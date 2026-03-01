@@ -58,96 +58,150 @@ export async function GET() {
   }
 
   try {
-    // ─── TODO: Replace with real Monday.com GraphQL API call ──────────────
-    //
-    // const boardId = process.env.MONDAY_BOARD_ID;
-    //
-    // const query = `
-    //   query {
-    //     boards(ids: [${boardId}]) {
-    //       name
-    //       items_page(limit: 50) {
-    //         items {
-    //           id
-    //           name
-    //           column_values {
-    //             id
-    //             text
-    //             value
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // `;
-    //
-    // const response = await fetch("https://api.monday.com/v2", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //     Authorization: process.env.MONDAY_API_KEY!,
-    //     "API-Version": "2024-01",
-    //   },
-    //   body: JSON.stringify({ query }),
-    // });
-    //
-    // const { data } = await response.json();
-    // // Transform data.boards[0].items_page.items into your Lead[] shape
-    // ─── End TODO ─────────────────────────────────────────────────────────────
+    const boardId = process.env.MONDAY_BOARD_ID;
+    const apiKey = process.env.MONDAY_API_KEY;
 
-    // Mock data — remove this block once you connect the real API
-    const mockData: MondayData = {
-      boardName: "Sales Pipeline",
-      totalLeads: 24,
-      activeLeads: 18,
-      totalPipelineValue: 385000,
+    if (!boardId || !apiKey) {
+      return NextResponse.json(
+        { error: "Missing Monday.com credentials in environment" },
+        { status: 500 }
+      );
+    }
+
+    // ─── Fetch board structure to find column IDs ───────────────────────────
+    const structureQuery = `
+      query {
+        boards(ids: [${boardId}]) {
+          name
+          columns {
+            id
+            title
+            type
+          }
+        }
+      }
+    `;
+
+    const structureResponse = await fetch("https://api.monday.com/v2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: apiKey,
+      },
+      body: JSON.stringify({ query: structureQuery }),
+    });
+
+    const structureData = await structureResponse.json();
+    if (structureData.errors) {
+      throw new Error(
+        `Monday.com API error: ${structureData.errors[0]?.message}`
+      );
+    }
+
+    const board = structureData.data?.boards[0];
+    if (!board) {
+      throw new Error("Board not found");
+    }
+
+    // ─── Fetch items (leads) with all column values ───────────────────────
+    const itemsQuery = `
+      query {
+        boards(ids: [${boardId}]) {
+          name
+          items_page(limit: 50) {
+            items {
+              id
+              name
+              column_values {
+                id
+                text
+                value
+              }
+              created_at
+            }
+          }
+        }
+      }
+    `;
+
+    const itemsResponse = await fetch("https://api.monday.com/v2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: apiKey,
+      },
+      body: JSON.stringify({ query: itemsQuery }),
+    });
+
+    const itemsData = await itemsResponse.json();
+    if (itemsData.errors) {
+      throw new Error(
+        `Monday.com API error: ${itemsData.errors[0]?.message}`
+      );
+    }
+
+    const boardData = itemsData.data?.boards[0];
+    if (!boardData) {
+      throw new Error("No board data found");
+    }
+
+    // ─── Transform Monday.com items into Lead objects ────────────────────
+    const leads: Lead[] = (boardData.items_page?.items || []).map(
+      (item: any) => {
+        // Extract column values by looking at text/value fields
+        const statusColumn = item.column_values.find(
+          (col: any) =>
+            col.text &&
+            [
+              "New Lead",
+              "Contacted",
+              "Proposal Sent",
+              "Negotiating",
+              "Won",
+              "Lost",
+            ].includes(col.text)
+        );
+
+        const valueColumn = item.column_values.find(
+          (col: any) => col.id?.includes("budget") || col.id?.includes("value")
+        );
+
+        const assigneeColumn = item.column_values.find(
+          (col: any) => col.id?.includes("assignee") || col.id?.includes("person")
+        );
+
+        return {
+          id: item.id,
+          name: item.name,
+          status: (statusColumn?.text as LeadStatus) || "New Lead",
+          value: valueColumn ? parseInt(valueColumn.value) || 0 : 0,
+          assignee: assigneeColumn?.text || "Unassigned",
+          lastActivity: new Date(item.created_at).toISOString().split("T")[0],
+        };
+      }
+    );
+
+    // ─── Calculate summary stats ──────────────────────────────────────────
+    const activeStatuses: LeadStatus[] = [
+      "Contacted",
+      "Proposal Sent",
+      "Negotiating",
+    ];
+    const activeLeads = leads.filter((l) => activeStatuses.includes(l.status))
+      .length;
+    const totalPipelineValue = leads.reduce((sum, l) => sum + l.value, 0);
+
+    const response: MondayData = {
+      boardName: boardData.name,
+      totalLeads: leads.length,
+      activeLeads,
+      totalPipelineValue,
       currency: "GBP",
-      leads: [
-        {
-          id: "1",
-          name: "Acme Corp",
-          status: "Proposal Sent",
-          value: 45000,
-          assignee: "Sarah J.",
-          lastActivity: "2025-06-02",
-        },
-        {
-          id: "2",
-          name: "Globex Industries",
-          status: "Negotiating",
-          value: 82000,
-          assignee: "Mike T.",
-          lastActivity: "2025-06-01",
-        },
-        {
-          id: "3",
-          name: "Initech Solutions",
-          status: "Contacted",
-          value: 28000,
-          assignee: "Sarah J.",
-          lastActivity: "2025-05-30",
-        },
-        {
-          id: "4",
-          name: "Umbrella Ltd",
-          status: "New Lead",
-          value: 15000,
-          assignee: "Chris P.",
-          lastActivity: "2025-05-29",
-        },
-        {
-          id: "5",
-          name: "Stark Enterprises",
-          status: "Won",
-          value: 120000,
-          assignee: "Mike T.",
-          lastActivity: "2025-05-28",
-        },
-      ],
+      leads: leads.slice(0, 20), // Show top 20 leads
       lastUpdated: new Date().toISOString(),
     };
 
-    return NextResponse.json(mockData);
+    return NextResponse.json(response);
   } catch (error) {
     console.error("[Monday.com API Error]", error);
     return NextResponse.json(
