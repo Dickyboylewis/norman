@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface TopBarProps {
-  title: string;
+  title?: string;
   subtitle?: string;
 }
 
@@ -47,39 +47,41 @@ export function TopBar({ title, subtitle }: TopBarProps) {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-8 border-b border-gray-100 bg-white">
-      {/* Left: Logo + Page title */}
-      <div className="flex items-center gap-4">
-        {/* White-Red Logo */}
+    <header className="h-16 flex items-center px-8 border-b border-gray-100 bg-white relative">
+      {/* Left: Page title */}
+      <div className="flex items-center gap-4 flex-1">
+        {title && (
+          <div>
+            <h1
+              className="text-lg font-semibold text-[#333333] leading-none"
+            >
+              {title}
+            </h1>
+            {subtitle && (
+              <p
+                className="text-xs text-[#7A7A7A] mt-0.5"
+              >
+                {subtitle}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Center: White-Red Logo */}
+      <div className="absolute left-1/2 -translate-x-1/2">
         <img
           src="/white-red.svg"
           alt="Norman"
           className="h-8 w-auto"
         />
-        <div>
-          <h1
-            className="text-lg font-semibold text-[#333333] leading-none"
-            style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}
-          >
-            {title}
-          </h1>
-          {subtitle && (
-            <p
-              className="text-xs text-[#7A7A7A] mt-0.5"
-              style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}
-            >
-              {subtitle}
-            </p>
-          )}
-        </div>
       </div>
 
       {/* Right: Actions + User */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 justify-end">
         {/* Date */}
         <span
           className="hidden md:block text-xs text-[#7A7A7A]"
-          style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}
         >
           {dateString}
         </span>

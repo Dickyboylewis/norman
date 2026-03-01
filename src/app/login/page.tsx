@@ -25,15 +25,15 @@ export default function LoginPage() {
           <div className="flex flex-col items-center gap-4">
             {/* White Red style logo mark — bold red square with "N" */}
             <div className="w-16 h-16 rounded-lg bg-[#DA2C26] flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-3xl tracking-tight" style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>
+              <span className="text-white font-bold text-3xl tracking-tight">
                 N
               </span>
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-[#333333] tracking-tight" style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>
+              <h1 className="text-2xl font-bold text-[#333333] tracking-tight">
                 Norman
               </h1>
-              <p className="text-sm text-[#7A7A7A] mt-1" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
+              <p className="text-sm text-[#7A7A7A] mt-1">
                 Internal Operations Dashboard
               </p>
             </div>
@@ -44,7 +44,7 @@ export default function LoginPage() {
 
           {/* Sign in section */}
           <div className="w-full flex flex-col items-center gap-4">
-            <p className="text-sm text-[#54595F] text-center" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
+            <p className="text-sm text-[#54595F] text-center">
               Sign in with your company Google account to access the dashboard.
             </p>
 
@@ -89,14 +89,14 @@ export default function LoginPage() {
             </form>
 
             {/* Alternative: sign in with red primary button style */}
-            <p className="text-xs text-[#7A7A7A] text-center" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
+            <p className="text-xs text-[#7A7A7A] text-center">
               Access is restricted to authorised team members only.
             </p>
           </div>
         </div>
 
         {/* White Red branding footer */}
-        <p className="text-center text-xs text-[#7A7A7A] mt-6" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
+        <p className="text-center text-xs text-[#7A7A7A] mt-6">
           Powered by{" "}
           <a
             href="https://whitered.co.uk"
