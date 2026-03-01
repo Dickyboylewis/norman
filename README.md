@@ -1,4 +1,4 @@
-# Norman — Internal Operations Dashboard
+# Norman — Internal Operations Dashboard test
 
 A modern, highly polished internal dashboard built with **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS**, **shadcn/ui**, **NextAuth.js v5 (Auth.js)**, and **TanStack Query**.
 
