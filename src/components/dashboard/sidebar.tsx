@@ -3,12 +3,10 @@
 /**
  * Dashboard Sidebar
  *
- * A fixed left sidebar with:
- * - App logo/brand
- * - Navigation links
- * - User profile section at the bottom with sign-out
- *
- * Uses NextAuth's useSession hook for client-side session data.
+ * A fixed left sidebar styled with White Red branding:
+ * - Dark charcoal (#333) background
+ * - Brand red (#DA2C26) active states and accents
+ * - Poppins/Roboto typography
  */
 
 import Link from "next/link";
@@ -16,7 +14,6 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -75,21 +72,22 @@ export function Sidebar() {
     : "?";
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white">
+    <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#333333] text-white">
       {/* Brand */}
-      <div className="flex h-16 items-center gap-3 px-6 border-b border-slate-700/50">
-        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-          <span className="text-slate-900 font-bold text-sm">N</span>
+      <div className="flex h-16 items-center gap-3 px-6 border-b border-white/10">
+        {/* Red logo mark */}
+        <div className="w-8 h-8 rounded-md bg-[#DA2C26] flex items-center justify-center flex-shrink-0 shadow-sm">
+          <span className="text-white font-bold text-sm" style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>N</span>
         </div>
         <div>
-          <p className="font-semibold text-sm leading-none">Norman</p>
-          <p className="text-xs text-slate-400 mt-0.5">Operations Hub</p>
+          <p className="font-semibold text-sm leading-none text-white" style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>Norman</p>
+          <p className="text-xs text-white/50 mt-0.5" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>Operations Hub</p>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
-        <p className="px-3 mb-2 text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <p className="px-3 mb-2 text-xs font-medium text-white/30 uppercase tracking-wider" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
           Menu
         </p>
         <ul className="space-y-0.5">
@@ -102,16 +100,17 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                    "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-150",
                     isActive
-                      ? "bg-white/10 text-white"
-                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                      ? "bg-[#DA2C26] text-white shadow-sm"
+                      : "text-white/60 hover:bg-white/8 hover:text-white"
                   )}
+                  style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   <span className="flex-1">{item.label}</span>
                   {isActive && (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    <ChevronRight className="w-3.5 h-3.5 text-white/70" />
                   )}
                 </Link>
               </li>
@@ -120,20 +119,23 @@ export function Sidebar() {
         </ul>
       </nav>
 
+      {/* Red accent line above user section */}
+      <div className="h-px bg-[#DA2C26]/40 mx-4" />
+
       {/* User Profile + Sign Out */}
-      <div className="border-t border-slate-700/50 p-4">
+      <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-9 h-9 flex-shrink-0">
             <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "User"} />
-            <AvatarFallback className="bg-slate-700 text-white text-xs font-medium">
+            <AvatarFallback className="bg-[#DA2C26] text-white text-xs font-medium">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">
+            <p className="text-sm font-medium text-white truncate" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
               {user?.name ?? "Loading..."}
             </p>
-            <p className="text-xs text-slate-400 truncate">
+            <p className="text-xs text-white/40 truncate" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
               {user?.email ?? ""}
             </p>
           </div>
@@ -142,8 +144,9 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start gap-2 text-slate-400 hover:text-white hover:bg-white/5 text-xs"
+          className="w-full justify-start gap-2 text-white/40 hover:text-white hover:bg-white/8 text-xs"
           onClick={() => signOut({ callbackUrl: "/login" })}
+          style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}
         >
           <LogOut className="w-3.5 h-3.5" />
           Sign out

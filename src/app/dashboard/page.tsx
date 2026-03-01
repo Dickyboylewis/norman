@@ -1,14 +1,10 @@
 /**
  * Main Dashboard Page
  *
- * This is the primary view at /dashboard.
- * It renders the top bar and a responsive 3-column grid of widgets:
- *   - QuickBooks Income Planner (spans 2 columns on large screens)
- *   - Monday.com Leads Summary
- *   - Notion Action Items
- *
- * All widgets are Client Components that fetch their own data via TanStack Query.
- * This page itself is a Server Component (no "use client" directive).
+ * Styled with White Red branding:
+ * - Clean white/light grey background
+ * - Brand red (#DA2C26) accents on headings and decorative elements
+ * - Poppins/Roboto typography
  */
 
 import { TopBar } from "@/components/dashboard/topbar";
@@ -18,7 +14,6 @@ import { NotionWidget } from "@/components/dashboard/widgets/notion-widget";
 import { auth } from "@/lib/auth";
 
 export default async function DashboardPage() {
-  // Fetch the session server-side for the greeting
   const session = await auth();
   const firstName = session?.user?.name?.split(" ")[0] ?? "there";
 
@@ -31,13 +26,23 @@ export default async function DashboardPage() {
       />
 
       {/* Page Content */}
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 bg-gray-50">
         {/* Page Header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Operations Overview
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <div className="flex items-center gap-3 mb-1">
+            {/* Brand red accent bar */}
+            <div className="w-1 h-7 bg-[#DA2C26] rounded-full flex-shrink-0" />
+            <h2
+              className="text-2xl font-bold text-[#333333]"
+              style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}
+            >
+              Operations Overview
+            </h2>
+          </div>
+          <p
+            className="text-sm text-[#7A7A7A] mt-1 ml-4"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}
+          >
             Your live snapshot from QuickBooks, Monday.com, and Notion.
           </p>
         </div>
@@ -51,8 +56,6 @@ export default async function DashboardPage() {
          *     - QuickBooks: spans 2 cols (wide chart widget)
          *     - Monday:     1 col
          *     - Notion:     1 col (starts new row, spans 1 col)
-         *
-         * To change the layout, adjust the col-span-* classes on each widget.
          */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* QuickBooks — Income Planner (wide) */}
@@ -65,7 +68,7 @@ export default async function DashboardPage() {
             <MondayWidget />
           </div>
 
-          {/* Notion — Action Items (full width on its row) */}
+          {/* Notion — Action Items */}
           <div className="lg:col-span-1">
             <NotionWidget />
           </div>

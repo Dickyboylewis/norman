@@ -1,52 +1,50 @@
 /**
  * Login Page
  *
- * A clean, minimal sign-in screen with a "Sign in with Google" button.
- * This page is publicly accessible (no auth required).
- *
- * The signIn action calls NextAuth's Google provider, which redirects
- * the user through Google's OAuth flow and back to /dashboard on success.
+ * A clean sign-in screen styled with White Red branding.
+ * Primary red (#DA2C26) with Poppins/Roboto typography.
  */
 
 import { signIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Chrome } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      {/* Background decoration */}
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      {/* Subtle red background accent */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-blue-100/50 dark:bg-blue-900/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-indigo-100/50 dark:bg-indigo-900/20 blur-3xl" />
+        <div className="absolute -top-60 -right-60 w-[600px] h-[600px] rounded-full bg-[#DA2C26]/5 blur-3xl" />
+        <div className="absolute -bottom-60 -left-60 w-[600px] h-[600px] rounded-full bg-[#DA2C26]/5 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md mx-auto px-6">
         {/* Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-10 flex flex-col items-center gap-8">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-10 flex flex-col items-center gap-8">
+
           {/* Logo / Brand */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-slate-900 dark:bg-white flex items-center justify-center shadow-md">
-              <span className="text-white dark:text-slate-900 font-bold text-2xl tracking-tight">
+          <div className="flex flex-col items-center gap-4">
+            {/* White Red style logo mark — bold red square with "N" */}
+            <div className="w-16 h-16 rounded-lg bg-[#DA2C26] flex items-center justify-center shadow-md">
+              <span className="text-white font-bold text-3xl tracking-tight" style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>
                 N
               </span>
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl font-bold text-[#333333] tracking-tight" style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>
                 Norman
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-sm text-[#7A7A7A] mt-1" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
                 Internal Operations Dashboard
               </p>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="w-full border-t border-slate-100 dark:border-slate-800" />
+          {/* Red accent divider */}
+          <div className="w-12 h-0.5 bg-[#DA2C26] rounded-full" />
 
           {/* Sign in section */}
           <div className="w-full flex flex-col items-center gap-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
+            <p className="text-sm text-[#54595F] text-center" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
               Sign in with your company Google account to access the dashboard.
             </p>
 
@@ -61,13 +59,12 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full gap-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm hover:shadow-md transition-all duration-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-600"
+                className="w-full gap-3 bg-white hover:bg-gray-50 text-[#54595F] border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-[#DA2C26]/30"
                 variant="outline"
               >
-                {/* Google "G" icon using Lucide Chrome as a stand-in */}
                 <svg
                   viewBox="0 0 24 24"
-                  className="w-5 h-5"
+                  className="w-5 h-5 flex-shrink-0"
                   aria-hidden="true"
                 >
                   <path
@@ -90,13 +87,26 @@ export default function LoginPage() {
                 Sign in with Google
               </Button>
             </form>
-          </div>
 
-          {/* Footer note */}
-          <p className="text-xs text-slate-400 dark:text-slate-600 text-center">
-            Access is restricted to authorised team members only.
-          </p>
+            {/* Alternative: sign in with red primary button style */}
+            <p className="text-xs text-[#7A7A7A] text-center" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
+              Access is restricted to authorised team members only.
+            </p>
+          </div>
         </div>
+
+        {/* White Red branding footer */}
+        <p className="text-center text-xs text-[#7A7A7A] mt-6" style={{ fontFamily: 'var(--font-poppins), Poppins, sans-serif' }}>
+          Powered by{" "}
+          <a
+            href="https://whitered.co.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#DA2C26] hover:underline font-medium"
+          >
+            White Red
+          </a>
+        </p>
       </div>
     </div>
   );
