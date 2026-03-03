@@ -22,7 +22,7 @@ export function IncomePlannerChart() {
   return (
     <Card className="shadow-sm border-gray-200">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardTitle className="text-lg font-semibold text-gray-900 text-center">
           Cash in and out • Last 6 months
         </CardTitle>
       </CardHeader>
@@ -65,13 +65,13 @@ export function IncomePlannerChart() {
             <Bar 
               dataKey="cashIn" 
               name="Cash in" 
-              fill="#2563eb" 
+              fill="#991b1b" 
               radius={[4, 4, 0, 0]} 
             />
             <Bar 
               dataKey="cashOut" 
               name="Cash out" 
-              fill="#93c5fd" 
+              fill="#fecdd3" 
               radius={[4, 4, 0, 0]} 
             />
           </BarChart>

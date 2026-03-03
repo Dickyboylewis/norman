@@ -11,7 +11,7 @@ import { TopBar } from "@/components/dashboard/topbar";
 import { IncomePlannerChart } from "@/components/dashboard/widgets/income-planner-chart";
 import { ProspectingChart } from "@/components/dashboard/widgets/prospecting-chart";
 import { DealRevenueChart } from "@/components/dashboard/widgets/deal-revenue-chart";
-import { CashflowCard } from "@/components/dashboard/widgets/cashflow-card";
+import { NetProfitWidget } from "@/components/dashboard/widgets/net-profit-widget";
 
 export default async function DashboardPage() {
   return (
@@ -32,8 +32,8 @@ export default async function DashboardPage() {
           {/* Viewport 3: Deal Revenue */}
           <DealRevenueChart />
 
-          {/* Viewport 4: Cashflow Balance */}
-          <CashflowCard />
+          {/* Viewport 4: 6 Month Net Profit */}
+          <NetProfitWidget />
         </div>
       </div>
     </div>
