@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 
 const XERO_CLIENT_ID = process.env.XERO_CLIENT_ID ?? "";
 const XERO_REDIRECT_URI =
-  process.env.XERO_REDIRECT_URI ?? "http://localhost:3000/api/xero/callback";
+  process.env.XERO_REDIRECT_URI ?? "http://127.0.0.1:3000/api/xero/callback";
 
 const XERO_SCOPES = [
   "openid",

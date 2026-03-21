@@ -1,14 +1,8 @@
 "use client";
 
-/**
- * Income Planner Chart -> Cash In and Out
- * * Bar chart showing Cash In vs Cash Out per month (Mimicking Xero Dashboard)
- */
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-// 1. Updated data to match the Xero Cash In/Out screenshot
 const data = [
   { month: "Oct", cashIn: 280000, cashOut: 220000 },
   { month: "Nov", cashIn: 300000, cashOut: 350000 },
@@ -30,50 +24,15 @@ export function IncomePlannerChart() {
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            
-            <XAxis 
-              dataKey="month" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#6b7280', fontSize: 12 }} 
-              dy={10}
-            />
-            
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              tickFormatter={(value: any) => `£${value / 1000}k`} 
-            />
-            
+            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(value: any) => `£${value / 1000}k`} />
             <Tooltip 
-              cursor={{ fill: 'rgba(0,0,0,0.05)' }} 
-              contentStyle={{ 
-                backgroundColor: "white", 
-                borderRadius: '8px', 
-                border: '1px solid #e5e7eb', 
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
-              }}
+              contentStyle={{ backgroundColor: "white", borderRadius: '8px', border: '1px solid #e5e7eb' }}
               formatter={(value: any) => [`£${Number(value).toLocaleString()}`, undefined]}
             />
-            
-            <Legend 
-              iconType="circle" 
-              wrapperStyle={{ paddingTop: '20px' }} 
-            />
-            
-            <Bar 
-              dataKey="cashIn" 
-              name="Cash in" 
-              fill="#991b1b" 
-              radius={[4, 4, 0, 0]} 
-            />
-            <Bar 
-              dataKey="cashOut" 
-              name="Cash out" 
-              fill="#fecdd3" 
-              radius={[4, 4, 0, 0]} 
-            />
+            <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+            <Bar dataKey="cashIn" name="Cash in" fill="#991b1b" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="cashOut" name="Cash out" fill="#fecdd3" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
