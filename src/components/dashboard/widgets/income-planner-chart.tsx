@@ -1,36 +1,83 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-const data = [
-  { month: "Oct", cashIn: 280000, cashOut: 220000 },
-  { month: "Nov", cashIn: 300000, cashOut: 350000 },
-  { month: "Dec", cashIn: 500000, cashOut: 210000 },
-  { month: "Jan", cashIn: 320000, cashOut: 180000 },
-  { month: "Feb", cashIn: 50000, cashOut: 150000 },
-  { month: "Mar", cashIn: 0, cashOut: 40000 },
-];
+interface MonthData { month: string; cashIn: number; cashOut: number; }
+interface CashflowData { months: MonthData[]; totalCashIn: number; totalCashOut: number; difference: number; }
+
+const fmt = (v: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(v);
 
 export function IncomePlannerChart() {
+  const [data, setData] = useState<CashflowData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [needsAuth, setNeedsAuth] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/xero/cashflow").then(async (res) => {
+      const text = await res.text();
+      let json: any;
+      try { json = JSON.parse(text); } catch { setNeedsAuth(true); setLoading(false); return; }
+      if (!res.ok || json.error) { setNeedsAuth(true); setLoading(false); return; }
+      setData(json);
+      setLoading(false);
+    }).catch(() => { setNeedsAuth(true); setLoading(false); });
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="shadow-sm border-gray-200 h-96 flex items-center justify-center">
+        <div className="text-gray-400 animate-pulse">Loading Xero Data...</div>
+      </Card>
+    );
+  }
+
+  if (needsAuth) {
+    return (
+      <Card className="shadow-sm border-gray-200 h-96 flex flex-col items-center justify-center gap-4">
+        <p className="text-lg font-semibold">Xero Disconnected</p>
+        <p className="text-sm text-gray-500">Connect Xero to see live cash flow data.</p>
+        <a href="/api/xero/auth" className="px-6 py-2 bg-blue-500 text-white font-semibold rounded-md">
+          Connect to Xero
+        </a>
+      </Card>
+    );
+  }
+
+  const isPositive = (data?.difference ?? 0) >= 0;
+
   return (
     <Card className="shadow-sm border-gray-200">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900 text-center">
-          Cash in and out • Last 6 months
+          Cash in and out - Last 6 months
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div>
+            <p className="text-xl font-bold text-gray-900">{fmt(data?.totalCashIn ?? 0)}</p>
+            <p className="text-xs text-gray-500 mt-1">Cash in</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-red-700">{fmt(data?.totalCashOut ?? 0)}</p>
+            <p className="text-xs text-gray-500 mt-1">Cash out</p>
+          </div>
+          <div>
+            <p className={`text-xl font-bold ${isPositive ? "text-green-700" : "text-red-700"}`}>
+              {fmt(data?.difference ?? 0)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Difference</p>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={data?.months || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(value: any) => `£${value / 1000}k`} />
-            <Tooltip 
-              contentStyle={{ backgroundColor: "white", borderRadius: '8px', border: '1px solid #e5e7eb' }}
-              formatter={(value: any) => [`£${Number(value).toLocaleString()}`, undefined]}
-            />
-            <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} dy={10} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <Tooltip contentStyle={{ backgroundColor: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }} formatter={(value: any) => [`${Number(value).toLocaleString()}`, undefined]} />
+            <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
             <Bar dataKey="cashIn" name="Cash in" fill="#991b1b" radius={[4, 4, 0, 0]} />
             <Bar dataKey="cashOut" name="Cash out" fill="#fecdd3" radius={[4, 4, 0, 0]} />
           </BarChart>
