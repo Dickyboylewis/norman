@@ -7,8 +7,6 @@ function parseXeroDate(dateStr: string): Date {
   return new Date(dateStr);
 }
 
-// Credit card accounts — excluded from BankSummary totals.
-// Identified from the Xero BankSummary response by account name.
 const CREDIT_CARD_ACCOUNT_IDS = new Set([
   "a8fa9c65-c78b-4619-9704-fa641d2180db", // Credit Card (DL)
   "fa7836c7-71c0-4932-8796-3e1aa8c9babe", // DL C/card 0367
@@ -39,8 +37,12 @@ export async function GET() {
       Accept: "application/json",
     };
 
-    // Step 1: Get BankSummary for each month — only sum BANK accounts (not credit cards)
-    const rawMonths: { label: string; received: number; spent: number }[] = [];
+    // Step 1: BankSummary per month — sum only bank accounts, skip credit cards
+    const rawMonths: {
+      label: string;
+      bankReceived: number;
+      bankSpent: number;
+    }[] = [];
 
     for (const m of monthRanges) {
       try {
@@ -48,44 +50,36 @@ export async function GET() {
         const res = await fetch(url, { headers });
 
         if (!res.ok) {
-          rawMonths.push({ label: m.label, received: 0, spent: 0 });
+          rawMonths.push({ label: m.label, bankReceived: 0, bankSpent: 0 });
           continue;
         }
 
         const data = await res.json();
         const allRows = data.Reports?.[0]?.Rows || [];
 
-        let received = 0;
-        let spent = 0;
+        let bankReceived = 0;
+        let bankSpent = 0;
 
         for (const section of allRows) {
           for (const child of section.Rows || []) {
             if (child.RowType !== "Row") continue;
-
             const cells = child.Cells || [];
             const accountId =
-              cells[0]?.Attributes?.find(
-                (a: any) => a.Id === "accountID"
-              )?.Value || "";
-
-            // Skip credit card accounts
+              cells[0]?.Attributes?.find((a: any) => a.Id === "accountID")
+                ?.Value || "";
             if (CREDIT_CARD_ACCOUNT_IDS.has(accountId)) continue;
-
-            received += Math.abs(parseFloat(cells[2]?.Value || "0"));
-            spent += Math.abs(parseFloat(cells[3]?.Value || "0"));
+            bankReceived += Math.abs(parseFloat(cells[2]?.Value || "0"));
+            bankSpent += Math.abs(parseFloat(cells[3]?.Value || "0"));
           }
         }
 
-        rawMonths.push({ label: m.label, received, spent });
+        rawMonths.push({ label: m.label, bankReceived, bankSpent });
       } catch {
-        rawMonths.push({ label: m.label, received: 0, spent: 0 });
+        rawMonths.push({ label: m.label, bankReceived: 0, bankSpent: 0 });
       }
     }
 
-    // Step 2: Fetch BankTransfers and subtract directionally.
-    // Bank-to-bank transfers inflate both received and spent — subtract from both.
-    // Bank-to-credit-card (repayments) inflate only bank spent — subtract from spent only.
-    // Credit-card-to-bank inflate only bank received — subtract from received only.
+    // Step 2: BankTransfers — directional subtraction
     const firstFrom = monthRanges[0].fromDate.split("-");
     const lastTo = monthRanges[monthRanges.length - 1].toDate.split("-");
     const where = encodeURIComponent(
@@ -94,6 +88,7 @@ export async function GET() {
 
     const transfersIn: Record<string, number> = {};
     const transfersOut: Record<string, number> = {};
+
     for (const m of monthRanges) {
       transfersIn[m.label] = 0;
       transfersOut[m.label] = 0;
@@ -105,7 +100,6 @@ export async function GET() {
     while (hasMore) {
       const tUrl = `https://api.xero.com/api.xro/2.0/BankTransfers?where=${where}&page=${page}`;
       const tRes = await fetch(tUrl, { headers });
-
       if (!tRes.ok) break;
 
       const tData = await tRes.json();
@@ -118,43 +112,37 @@ export async function GET() {
 
       for (const t of transfers) {
         const tDate = parseXeroDate(t.Date);
-        const tMonth = tDate.getMonth();
-        const tYear = tDate.getFullYear();
-        const fromId = t.FromBankAccount?.AccountID || "";
-        const toId = t.ToBankAccount?.AccountID || "";
-        const fromIsCC = CREDIT_CARD_ACCOUNT_IDS.has(fromId);
-        const toIsCC = CREDIT_CARD_ACCOUNT_IDS.has(toId);
+        const fromIsCC = CREDIT_CARD_ACCOUNT_IDS.has(
+          t.FromBankAccount?.AccountID || ""
+        );
+        const toIsCC = CREDIT_CARD_ACCOUNT_IDS.has(
+          t.ToBankAccount?.AccountID || ""
+        );
 
         for (const m of monthRanges) {
-          if (tMonth === m.jsMonth && tYear === m.jsYear) {
-            // Only subtract from sides that are counted in our bank-only totals
-            if (!fromIsCC) {
-              // From account is a bank — its "spent" was counted, so subtract
-              transfersOut[m.label] += t.Amount;
-            }
-            if (!toIsCC) {
-              // To account is a bank — its "received" was counted, so subtract
-              transfersIn[m.label] += t.Amount;
-            }
+          if (
+            tDate.getMonth() === m.jsMonth &&
+            tDate.getFullYear() === m.jsYear
+          ) {
+            if (!fromIsCC) transfersOut[m.label] += t.Amount;
+            if (!toIsCC) transfersIn[m.label] += t.Amount;
             break;
           }
         }
       }
 
-      if (transfers.length < 100) {
-        hasMore = false;
-      } else {
-        page++;
-      }
+      if (transfers.length < 100) hasMore = false;
+      else page++;
     }
 
-    // Step 3: Real cash flow = bank-only totals minus directional transfers
+    // Step 3: Final figures
     const months = rawMonths.map((rm) => ({
       month: rm.label,
       cashIn:
-        Math.round((rm.received - (transfersIn[rm.label] || 0)) * 100) / 100,
+        Math.round((rm.bankReceived - (transfersIn[rm.label] || 0)) * 100) /
+        100,
       cashOut:
-        Math.round((rm.spent - (transfersOut[rm.label] || 0)) * 100) / 100,
+        Math.round((rm.bankSpent - (transfersOut[rm.label] || 0)) * 100) / 100,
     }));
 
     const totalCashIn =

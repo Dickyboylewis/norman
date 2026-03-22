@@ -2,12 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
 
 interface MonthData { month: string; cashIn: number; cashOut: number; }
 interface CashflowData { months: MonthData[]; totalCashIn: number; totalCashOut: number; difference: number; }
 
 const fmt = (v: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(v);
+
+/**
+ * Returns a green or red color whose intensity scales with the magnitude of
+ * the net cash flow relative to the largest absolute value in the dataset.
+ */
+function getMonthColor(diff: number, maxAbs: number): string {
+  const t = maxAbs === 0 ? 0 : Math.abs(diff) / maxAbs; // 0‑1 intensity
+  if (diff >= 0) {
+    // Light green → deep green  (HSL 142°, 71% sat, lightness 85% → 35%)
+    return `hsl(142, 71%, ${85 - t * 50}%)`;
+  }
+  // Light red → deep red  (HSL 0°, 72% sat, lightness 85% → 35%)
+  return `hsl(0, 72%, ${85 - t * 50}%)`;
+}
 
 export function IncomePlannerChart() {
   const [data, setData] = useState<CashflowData | null>(null);
@@ -47,6 +61,11 @@ export function IncomePlannerChart() {
 
   const isPositive = (data?.difference ?? 0) >= 0;
 
+  // Pre-compute per-month net flow and the max absolute value for scaling
+  const months = data?.months || [];
+  const diffs = months.map(m => m.cashIn - m.cashOut);
+  const maxAbsDiff = Math.max(...diffs.map(Math.abs), 1);
+
   return (
     <Card className="shadow-sm border-gray-200">
       <CardHeader>
@@ -78,8 +97,16 @@ export function IncomePlannerChart() {
             <YAxis axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
             <Tooltip contentStyle={{ backgroundColor: "white", borderRadius: "8px", border: "1px solid #e5e7eb" }} formatter={(value: any) => [`${Number(value).toLocaleString()}`, undefined]} />
             <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
-            <Bar dataKey="cashIn" name="Cash in" fill="#991b1b" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="cashOut" name="Cash out" fill="#fecdd3" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="cashIn" name="Cash in" radius={[4, 4, 0, 0]}>
+              {months.map((m, i) => (
+                <Cell key={i} fill={getMonthColor(diffs[i], maxAbsDiff)} />
+              ))}
+            </Bar>
+            <Bar dataKey="cashOut" name="Cash out" radius={[4, 4, 0, 0]}>
+              {months.map((m, i) => (
+                <Cell key={i} fill={getMonthColor(diffs[i], maxAbsDiff)} opacity={0.45} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
