@@ -8,20 +8,10 @@ export async function GET() {
     response_type: "code",
     client_id: clientId || "",
     redirect_uri: redirectUri || "",
-    scope: [
-      "openid",
-      "profile",
-      "email",
-      "offline_access",
-      "accounting.reports.profitandloss.read",
-      "accounting.reports.balancesheet.read",
-      "accounting.banktransactions.read",
-      "accounting.settings.read",
-    ].join(" "),
+    scope: "openid profile email offline_access accounting.reports.profitandloss.read accounting.reports.balancesheet.read accounting.reports.banksummary.read accounting.banktransactions.read accounting.settings.read",
     state: crypto.randomUUID(),
   });
 
   const authUrl = `https://login.xero.com/identity/connect/authorize?${params.toString()}`;
-
   return NextResponse.redirect(authUrl);
 }
