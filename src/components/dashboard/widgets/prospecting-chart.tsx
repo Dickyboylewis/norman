@@ -49,7 +49,7 @@ export function ProspectingChart() {
   }
 
   return (
-    <Card className="w-full h-[500px] flex flex-col font-roboto">
+    <Card className="w-full flex flex-col font-roboto">
       <CardHeader className="pb-2">
         <div className="flex flex-col items-center">
           <CardTitle className="text-xl font-bold text-gray-800 text-center">This Weeks Prospecting</CardTitle>
@@ -60,8 +60,8 @@ export function ProspectingChart() {
         </div>
       </CardHeader>
       
-      <CardContent className="h-[400px] pb-6">
-        <ResponsiveContainer width="100%" height="100%">
+      <CardContent className="pb-6">
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart
             data={data}
             margin={{ top: 20, right: 30, left: 0, bottom: 0 }}

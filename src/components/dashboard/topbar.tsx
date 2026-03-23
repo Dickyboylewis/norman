@@ -47,7 +47,7 @@ export function TopBar({ title, subtitle }: TopBarProps) {
   };
 
   return (
-    <header className="h-16 flex items-center px-8 border-b border-gray-100 bg-white relative">
+    <header className="h-16 flex items-center px-4 md:px-8 border-b border-gray-100 bg-white relative">
       {/* Left: Page title */}
       <div className="flex items-center gap-4 flex-1">
         {title && (

@@ -74,7 +74,7 @@ export function IncomePlannerChart() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-2 mb-4 md:mb-6">
           <div>
             <p className="text-xl font-bold text-gray-900">{fmt(data?.totalCashIn ?? 0)}</p>
             <p className="text-xs text-gray-500 mt-1">Cash in</p>
@@ -90,7 +90,7 @@ export function IncomePlannerChart() {
             <p className="text-xs text-gray-500 mt-1">Difference</p>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data?.months || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 12 }} dy={10} />

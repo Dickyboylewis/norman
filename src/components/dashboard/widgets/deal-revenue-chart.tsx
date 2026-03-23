@@ -31,8 +31,8 @@ export function DealRevenueChart() {
       <CardHeader className="text-center">
         <CardTitle>{`${quarter} Deal Revenue`}</CardTitle>
       </CardHeader>
-      <CardContent className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
+      <CardContent>
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
