@@ -91,7 +91,7 @@ export default function HRPage() {
             <CardContent className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={headcount} dataKey="count" nameKey="department" cx="50%" cy="50%" outerRadius={90} label={({ department, percent }) => `${department} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={headcount} dataKey="count" nameKey="department" cx="50%" cy="50%" outerRadius={90} label={(props: any) => `${props.name ?? ""} ${(((props.percent as number) ?? 0) * 100).toFixed(0)}%`}>
                     {headcount.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}

@@ -22,7 +22,33 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, AlertCircle, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { MondayData, LeadStatus } from "@/app/api/monday/route";
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type LeadStatus =
+  | "New Lead"
+  | "Contacted"
+  | "Proposal Sent"
+  | "Negotiating"
+  | "Won"
+  | "Lost";
+
+interface Lead {
+  id: string;
+  name: string;
+  status: LeadStatus;
+  assignee: string;
+  value: number;
+  lastActivity: string;
+}
+
+interface MondayData {
+  boardName: string;
+  totalLeads: number;
+  activeLeads: number;
+  totalPipelineValue: number;
+  currency: string;
+  leads: Lead[];
+}
 
 // ─── Data Fetcher ──────────────────────────────────────────────────────────────
 

@@ -46,7 +46,7 @@ export function DealRevenueChart() {
               tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip 
-              formatter={(value: number | undefined) => value ? `$${value.toLocaleString()}` : ''}
+              formatter={(value: any) => value ? `$${Number(value).toLocaleString()}` : ''}
               contentStyle={{ 
                 backgroundColor: "white", 
                 border: "1px solid #e5e7eb",

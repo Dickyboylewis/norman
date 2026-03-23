@@ -1,182 +1,172 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+/**
+ * Finance Page
+ *
+ * Rebuilt with live Xero data via TanStack Query.
+ * - Summary KPI cards from /api/xero/balance-summary
+ * - Modular chart grid — easy to toggle charts on/off
+ * - LiveIndicator on every card and chart
+ */
+
+import { useQuery } from "@tanstack/react-query";
 import { TopBar } from "@/components/dashboard/topbar";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ReferenceLine,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LiveIndicator } from "@/components/dashboard/charts/live-indicator";
+import { IncomeExpensesChart } from "@/components/dashboard/charts/income-expenses-chart";
+import { FinanceIncomePlannerChart } from "@/components/dashboard/charts/finance-income-planner";
+import { ExpenseBreakdownChart } from "@/components/dashboard/charts/expense-breakdown-chart";
+import { CashflowTrendChart } from "@/components/dashboard/charts/cashflow-trend-chart";
+import { ProfitAndLossChart } from "@/components/dashboard/charts/profit-and-loss-chart";
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-const monthlyIncome = [
-  { month: "Jan", full: 180000, seventyFive: 135000 },
-  { month: "Feb", full: 210000, seventyFive: 157500 },
-  { month: "Mar", full: 195000, seventyFive: 146250 },
-  { month: "Apr", full: 240000, seventyFive: 180000 },
-  { month: "May", full: 225000, seventyFive: 168750 },
-  { month: "Jun", full: 270000, seventyFive: 202500 },
-];
+interface BalanceSummary {
+  totalRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  cashflowBalance: number;
+  revenueChange: string;
+  expensesChange: string;
+  netProfitChange: string;
+  cashflowChange: string;
+  connected: boolean;
+}
 
-const TARGET_REVENUE = 250000;
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
-const expenses = [
-  { category: "Salaries", amount: 85000 },
-  { category: "Software", amount: 12000 },
-  { category: "Office", amount: 8000 },
-  { category: "Marketing", amount: 15000 },
-  { category: "Travel", amount: 6000 },
-];
-
-const PIE_COLORS = ["#DC2626", "#2563EB", "#F59E0B", "#10B981", "#8B5CF6"];
-
-const cashflowTrend = [
-  { month: "Jan", balance: 180000 },
-  { month: "Feb", balance: 195000 },
-  { month: "Mar", balance: 210000 },
-  { month: "Apr", balance: 232000 },
-  { month: "May", balance: 248000 },
-  { month: "Jun", balance: 265000 },
-];
-
-const profitLoss = [
-  { month: "Jan", revenue: 180000, costs: 126000 },
-  { month: "Feb", revenue: 210000, costs: 135000 },
-  { month: "Mar", revenue: 195000, costs: 128000 },
-  { month: "Apr", revenue: 240000, costs: 142000 },
-  { month: "May", revenue: 225000, costs: 138000 },
-  { month: "Jun", revenue: 270000, costs: 150000 },
-];
-
-const formatCurrency = (value: number) =>
+const fmt = (v: number) =>
   new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(v);
+
+async function fetchBalanceSummary(): Promise<BalanceSummary> {
+  const res = await fetch("/api/xero/balance-summary");
+  if (!res.ok) throw new Error("Failed to fetch balance summary");
+  return res.json();
+}
+
+// ─── KPI Card ──────────────────────────────────────────────────────────────────
+
+function KpiCard({
+  label,
+  value,
+  change,
+  connected,
+  loading,
+}: {
+  label: string;
+  value: string;
+  change: string;
+  connected: boolean;
+  loading: boolean;
+}) {
+  const isPositiveChange = change.startsWith("+");
+
+  return (
+    <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
+      <CardContent className="pt-5 pb-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-medium text-gray-500">{label}</p>
+          <LiveIndicator connected={connected} />
+        </div>
+        {loading ? (
+          <>
+            <Skeleton className="h-8 w-32 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </>
+        ) : (
+          <>
+            <p className="text-2xl font-bold text-gray-900 font-[Poppins]">{value}</p>
+            <p
+              className={`text-xs mt-1 font-medium ${
+                isPositiveChange ? "text-green-600" : "text-red-500"
+              }`}
+            >
+              {change} vs last period
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FinancePage() {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["xero-balance-summary"],
+    queryFn: fetchBalanceSummary,
+    refetchInterval: 300_000,
+    retry: 1,
+  });
+
+  const connected = !isError && !!data?.connected;
+  const loading = isLoading;
+
+  const kpis = [
+    {
+      label: "Total Revenue",
+      value: data ? fmt(data.totalRevenue) : "—",
+      change: data?.revenueChange ?? "+0.0%",
+    },
+    {
+      label: "Total Expenses",
+      value: data ? fmt(data.totalExpenses) : "—",
+      change: data?.expensesChange ?? "+0.0%",
+    },
+    {
+      label: "Net Profit",
+      value: data ? fmt(data.netProfit) : "—",
+      change: data?.netProfitChange ?? "+0.0%",
+    },
+    {
+      label: "Cashflow Balance",
+      value: data ? fmt(data.cashflowBalance) : "—",
+      change: data?.cashflowChange ?? "+0.0%",
+    },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
-      <TopBar title="Finance" />
+      <TopBar title="Finance" subtitle="Live data from Xero" />
 
       <div className="flex-1 p-8 bg-gray-50">
-        {/* KPI Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {[
-            { label: "Total Revenue", value: "£1,320,000", change: "+8.2%" },
-            { label: "Total Expenses", value: "£819,000", change: "+3.1%" },
-            { label: "Net Profit", value: "£501,000", change: "+14.6%" },
-            { label: "Cashflow Balance", value: "£265,000", change: "+5.4%" },
-          ].map((kpi) => (
-            <Card key={kpi.label}>
-              <CardContent className="pt-6">
-                <p className="text-sm text-gray-500">{kpi.label}</p>
-                <p className="text-2xl font-bold mt-1">{kpi.value}</p>
-                <p className="text-xs text-green-600 mt-1">{kpi.change} vs last period</p>
-              </CardContent>
-            </Card>
+        {/* ── KPI Summary Cards ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {kpis.map((kpi) => (
+            <KpiCard
+              key={kpi.label}
+              label={kpi.label}
+              value={kpi.value}
+              change={kpi.change}
+              connected={connected}
+              loading={loading}
+            />
           ))}
         </div>
 
-        {/* Charts Grid */}
+        {/* ── Chart Grid ── */}
+        {/* To toggle a chart off, wrap it in a comment: {/* <ChartName /> */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Income Planner */}
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Income Planner</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyIncome} margin={{ top: 20, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={formatCurrency} width={80} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Legend />
-                  <ReferenceLine
-                    y={TARGET_REVENUE}
-                    stroke="#333"
-                    strokeDasharray="5 5"
-                    label={{ value: `Target: ${formatCurrency(TARGET_REVENUE)}`, position: "right", fill: "#333", fontSize: 12 }}
-                  />
-                  <Bar dataKey="full" name="100% Income" fill="#DC2626" />
-                  <Bar dataKey="seventyFive" name="75% Income" fill="#2563EB" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* NEW: Income vs Expenses grouped bar chart */}
+          <IncomeExpensesChart />
 
-          {/* Expense Breakdown */}
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Expense Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={expenses} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={90} label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}>
-                    {expenses.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* Income Planner — Cash In vs Cash Out */}
+          <FinanceIncomePlannerChart />
 
-          {/* Cashflow Trend */}
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Cashflow Trend</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={cashflowTrend} margin={{ top: 20, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={formatCurrency} width={80} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Line type="monotone" dataKey="balance" stroke="#2563EB" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* Expense Breakdown — Pie chart of monthly costs */}
+          <ExpenseBreakdownChart />
 
-          {/* Profit & Loss */}
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Profit &amp; Loss</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={profitLoss} margin={{ top: 20, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={formatCurrency} width={80} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                  <Legend />
-                  <Bar dataKey="revenue" name="Revenue" fill="#10B981" />
-                  <Bar dataKey="costs" name="Costs" fill="#DC2626" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* Cashflow Trend — Cumulative balance line chart */}
+          <CashflowTrendChart />
+
+          {/* Profit & Loss — Revenue vs Costs bar chart */}
+          <ProfitAndLossChart />
         </div>
       </div>
     </div>
