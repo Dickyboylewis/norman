@@ -18,6 +18,15 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Norman — Internal Dashboard",
   description: "Internal operations dashboard powered by QuickBooks, Monday.com, and Notion.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "White Red",
+  },
+  icons: {
+    apple: "/apple-touch-icon-WR.png",
+  },
 };
 
 export default function RootLayout({
