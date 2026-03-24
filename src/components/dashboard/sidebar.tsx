@@ -151,17 +151,6 @@ export function Sidebar() {
     <>
       {/* ── MOBILE HEADER (visible only on small screens) ─────────────────── */}
       <header className="flex md:hidden fixed top-0 left-0 right-0 z-50 h-14 items-center justify-between px-4 bg-red-700 text-white shadow-md">
-        {/* Logo / Title */}
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span className="text-red-700 font-bold text-xs">N</span>
-          </div>
-          <div>
-            <p className="font-semibold text-sm leading-none">Norman</p>
-            <p className="text-[10px] text-white/60">Operations Hub</p>
-          </div>
-        </div>
-
         {/* Hamburger button */}
         <button
           aria-label="Open navigation menu"
@@ -188,17 +177,8 @@ export function Sidebar() {
 
           {/* Slide-out drawer */}
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-red-700 text-white shadow-2xl animate-in slide-in-from-left duration-200">
-            {/* Drawer header */}
-            <div className="flex h-14 items-center justify-between px-4 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <span className="text-red-700 font-bold text-xs">N</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-sm leading-none">Norman</p>
-                  <p className="text-[10px] text-white/60">Operations Hub</p>
-                </div>
-              </div>
+            {/* Close button row */}
+            <div className="flex h-14 items-center justify-end px-4">
               <button
                 aria-label="Close navigation menu"
                 onClick={() => setMobileOpen(false)}
@@ -209,10 +189,7 @@ export function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-4 px-3">
-              <p className="px-3 mb-2 text-xs font-medium text-white/70 uppercase tracking-wider">
-                Menu
-              </p>
+            <nav className="flex-1 overflow-y-auto pt-2 px-3">
               <NavList pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             </nav>
 
@@ -254,22 +231,8 @@ export function Sidebar() {
 
       {/* ── DESKTOP SIDEBAR (hidden on mobile, visible md+) ───────────────── */}
       <aside className="hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-red-700 text-white">
-        {/* Brand */}
-        <div className="flex h-16 items-center gap-3 px-6 border-b border-white/10">
-          <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span className="text-red-700 font-bold text-sm">N</span>
-          </div>
-          <div>
-            <p className="font-semibold text-sm leading-none text-white">Norman</p>
-            <p className="text-xs text-white/50 mt-0.5">Operations Hub</p>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
-          <p className="px-3 mb-2 text-xs font-medium text-white/70 uppercase tracking-wider">
-            Menu
-          </p>
+        {/* Navigation — flush to top */}
+        <nav className="flex-1 overflow-y-auto pt-4 px-3">
           <NavList pathname={pathname} />
         </nav>
 
