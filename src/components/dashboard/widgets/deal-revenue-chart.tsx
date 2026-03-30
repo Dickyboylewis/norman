@@ -13,11 +13,11 @@
  *    Shared deals are split equally between owners.
  *
  * 2. AVATARS & FIRST NAMES
- *    Same circular avatar logic as ProspectingChart (jesus.png, joe.png,
- *    dicky.png from /public). First name shown below on desktop, hidden mobile.
+ *    Circular avatar on X-axis (jesus.png, joe.png, dicky.png from /public).
+ *    First name shown below on desktop, hidden on mobile.
  *
- * 3. STACKED BARS BY DEAL
- *    Each deal is its own stack segment. Color families per person:
+ * 3. STACKED BARS BY PROJECT NAME
+ *    Each deal/project is its own stack segment. Color families per person:
  *      Jesus → Blues  (blue-400 / blue-500 / blue-600 …)
  *      Joe   → Reds   (red-400  / red-500  / red-600  …)
  *      Dicky → Ambers (amber-400 / amber-500 / amber-600 …)
@@ -26,11 +26,11 @@
  * 4. LEADERBOARD MEDALS
  *    Gold 🥇 / Silver 🥈 / Bronze 🥉 floating above each bar based on total
  *    revenue. Ties share the same medal. £0 shows plain grey £0.
- *    Values formatted as £Xk or £X.Xm.
  *
- * 5. QUARTERLY TARGET LINES
- *    Dashed ReferenceLine at Q1 (£625k), Q2 (£1.25m), Q3 (£1.875m),
- *    Q4 (£2.5m) with subtle labels.
+ * 5. QUARTERLY TARGET LINE
+ *    Dashed ReferenceLine for the CURRENT quarter only (individual targets):
+ *    Q1 £250k | Q2 £500k | Q3 £750k | Q4 £1m
+ *    Dynamically zooms in the chart to the relevant quarter.
  */
 
 import React, { useEffect, useState } from "react";
@@ -55,8 +55,7 @@ const PERSON_META: Record<string, { avatar: string; firstName: string }> = {
   "Dicky Lewis":   { avatar: "/dicky.png", firstName: "Dicky" },
 };
 
-// ── Color palettes per person ──────────────────────────────────────────────
-// Each array provides shades for up to N deals. Cycles if more deals than shades.
+// ── Color palettes per person (Tailwind hex equivalents) ───────────────────
 const PERSON_COLORS: Record<string, string[]> = {
   "Jesus Jimenez": ["#60A5FA", "#3B82F6", "#2563EB", "#1D4ED8", "#1E40AF", "#1E3A8A"],
   "Joe Haire":     ["#F87171", "#EF4444", "#DC2626", "#B91C1C", "#991B1B", "#7F1D1D"],
@@ -66,21 +65,26 @@ const PERSON_COLORS: Record<string, string[]> = {
 // Shared deal colors (purple shades)
 const SHARED_COLORS = ["#C084FC", "#A855F7", "#9333EA", "#7C3AED", "#6D28D9", "#5B21B6"];
 
-// ── Quarterly targets ──────────────────────────────────────────────────────
+// ── Individual quarterly targets (£1m annual per director) ─────────────────
 const QUARTERLY_TARGETS = [
-  { value: 625000,   label: "Q1 Target" },
-  { value: 1250000,  label: "Q2 Target" },
-  { value: 1875000,  label: "Q3 Target" },
-  { value: 2500000,  label: "Q4 Target" },
+  { value: 250_000,   label: "Q1 Target (£250k)" },
+  { value: 500_000,   label: "Q2 Target (£500k)" },
+  { value: 750_000,   label: "Q3 Target (£750k)" },
+  { value: 1_000_000, label: "Q4 Target (£1m)"   },
 ];
+
+function getCurrentQuarterIndex(): number {
+  const month = new Date().getMonth();
+  return Math.floor(month / 3);
+}
 
 // ── Medal helpers ──────────────────────────────────────────────────────────
 type MedalInfo = { emoji: string; color: string };
 
 function getMedalInfo(rank: number): MedalInfo {
-  if (rank === 1) return { emoji: "🥇", color: "#EAB308" }; // gold
-  if (rank === 2) return { emoji: "🥈", color: "#94A3B8" }; // silver
-  if (rank === 3) return { emoji: "🥉", color: "#D97706" }; // bronze
+  if (rank === 1) return { emoji: "🥇", color: "#EAB308" };
+  if (rank === 2) return { emoji: "🥈", color: "#94A3B8" };
+  if (rank === 3) return { emoji: "🥉", color: "#D97706" };
   return { emoji: "", color: "#9CA3AF" };
 }
 
@@ -132,7 +136,7 @@ function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false }: CustomTick
   const meta = PERSON_META[name];
   if (!meta) return null;
 
-  const AVATAR_R = isMobile ? 16 : 20;
+  const AVATAR_R = isMobile ? 16 : 22;
   const avatarY  = numY + 8;
 
   return (
@@ -228,7 +232,7 @@ function RevenueLabel({
       y={y - 6}
       textAnchor="middle"
       fill={medal.color}
-      fontSize={12}
+      fontSize={13}
       fontWeight={700}
       fontFamily="var(--font-roboto), Roboto, sans-serif"
     >
@@ -237,21 +241,44 @@ function RevenueLabel({
   );
 }
 
-// ── Reference line label ───────────────────────────────────────────────────
+// ── Reference line label (pinned right with background pill) ───────────────
 function TargetLineLabel({ viewBox, label }: { viewBox?: any; label: string }) {
   if (!viewBox) return null;
   const { x, y, width } = viewBox;
+
+  const textX = (x ?? 0) + (width ?? 0);
+  const textY = (y ?? 0) - 12;
+  const padH  = 6;
+  const padV  = 4;
+  const textW = label.length * 5.8;
+  const pillW = textW + padH * 2;
+  const pillH = 16;
+
   return (
-    <text
-      x={(x ?? 0) + (width ?? 0) - 4}
-      y={(y ?? 0) - 4}
-      textAnchor="end"
-      fill="#9CA3AF"
-      fontSize={9}
-      fontFamily="var(--font-poppins), Poppins, sans-serif"
-    >
-      {label}
-    </text>
+    <g>
+      <rect
+        x={textX - pillW - 2}
+        y={textY - pillH / 2 - padV / 2}
+        width={pillW}
+        height={pillH}
+        rx={4}
+        ry={4}
+        fill="#FFFBEB"
+        stroke="#F59E0B"
+        strokeWidth={1}
+      />
+      <text
+        x={textX - pillW / 2 - 2}
+        y={textY + 4}
+        textAnchor="middle"
+        fill="#B45309"
+        fontSize={10}
+        fontWeight={600}
+        fontFamily="var(--font-poppins), Poppins, sans-serif"
+      >
+        {label}
+      </text>
+    </g>
   );
 }
 
@@ -270,13 +297,10 @@ interface PersonData {
 }
 
 // ── Build chart data from API response ────────────────────────────────────
-// We need to create a flat structure for Recharts stacked bars.
-// Each unique deal becomes a Bar key. We assign colors per person/deal.
 function buildChartData(apiData: PersonData[]): {
   chartData: ChartRow[];
   barKeys: Array<{ key: string; colors: Record<string, string> }>;
 } {
-  // Collect all unique deal names across all people
   const allDealNames = new Set<string>();
   apiData.forEach((person) => {
     person.deals.forEach((deal) => {
@@ -284,7 +308,6 @@ function buildChartData(apiData: PersonData[]): {
     });
   });
 
-  // For each deal name, track which people have it and whether it's shared
   const dealMeta: Record<string, { isShared: boolean; owners: string[] }> = {};
   apiData.forEach((person) => {
     person.deals.forEach((deal) => {
@@ -295,15 +318,9 @@ function buildChartData(apiData: PersonData[]): {
     });
   });
 
-  // Assign colors per person per deal (cycling through palette)
-  // Track how many deals each person has seen so far for color cycling
   const personDealCount: Record<string, number> = {};
-
-  // Build bar keys with per-person color assignments
   const barKeys: Array<{ key: string; colors: Record<string, string> }> = [];
-  const dealColorIndex: Record<string, number> = {}; // shared color index per deal
-
-  // We need to process deals in a stable order
+  const dealColorIndex: Record<string, number> = {};
   const dealNames = Array.from(allDealNames);
 
   dealNames.forEach((dealName) => {
@@ -315,15 +332,12 @@ function buildChartData(apiData: PersonData[]): {
       if (!hasDeal) return;
 
       if (meta.isShared) {
-        // Use shared (purple) colors — same shade for all owners of this deal
         if (dealColorIndex[dealName] === undefined) {
-          // Count how many shared deals we've seen so far
           const sharedCount = Object.values(dealColorIndex).length;
           dealColorIndex[dealName] = sharedCount % SHARED_COLORS.length;
         }
         colors[person.name] = SHARED_COLORS[dealColorIndex[dealName]];
       } else {
-        // Use person-specific color
         if (personDealCount[person.name] === undefined) personDealCount[person.name] = 0;
         const palette = PERSON_COLORS[person.name] ?? ["#6B7280"];
         colors[person.name] = palette[personDealCount[person.name] % palette.length];
@@ -334,7 +348,6 @@ function buildChartData(apiData: PersonData[]): {
     barKeys.push({ key: dealName, colors });
   });
 
-  // Build chart rows — one per person
   const chartData: ChartRow[] = apiData.map((person) => {
     const row: ChartRow = { name: person.name, total: person.total };
     person.deals.forEach((deal) => {
@@ -352,7 +365,6 @@ export function DealRevenueChart() {
   const [loading, setLoading]   = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile viewport
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 480px)");
     setIsMobile(mq.matches);
@@ -361,7 +373,6 @@ export function DealRevenueChart() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Fetch live Monday.com deals data
   useEffect(() => {
     fetch("/api/monday/deals")
       .then((res) => res.json())
@@ -387,20 +398,19 @@ export function DealRevenueChart() {
 
   const { chartData, barKeys } = buildChartData(apiData);
 
-  // Compute revenue ranks for medal labels
-  const totals      = chartData.map((r) => r.total);
+  const totals       = chartData.map((r) => r.total);
   const revenueRanks = computeRevenueRanks(totals);
 
-  // Chart dimensions
-  const chartHeight  = isMobile ? 220 : 320;
+  const chartHeight  = isMobile ? 240 : 340;
   const bottomMargin = isMobile ? 50 : 70;
 
-  // Max Y value — at least Q4 target so reference lines always show
-  const maxTotal = Math.max(...totals, 2_500_000);
-  const yDomain: [number, number] = [0, Math.ceil(maxTotal * 1.1)];
+  // Current quarter target — drives the Y-axis zoom
+  const qIdx          = getCurrentQuarterIndex();
+  const currentTarget = QUARTERLY_TARGETS[qIdx];
 
-  // The "top" bar key for placing the label — last bar key that has data
-  // We use a sentinel bar with value 0 just to attach the LabelList
+  const maxTotal = Math.max(...totals, currentTarget.value);
+  const yDomain: [number, number] = [0, Math.ceil(maxTotal * 1.2)];
+
   const hasAnyDeals = barKeys.length > 0;
 
   return (
@@ -428,8 +438,8 @@ export function DealRevenueChart() {
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart
             data={chartData}
-            margin={{ top: 36, right: 16, left: 8, bottom: bottomMargin }}
-            barSize={isMobile ? 40 : 60}
+            margin={{ top: 36, right: 24, left: 8, bottom: bottomMargin }}
+            barSize={isMobile ? 60 : 96}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
 
@@ -464,21 +474,18 @@ export function DealRevenueChart() {
               }}
             />
 
-            {/* ── Quarterly target reference lines ── */}
-            {QUARTERLY_TARGETS.map((target) => (
-              <ReferenceLine
-                key={target.label}
-                y={target.value}
-                stroke="#D1D5DB"
-                strokeDasharray="5 4"
-                strokeWidth={1}
-                label={(props: any) => (
-                  <TargetLineLabel {...props} label={target.label} />
-                )}
-              />
-            ))}
+            {/* ── Current-quarter target reference line ONLY ── */}
+            <ReferenceLine
+              y={currentTarget.value}
+              stroke="#F59E0B"
+              strokeDasharray="6 4"
+              strokeWidth={1.5}
+              label={(props: any) => (
+                <TargetLineLabel {...props} label={currentTarget.label} />
+              )}
+            />
 
-            {/* ── Stacked deal bars ── */}
+            {/* ── Stacked deal bars (each deal = one stack segment) ── */}
             {hasAnyDeals ? (
               barKeys.map((barKey, barIdx) => (
                 <Bar
@@ -494,7 +501,6 @@ export function DealRevenueChart() {
                       : [0, 0, 0, 0]
                   }
                 >
-                  {/* Per-cell color based on person */}
                   {chartData.map((row) => (
                     <Cell
                       key={`cell-${row.name}-${barKey.key}`}
@@ -502,7 +508,6 @@ export function DealRevenueChart() {
                     />
                   ))}
 
-                  {/* Revenue label only on the last (top) bar */}
                   {barIdx === barKeys.length - 1 && (
                     <LabelList
                       dataKey={barKey.key}
@@ -518,8 +523,6 @@ export function DealRevenueChart() {
                 </Bar>
               ))
             ) : (
-              /* No deals yet — render a zero-height placeholder bar so the
-                 chart still shows with reference lines and labels */
               <Bar
                 dataKey="_placeholder"
                 stackId="revenue"
@@ -541,7 +544,7 @@ export function DealRevenueChart() {
           </BarChart>
         </ResponsiveContainer>
 
-        {/* ── Shared deal legend note ── */}
+        {/* ── Shared deal legend ── */}
         <div className="flex items-center justify-center gap-2 pt-2">
           <span
             className="inline-block w-3 h-3 rounded-full"

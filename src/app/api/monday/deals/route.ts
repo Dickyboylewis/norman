@@ -8,15 +8,18 @@ import { NextResponse } from "next/server";
  *
  * ── KEY LOGIC ─────────────────────────────────────────────────────────────
  *
- * 1. YTD FILTER
+ * 1. WON FILTER
+ *    Only deals where the `deal_stage` column is exactly "Won" are included.
+ *
+ * 2. YTD FILTER
  *    Only deals whose won/completion date falls between Jan 1st of the
  *    current calendar year and today are included.
  *
- * 2. REVENUE SPLIT
+ * 3. REVENUE SPLIT
  *    If deal_owner contains multiple people (e.g. "Jesus Jimenez, Dicky Lewis"),
  *    the deal_value is split equally between them to avoid double-counting.
  *
- * 3. RESPONSE SHAPE
+ * 4. RESPONSE SHAPE
  *    Returns an array of deal objects per person, each with:
  *      {
  *        name: string,           // full name (e.g. "Joe Haire")
@@ -25,13 +28,13 @@ import { NextResponse } from "next/server";
  *          value: number,        // split value for this person
  *          isShared: boolean,    // true if multiple owners
  *          owners: string[],     // all owners of this deal
- *        }>
+ *        }>,
+ *        total: number,          // sum of all deal values for this person
  *      }
  */
 
 const DEALS_BOARD_ID = "1461714574";
 
-// Known team members — used to filter/validate owners
 const KNOWN_OWNERS: Record<string, string> = {
   "Joe Haire":     "Joe Haire",
   "Jesus Jimenez": "Jesus Jimenez",
@@ -112,7 +115,7 @@ export async function GET() {
 
     // ── YTD window: Jan 1st of current year → today ────────────────────────
     const now = new Date();
-    const ytdStart = new Date(now.getFullYear(), 0, 1); // Jan 1st 00:00:00
+    const ytdStart = new Date(now.getFullYear(), 0, 1);
     ytdStart.setHours(0, 0, 0, 0);
 
     // ── Per-person deal accumulator ────────────────────────────────────────
@@ -131,13 +134,23 @@ export async function GET() {
 
     // ── Process every deal item ────────────────────────────────────────────
     allItems.forEach((item: any) => {
-      const cols = item.column_values as Array<{ id: string; text: string; type: string; value: string }>;
+      const cols = item.column_values as Array<{
+        id: string;
+        text: string;
+        type: string;
+        value: string;
+      }>;
+
+      // ── STRICT "Won" filter on deal_stage ────────────────────────────────
+      const stageCol = cols.find((c) => c.id === "deal_stage");
+      const stageText = stageCol?.text?.trim() ?? "";
+
+      if (stageText !== "Won") return; // Skip anything that isn't "Won"
 
       // Find relevant columns
-      const ownerCol     = cols.find((c) => c.id === "deal_owner");
-      const valueCol     = cols.find((c) => c.id === "deal_value");
-      // Try multiple possible date column IDs for won/completion date
-      const wonDateCol   =
+      const ownerCol   = cols.find((c) => c.id === "deal_owner");
+      const valueCol   = cols.find((c) => c.id === "deal_value");
+      const wonDateCol =
         cols.find((c) => c.id === "date__1") ||
         cols.find((c) => c.id === "date4") ||
         cols.find((c) => c.id === "date0") ||
@@ -145,11 +158,8 @@ export async function GET() {
         cols.find((c) => c.type === "date" && c.text);
 
       // ── Parse deal value ─────────────────────────────────────────────────
-      // deal_value may be a plain number, a currency string like "£150,000",
-      // or a JSON value like {"number": 150000}
       let dealValue = 0;
       if (valueCol) {
-        // Try JSON value first
         try {
           const parsed = JSON.parse(valueCol.value || "{}");
           if (typeof parsed.number === "number") {
@@ -162,16 +172,15 @@ export async function GET() {
         }
 
         if (dealValue === 0 && valueCol.text) {
-          // Strip currency symbols, commas, spaces
           const cleaned = valueCol.text.replace(/[£$€,\s]/g, "");
           const num = parseFloat(cleaned);
           if (!isNaN(num)) dealValue = num;
         }
       }
 
-      if (dealValue <= 0) return; // Skip deals with no value
+      if (dealValue <= 0) return;
 
-      // ── Parse won/completion date ─────────────────────────────────────────
+      // ── Parse won/completion date ────────────────────────────────────────
       let dealDate: Date | null = null;
       if (wonDateCol?.text) {
         const parsed = new Date(wonDateCol.text);
