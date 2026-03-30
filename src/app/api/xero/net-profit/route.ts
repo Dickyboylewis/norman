@@ -40,9 +40,9 @@ function getCurrentFYRange(now: Date): {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
-  // Months elapsed = (currentYear - fyStartYear) * 12 + (currentMonth - fyStartMonth) + 1
+  // periods = number of comparison periods (Xero adds these to the base month)
   const periods =
-    (currentYear - fyStartYear) * 12 + (currentMonth - fyStartMonth) + 1;
+    (currentYear - fyStartYear) * 12 + (currentMonth - fyStartMonth);
 
   return { fromDate, toDate, periods };
 }
@@ -150,7 +150,14 @@ async function fetchNetProfitTotal(
   // (first in the array, as Xero orders newest-first) is the true YTD total.
   const total = months.length > 0 ? months[0].netProfit : 0;
 
-  return { total, months };
+  // Convert cumulative figures to discrete monthly profit.
+  // months is ordered newest-first, so months[i+1] is the prior month's cumulative.
+  const discreteMonths = months.map((m, i) => ({
+    ...m,
+    netProfit: Math.round((m.netProfit - (months[i + 1]?.netProfit || 0)) * 100) / 100,
+  }));
+
+  return { total, months: discreteMonths };
 }
 
 // ─── Route Handler ────────────────────────────────────────────────────────────
