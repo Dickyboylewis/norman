@@ -72,9 +72,25 @@ export default function PushManager() {
     }
 
     setLoading(true);
-    setStatus('🔄 Requesting permission...');
+    setStatus('🔄 Registering service worker...');
 
     try {
+      // Always register/re-register the service worker first
+      // This ensures if it gets unregistered, the button brings it back to life
+      console.log('[PushManager] Registering service worker');
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        updateViaCache: 'none', // Always fetch fresh service worker
+      });
+      
+      console.log('[PushManager] Service worker registered:', registration);
+      
+      // Wait for service worker to be ready
+      await navigator.serviceWorker.ready;
+      console.log('[PushManager] Service worker ready');
+
+      setStatus('🔄 Requesting permission...');
+
       // Request notification permission
       console.log('[PushManager] Requesting notification permission');
       const permission = await Notification.requestPermission();
@@ -85,20 +101,6 @@ export default function PushManager() {
         setLoading(false);
         return;
       }
-
-      setStatus('🔄 Registering service worker...');
-      
-      // Register the service worker
-      console.log('[PushManager] Registering service worker');
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/',
-      });
-      
-      console.log('[PushManager] Service worker registered:', registration);
-      
-      // Wait for service worker to be ready
-      await navigator.serviceWorker.ready;
-      console.log('[PushManager] Service worker ready');
 
       setStatus('🔄 Subscribing to push notifications...');
 

@@ -41,75 +41,36 @@ self.addEventListener('activate', function (event) {
 
 // Push event - handle incoming push notifications
 self.addEventListener('push', function (event) {
-  console.log('[Service Worker] Push received');
+  console.log('[Service Worker] Push event received');
   
-  if (!event.data) {
-    console.log('[Service Worker] Push event has no data');
-    return;
-  }
+  // Extract data securely
+  const data = event.data ? event.data.json() : {};
+  console.log('[Service Worker] Push data:', data);
 
-  // Wrap everything in event.waitUntil to ensure proper async handling
+  // Extract notification properties with defaults
+  const title = data.title || 'Notification';
+  const options = {
+    body: data.body || 'You have a new notification',
+    icon: data.icon || '/icon-192x192-WR.png',
+    badge: data.badge || '/icon-192x192-WR.png',
+    data: { url: data.url || '/' },
+    tag: data.tag || 'default-notification',
+    requireInteraction: data.requireInteraction || false,
+    vibrate: [200, 100, 200],
+    renotify: true,
+  };
+
+  console.log('[Service Worker] Displaying notification:', title, options);
+
+  // Properly await showNotification inside event.waitUntil
   event.waitUntil(
-    (async function () {
-      let data;
-      
-      try {
-        // Try to parse as JSON first
-        data = event.data.json();
-        console.log('[Service Worker] Successfully parsed push data as JSON:', data);
-      } catch (jsonError) {
-        console.warn('[Service Worker] Failed to parse as JSON, trying text fallback:', jsonError);
-        
-        try {
-          // Fallback to text if JSON parsing fails
-          const textData = event.data.text();
-          console.log('[Service Worker] Received text data:', textData);
-          
-          // Try to parse the text as JSON (in case it's a JSON string)
-          try {
-            data = JSON.parse(textData);
-            console.log('[Service Worker] Successfully parsed text as JSON:', data);
-          } catch (textParseError) {
-            // If all parsing fails, use default notification
-            console.warn('[Service Worker] Could not parse text as JSON, using defaults');
-            data = {
-              title: 'White Red Hub',
-              body: textData || 'You have a new notification'
-            };
-          }
-        } catch (textError) {
-          console.error('[Service Worker] Error getting text data:', textError);
-          data = {
-            title: 'White Red Hub',
-            body: 'You have a new notification'
-          };
-        }
-      }
-
-      // Extract notification properties with proper defaults
-      const title = data.title || 'White Red Hub';
-      const options = {
-        body: data.body || 'You have a new notification',
-        icon: data.icon || '/icon-192x192-WR.png',
-        badge: data.badge || '/icon-192x192-WR.png',
-        data: { url: data.url || '/' },
-        tag: data.tag || 'default-notification',
-        requireInteraction: data.requireInteraction || false,
-        vibrate: [200, 100, 200],
-        // iOS-specific: ensure notification is visible
-        renotify: true,
-      };
-
-      console.log('[Service Worker] Showing notification with title:', title, 'and options:', options);
-
-      try {
-        await self.registration.showNotification(title, options);
-        console.log('[Service Worker] Notification shown successfully');
-      } catch (showError) {
-        console.error('[Service Worker] Error showing notification:', showError);
-        throw showError; // Re-throw to be caught by event.waitUntil
-      }
-    })()
+    self.registration.showNotification(title, options)
+      .then(function () {
+        console.log('[Service Worker] Notification displayed successfully');
+      })
+      .catch(function (error) {
+        console.error('[Service Worker] Failed to display notification:', error);
+      })
   );
 });
 
@@ -144,18 +105,9 @@ self.addEventListener('notificationclick', function (event) {
   );
 });
 
-// Fetch event - basic offline support (optional, but good for PWA)
+// Fetch event - simplified pass-through to prevent redirect crashes
 self.addEventListener('fetch', function (event) {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') return;
-  
-  // Skip chrome-extension and other non-http(s) requests
-  if (!event.request.url.startsWith('http')) return;
-
-  event.respondWith(
-    caches.match(event.request).then(function (response) {
-      // Return cached version or fetch from network
-      return response || fetch(event.request);
-    })
-  );
+  // Simple pass-through: let the browser handle all requests normally
+  // This prevents ERR_FAILED crashes on redirects
+  event.respondWith(fetch(event.request));
 });
