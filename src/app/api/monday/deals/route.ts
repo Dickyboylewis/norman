@@ -12,30 +12,38 @@ import { NextResponse } from "next/server";
  *    Only deals where the `deal_stage` column is exactly "Won" are included.
  *
  * 2. YTD FILTER
- *    Only deals whose won/completion date falls between Jan 1st of the
- *    current calendar year and today are included.
+ *    Only deals whose Won Date (date_mkkzr5kz) falls between Jan 1st of the
+ *    current calendar year and today are included. Deals from previous years
+ *    are strictly excluded.
  *
- * 3. REVENUE SPLIT
- *    If deal_owner contains multiple people (e.g. "Jesus Jimenez, Dicky Lewis"),
- *    the deal_value is split equally between them to avoid double-counting.
+ * 3. OWNER PARSING
+ *    The deal_owner column value is a JSON string containing a personsAndTeams
+ *    array. We JSON.parse() it and map person IDs to known director names.
  *
- * 4. RESPONSE SHAPE
+ * 4. REVENUE SPLIT
+ *    If ownerCount is 1, the full deal_value goes to that person's "Individual" total.
+ *    If ownerCount > 1, deal_value / ownerCount goes to each person's "Shared" total.
+ *
+ * 5. RESPONSE SHAPE
  *    Returns an array of deal objects per person, each with:
  *      {
- *        name: string,           // full name (e.g. "Joe Haire")
- *        deals: Array<{
- *          dealName: string,
- *          value: number,        // split value for this person
- *          isShared: boolean,    // true if multiple owners
- *          owners: string[],     // all owners of this deal
- *        }>,
- *        total: number,          // sum of all deal values for this person
+ *        name: string,
+ *        deals: Array<{ dealName, value, isShared, owners }>,
+ *        total: number,
  *      }
  */
 
 const DEALS_BOARD_ID = "1461714574";
 
-const KNOWN_OWNERS: Record<string, string> = {
+/** Map Monday.com person IDs → director names */
+const KNOWN_OWNER_IDS: Record<number, string> = {
+  60328447: "Joe Haire",
+  58965577: "Dicky Lewis",
+  60328434: "Jesus Jimenez",
+};
+
+/** Fallback: map display names → canonical names (for safety) */
+const KNOWN_OWNER_NAMES: Record<string, string> = {
   "Joe Haire":     "Joe Haire",
   "Jesus Jimenez": "Jesus Jimenez",
   "Dicky Lewis":   "Dicky Lewis",
@@ -113,10 +121,14 @@ export async function GET() {
       fetchCount++;
     }
 
+    console.log(`[Deals API] Total items fetched from Monday.com: ${allItems.length}`);
+
     // ── YTD window: Jan 1st of current year → today ────────────────────────
     const now = new Date();
     const ytdStart = new Date(now.getFullYear(), 0, 1);
     ytdStart.setHours(0, 0, 0, 0);
+
+    console.log(`[Deals API] YTD filter: ${ytdStart.toISOString()} → ${now.toISOString()}`);
 
     // ── Per-person deal accumulator ────────────────────────────────────────
     type DealEntry = {
@@ -147,45 +159,19 @@ export async function GET() {
 
       if (stageText !== "Won") return; // Skip anything that isn't "Won"
 
-      // Find relevant columns
-      const ownerCol   = cols.find((c) => c.id === "deal_owner");
-      const valueCol   = cols.find((c) => c.id === "deal_value");
-      const wonDateCol =
-        cols.find((c) => c.id === "date__1") ||
-        cols.find((c) => c.id === "date4") ||
-        cols.find((c) => c.id === "date0") ||
-        cols.find((c) => c.id === "date") ||
-        cols.find((c) => c.type === "date" && c.text);
+      // ── Parse Won Date from date_mkkzr5kz (the specific Won Date column) ─
+      const wonDateCol = cols.find((c) => c.id === "date_mkkzr5kz");
+      const wonDateText = wonDateCol?.text?.trim() ?? "";
 
-      // ── Parse deal value ─────────────────────────────────────────────────
-      let dealValue = 0;
-      if (valueCol) {
-        try {
-          const parsed = JSON.parse(valueCol.value || "{}");
-          if (typeof parsed.number === "number") {
-            dealValue = parsed.number;
-          } else if (typeof parsed === "number") {
-            dealValue = parsed;
-          }
-        } catch {
-          // Fall back to text parsing
-        }
-
-        if (dealValue === 0 && valueCol.text) {
-          const cleaned = valueCol.text.replace(/[£$€,\s]/g, "");
-          const num = parseFloat(cleaned);
-          if (!isNaN(num)) dealValue = num;
-        }
-      }
-
-      if (dealValue <= 0) return;
-
-      // ── Parse won/completion date ────────────────────────────────────────
       let dealDate: Date | null = null;
-      if (wonDateCol?.text) {
-        const parsed = new Date(wonDateCol.text);
+
+      // Try parsing from the text field first (format: YYYY-MM-DD)
+      if (wonDateText) {
+        const parsed = new Date(wonDateText);
         if (!isNaN(parsed.getTime())) dealDate = parsed;
       }
+
+      // Fallback: try parsing from the JSON value field
       if (!dealDate && wonDateCol?.value) {
         try {
           const parsed = JSON.parse(wonDateCol.value);
@@ -198,29 +184,90 @@ export async function GET() {
         }
       }
 
-      // ── YTD filter ────────────────────────────────────────────────────────
-      if (!dealDate || dealDate < ytdStart || dealDate > now) return;
+      // Log every Won deal's date for debugging
+      console.log(`[Deals API] Won deal "${item.name}" — date_mkkzr5kz: "${wonDateText}" — parsed: ${dealDate?.toISOString() ?? "null"}`);
 
-      // ── Resolve owners ────────────────────────────────────────────────────
-      const ownerText = ownerCol?.text ?? "";
-      const owners: string[] = ownerText
-        .split(/[,\n]+/)
-        .map((s: string) => s.trim())
-        .filter((s: string) => s.length > 0 && KNOWN_OWNERS[s]);
+      // ── STRICT YTD filter: must be >= Jan 1 of current year and <= today ──
+      if (!dealDate || dealDate < ytdStart || dealDate > now) {
+        console.log(`[Deals API]   → EXCLUDED (outside YTD range)`);
+        return;
+      }
+
+      console.log(`[Deals API]   → INCLUDED in YTD`);
+
+      // ── Parse deal value ─────────────────────────────────────────────────
+      const valueCol = cols.find((c) => c.id === "deal_value");
+      let dealValue = 0;
+
+      if (valueCol?.value) {
+        try {
+          // deal_value comes as a JSON string like "30000" or {"number": 30000}
+          const parsed = JSON.parse(valueCol.value);
+          if (typeof parsed === "number") {
+            dealValue = parsed;
+          } else if (typeof parsed === "object" && typeof parsed.number === "number") {
+            dealValue = parsed.number;
+          }
+        } catch {
+          // Fall back to text parsing
+        }
+      }
+
+      // Fallback: parse from text
+      if (dealValue === 0 && valueCol?.text) {
+        const cleaned = valueCol.text.replace(/[£$€,\s]/g, "");
+        const num = parseFloat(cleaned);
+        if (!isNaN(num)) dealValue = num;
+      }
+
+      if (dealValue <= 0) return;
+
+      // ── Parse owners by JSON.parse()-ing the deal_owner value ────────────
+      const ownerCol = cols.find((c) => c.id === "deal_owner");
+      const owners: string[] = [];
+
+      if (ownerCol?.value) {
+        try {
+          const parsed = JSON.parse(ownerCol.value);
+          const personsAndTeams: Array<{ id: number; kind: string }> =
+            parsed.personsAndTeams || [];
+
+          personsAndTeams.forEach((p) => {
+            const name = KNOWN_OWNER_IDS[p.id];
+            if (name) {
+              owners.push(name);
+            }
+          });
+        } catch {
+          // Fallback: try splitting the text field by comma
+          const ownerText = ownerCol?.text ?? "";
+          ownerText
+            .split(/[,\n]+/)
+            .map((s: string) => s.trim())
+            .filter((s: string) => s.length > 0 && KNOWN_OWNER_NAMES[s])
+            .forEach((s: string) => owners.push(KNOWN_OWNER_NAMES[s]));
+        }
+      }
 
       if (owners.length === 0) return;
 
+      const ownerCount = owners.length;
+
       // ── Split value equally between owners ────────────────────────────────
-      const splitValue = dealValue / owners.length;
-      const isShared   = owners.length > 1;
+      const splitValue = dealValue / ownerCount;
+      const isShared   = ownerCount > 1;
+
+      console.log(`[Deals API]   → value: £${dealValue}, ownerCount: ${ownerCount}, splitValue: £${splitValue}, owners: [${owners.join(", ")}], shared: ${isShared}`);
 
       owners.forEach((owner) => {
-        personDeals[owner].push({
-          dealName: item.name || "Unnamed Deal",
-          value:    splitValue,
-          isShared,
-          owners,
-        });
+        if (personDeals[owner]) {
+          personDeals[owner].push({
+            dealName: item.name || "Unnamed Deal",
+            value:    splitValue,
+            isShared,
+            owners,
+          });
+        }
       });
     });
 
@@ -230,6 +277,13 @@ export async function GET() {
       deals,
       total: deals.reduce((sum, d) => sum + d.value, 0),
     }));
+
+    // ── Debug: log final totals ────────────────────────────────────────────
+    console.log(`[Deals API] ═══ FINAL YTD TOTALS ═══`);
+    result.forEach((person) => {
+      console.log(`[Deals API]   ${person.name}: £${person.total.toFixed(2)} (${person.deals.length} deals)`);
+    });
+    console.log(`[Deals API] ═══════════════════════`);
 
     return NextResponse.json(result);
 

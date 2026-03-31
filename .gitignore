@@ -41,5 +41,9 @@ yarn-error.log*
 
 # xero tokens
 .xero-tokens.json
+
+# push notification subscriptions
+subscriptions.json
+
 *.tsbuildinfo
 next-env.d.ts

@@ -1,20 +1,25 @@
 {
   "name": "White Red",
   "short_name": "White Red",
+  "description": "Internal operations dashboard powered by QuickBooks, Monday.com, and Notion.",
   "display": "standalone",
   "start_url": "/",
+  "scope": "/",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/icon-192x192-WR.png?v=2",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512-WR.png?v=2",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * DealRevenueChart — Urgency Dashboard
+ * DealRevenueChart — White Red Dashboard
  *
  * Stacked bar chart showing YTD deal revenue per director.
  * Fetches live data from /api/monday/deals (Monday.com Deals board 1461714574).
@@ -26,18 +26,11 @@
  *    Gold 🥇 / Silver 🥈 / Bronze 🥉 floating above each bar based on total
  *    revenue. Ties share the same medal. £0 shows plain grey £0.
  *
- * 5. DANGER GAP
- *    Faded red "ghost" bar segment on top of each director's actual revenue
- *    showing the deficit to the current quarterly target.
+ * 5. QUARTERLY TARGET LINE
+ *    Dashed ReferenceLine at £250k (Q1 target).
+ *    Y-axis domain goes up to the target so bars remain legible.
  *
- * 6. YEARLY TARGET HEADER
- *    Badge + progress bar showing company-wide progress toward £3m.
- *
- * 7. QUARTERLY TARGET LINE
- *    Dashed ReferenceLine at the current quarter's cumulative target.
- *    Y-axis zoomed to ~120% of the target so bars stay legible.
- *
- * 8. DEAL NAME LEGEND
+ * 6. DEAL NAME LEGEND
  *    Legend below the chart showing each deal name and its assigned color.
  */
 
@@ -56,7 +49,6 @@ import {
   Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 // ── Avatar map ─────────────────────────────────────────────────────────────
 const PERSON_META: Record<string, { avatar: string; firstName: string }> = {
@@ -85,15 +77,13 @@ const DEAL_COLOR_PALETTE = [
   "#C4C4C4", // Monday grey
 ];
 
-// ── Quarterly cumulative targets per director (£1m annual) ─────────────────
+// ── Individual quarterly targets (£1m annual per director) ─────────────────
 const QUARTERLY_TARGETS = [
   { value: 250_000,   label: "Q1 Target (£250k)" },
   { value: 500_000,   label: "Q2 Target (£500k)" },
   { value: 750_000,   label: "Q3 Target (£750k)" },
   { value: 1_000_000, label: "Q4 Target (£1m)"   },
 ];
-
-const YEARLY_TARGET_COMPANY = 3_000_000;
 
 function getCurrentQuarterIndex(): number {
   const month = new Date().getMonth();
@@ -198,7 +188,6 @@ interface ChartRow {
   name: string;
   total: number;
   totalRevenue: number;
-  deficit: number;
   medal: string;
   medalColor: string;
   rank: number;
@@ -227,15 +216,15 @@ function TargetLineLabel({ viewBox, label }: { viewBox?: any; label: string }) {
         height={pillH}
         rx={4}
         ry={4}
-        fill="#FEF2F2"
-        stroke="#EF4444"
+        fill="#FFFBEB"
+        stroke="#F59E0B"
         strokeWidth={1}
       />
       <text
         x={textX - pillW / 2 - 2}
         y={textY + 4}
         textAnchor="middle"
-        fill="#DC2626"
+        fill="#B45309"
         fontSize={10}
         fontWeight={600}
         fontFamily="var(--font-poppins), Poppins, sans-serif"
@@ -289,28 +278,6 @@ function CustomLegend({ payload }: { payload?: LegendPayloadItem[] }) {
   );
 }
 
-// ── SVG pattern for deficit stripes ────────────────────────────────────────
-function DeficitPattern() {
-  return (
-    <defs>
-      <pattern
-        id="deficit-stripes"
-        patternUnits="userSpaceOnUse"
-        width={6}
-        height={6}
-        patternTransform="rotate(45)"
-      >
-        <rect width={6} height={6} fill="rgba(239,68,68,0.08)" />
-        <line
-          x1={0} y1={0} x2={0} y2={6}
-          stroke="rgba(239,68,68,0.18)"
-          strokeWidth={2}
-        />
-      </pattern>
-    </defs>
-  );
-}
-
 // ── Data types ─────────────────────────────────────────────────────────────
 interface DealEntry {
   dealName: string;
@@ -330,9 +297,6 @@ function buildChartData(apiData: PersonData[]): {
   chartData: ChartRow[];
   barKeys: Array<{ key: string; color: string }>;
 } {
-  const qIdx = getCurrentQuarterIndex();
-  const currentTarget = QUARTERLY_TARGETS[qIdx].value;
-
   // Collect all unique deal names in order of first appearance
   const seenDealNames = new Set<string>();
   const orderedDealNames: string[] = [];
@@ -364,7 +328,6 @@ function buildChartData(apiData: PersonData[]): {
       name: person.name,
       total: person.total,
       totalRevenue: 0,
-      deficit: 0,
       medal: "",
       medalColor: "#9CA3AF",
       rank: 99,
@@ -387,12 +350,7 @@ function buildChartData(apiData: PersonData[]): {
     }, 0);
   });
 
-  // ── Step 2: Calculate deficit (gap to quarterly target) ──────────────────
-  chartData.forEach((row) => {
-    row.deficit = Math.max(0, currentTarget - row.totalRevenue);
-  });
-
-  // ── Step 3: Rank directors and assign medals ────────────────────────────
+  // ── Step 2: Rank directors and assign medals ────────────────────────────
   const sortedTotals = Array.from(
     new Set(chartData.map((r) => r.totalRevenue).filter((t) => t > 0))
   ).sort((a, b) => b - a);
@@ -454,22 +412,14 @@ export function DealRevenueChart() {
 
   const { chartData, barKeys } = buildChartData(apiData);
 
-  // ── Quarterly target info ─────────────────────────────────────────────────
-  const qIdx = getCurrentQuarterIndex();
-  const currentTarget = QUARTERLY_TARGETS[qIdx];
-
-  // ── Company-wide progress ─────────────────────────────────────────────────
-  const companyTotal = chartData.reduce((sum, row) => sum + row.totalRevenue, 0);
-  const companyPct   = Math.min(100, (companyTotal / YEARLY_TARGET_COMPANY) * 100);
-
   // ── Chart dimensions ──────────────────────────────────────────────────────
-  const chartHeight  = isMobile ? 320 : 460;
+  // Taller chart so £50k–£60k bars are visually legible against the £250k target
+  const chartHeight  = isMobile ? 300 : 450;
   const bottomMargin = isMobile ? 50 : 70;
 
-  // Y-axis: zoom in — cap at 120% of the current quarterly target so bars
-  // aren't squashed but the target line is clearly visible
-  const yMax = Math.round(currentTarget.value * 1.2);
-  const yDomain: [number, number] = [0, yMax];
+  // Y-axis: always go up to the Q1 £250k target (fixed, not dynamic zoom)
+  const TARGET_VALUE = 250_000;
+  const yDomain: [number, number] = [0, TARGET_VALUE];
 
   const hasAnyDeals = barKeys.length > 0;
 
@@ -483,58 +433,18 @@ export function DealRevenueChart() {
     <Card className="w-full flex flex-col font-roboto shadow-sm border-gray-200">
       {/* ── Header ── */}
       <CardHeader className="pb-2">
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center">
           <CardTitle
             className="text-xl font-bold text-gray-800 text-center"
             style={{ fontFamily: "var(--font-roboto), Roboto, sans-serif" }}
           >
             YTD Deal Revenue
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-1">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">
               Live
             </span>
-          </div>
-        </div>
-
-        {/* ── Yearly Target Banner ── */}
-        <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="destructive" className="text-[11px] font-semibold tracking-wide">
-                🎯 YEARLY TARGET
-              </Badge>
-              <span
-                className="text-sm font-semibold text-gray-700"
-                style={{ fontFamily: "var(--font-roboto), Roboto, sans-serif" }}
-              >
-                £1,000,000 per Director
-              </span>
-            </div>
-            <span
-              className="text-xs font-bold tabular-nums"
-              style={{
-                fontFamily: "var(--font-roboto), Roboto, sans-serif",
-                color: companyPct < 10 ? "#DC2626" : companyPct < 25 ? "#F59E0B" : "#16A34A",
-              }}
-            >
-              {formatCurrency(companyTotal)} / £3m ({companyPct.toFixed(1)}%)
-            </span>
-          </div>
-          {/* Company progress bar */}
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-red-100">
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{
-                width: `${Math.max(companyPct, 0.5)}%`,
-                background: companyPct < 10
-                  ? "linear-gradient(90deg, #EF4444, #F87171)"
-                  : companyPct < 25
-                  ? "linear-gradient(90deg, #F59E0B, #FBBF24)"
-                  : "linear-gradient(90deg, #16A34A, #4ADE80)",
-              }}
-            />
           </div>
         </div>
       </CardHeader>
@@ -547,9 +457,6 @@ export function DealRevenueChart() {
             margin={{ top: 36, right: 24, left: 8, bottom: bottomMargin }}
             barSize={isMobile ? 60 : 96}
           >
-            {/* SVG pattern for deficit stripes */}
-            <DeficitPattern />
-
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
 
             <XAxis
@@ -573,10 +480,7 @@ export function DealRevenueChart() {
 
             <Tooltip
               cursor={{ fill: "rgba(0,0,0,0.04)" }}
-              formatter={(value: any, name: any) => {
-                if (name === "deficit") return [formatCurrency(Number(value) || 0), "Gap to Target"];
-                return [formatCurrency(Number(value) || 0), String(name)];
-              }}
+              formatter={(value: any, name: any) => [formatCurrency(Number(value) || 0), String(name)]}
               contentStyle={{
                 borderRadius: "8px",
                 border: "none",
@@ -586,14 +490,14 @@ export function DealRevenueChart() {
               }}
             />
 
-            {/* ── Quarterly target reference line ── */}
+            {/* ── Q1 £250k target reference line ── */}
             <ReferenceLine
-              y={currentTarget.value}
-              stroke="#EF4444"
+              y={TARGET_VALUE}
+              stroke="#F59E0B"
               strokeDasharray="6 4"
-              strokeWidth={2}
+              strokeWidth={1.5}
               label={(props: any) => (
-                <TargetLineLabel {...props} label={currentTarget.label} />
+                <TargetLineLabel {...props} label="Q1 Target (£250k)" />
               )}
             />
 
@@ -607,7 +511,9 @@ export function DealRevenueChart() {
                   name={barKey.key}
                   fill={barKey.color}
                   radius={
-                    barIdx === 0
+                    barIdx === barKeys.length - 1
+                      ? [4, 4, 0, 0]
+                      : barIdx === 0
                       ? [0, 0, 4, 4]
                       : [0, 0, 0, 0]
                   }
@@ -631,25 +537,7 @@ export function DealRevenueChart() {
                 radius={[4, 4, 4, 4]}
               />
             )}
-            {/* ── DANGER GAP: Red striped ghost bar showing deficit ── */}
-            <Bar
-              dataKey="deficit"
-              stackId="revenue"
-              name="deficit"
-              fill="url(#deficit-stripes)"
-              radius={[4, 4, 0, 0]}
-              isAnimationActive={true}
-            >
-              {chartData.map((row) => (
-                <Cell
-                  key={`deficit-${row.name}`}
-                  fill="url(#deficit-stripes)"
-                  stroke="rgba(239,68,68,0.25)"
-                  strokeWidth={1}
-                  strokeDasharray="3 2"
-                />
-              ))}
-            </Bar>
+
             {/* ── Step 3: Transparent Line overlay for bulletproof labels ── */}
             <Line
               dataKey="totalRevenue"
@@ -700,31 +588,7 @@ export function DealRevenueChart() {
 
         {/* ── Deal Name Legend ── */}
         {legendPayload.length > 0 && (
-          <div className="space-y-1">
-            <CustomLegend payload={legendPayload} />
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 14,
-                  height: 10,
-                  borderRadius: 2,
-                  background: "repeating-linear-gradient(45deg, rgba(239,68,68,0.08), rgba(239,68,68,0.08) 2px, rgba(239,68,68,0.22) 2px, rgba(239,68,68,0.22) 4px)",
-                  border: "1px dashed rgba(239,68,68,0.35)",
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-poppins), Poppins, sans-serif",
-                  fontSize: 11,
-                  color: "#DC2626",
-                  fontWeight: 500,
-                }}
-              >
-                Gap to {currentTarget.label}
-              </span>
-            </div>
-          </div>
+          <CustomLegend payload={legendPayload} />
         )}
       </CardContent>
     </Card>

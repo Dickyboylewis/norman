@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import { TimeTracker } from "@/components/dashboard/time-tracker";
 
 interface TopBarProps {
   title?: string;
@@ -48,7 +49,7 @@ export function TopBar({ title, subtitle }: TopBarProps) {
 
   return (
     <header className="h-16 flex items-center px-4 md:px-8 border-b border-gray-100 bg-white relative">
-      {/* Left: Page title */}
+      {/* Left: Page title + Time Tracker */}
       <div className="flex items-center gap-4 flex-1">
         {title && (
           <div>
@@ -66,6 +67,9 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             )}
           </div>
         )}
+        <div className="hidden md:block">
+          <TimeTracker />
+        </div>
       </div>
 
       {/* Center: White-Red Logo */}
