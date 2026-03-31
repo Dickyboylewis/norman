@@ -26,8 +26,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await webpush.sendNotification(subscription, JSON.stringify(payload));
+    // Ensure payload is properly formatted as JSON string
+    const notificationPayload = JSON.stringify({
+      title: payload.title || 'White Red Hub',
+      body: payload.body || 'You have a new notification',
+      icon: payload.icon || '/icon-192x192-WR.png',
+      badge: payload.badge || '/icon-192x192-WR.png',
+      url: payload.url || '/',
+      tag: payload.tag || 'default-notification',
+      requireInteraction: payload.requireInteraction || false,
+    });
 
+    console.log('[Web Push API] Sending notification with payload:', notificationPayload);
+    
+    await webpush.sendNotification(subscription, notificationPayload);
+
+    console.log('[Web Push API] Notification sent successfully');
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error('Error sending push notification:', error);
