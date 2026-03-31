@@ -139,8 +139,8 @@ export default function PushManager() {
 
       // Send a test welcome notification
       const payload = {
-        title: 'Welcome to White Red! 🎉',
-        body: 'You have successfully enabled push notifications.',
+        title: 'White Red Hub',
+        body: 'Notifications are now active!',
         icon: '/icon-192x192-WR.png',
         url: '/',
       };

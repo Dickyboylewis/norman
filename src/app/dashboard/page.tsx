@@ -13,6 +13,7 @@ import { ProspectingChart } from "@/components/dashboard/widgets/prospecting-cha
 import { DealRevenueChart } from "@/components/dashboard/widgets/deal-revenue-chart";
 import { NetProfitWidget } from "@/components/dashboard/widgets/net-profit-widget";
 import PushManager from "@/components/PushManager";
+import TestNotificationButton from "@/components/TestNotificationButton";
 
 export default async function DashboardPage() {
   return (
@@ -23,12 +24,23 @@ export default async function DashboardPage() {
       {/* Page Content */}
       <div className="flex-1 p-4 md:p-8 bg-gray-50">
         {/* Notification Banner */}
-        <div className="mb-6 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm">
-          <div>
-            <p className="text-sm font-semibold text-gray-800">Push Notifications</p>
-            <p className="text-xs text-gray-500">Stay up to date with real-time alerts from White Red Hub.</p>
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Push Notifications</p>
+              <p className="text-xs text-gray-500">Stay up to date with real-time alerts from White Red Hub.</p>
+            </div>
+            <PushManager />
           </div>
-          <PushManager />
+          
+          {/* Test Notification Button */}
+          <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 px-5 py-3 shadow-sm">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Test Notifications</p>
+              <p className="text-xs text-gray-500">Send a test notification to verify everything is working.</p>
+            </div>
+            <TestNotificationButton />
+          </div>
         </div>
 
         {/* 2x2 Grid Layout for Charts — single column on mobile, 2-col on md+ */}

@@ -48,34 +48,45 @@ self.addEventListener('push', function (event) {
     return;
   }
 
+  let data;
   try {
-    const data = event.data.json();
-    const { title, body, icon, url, badge, tag, requireInteraction } = data;
-
-    const options = {
-      body: body || 'You have a new notification',
-      icon: icon || '/icon-192x192-WR.png',
-      badge: badge || '/icon-192x192-WR.png',
-      data: { url: url || '/' },
-      tag: tag || 'default-notification',
-      requireInteraction: requireInteraction || false,
-      vibrate: [200, 100, 200],
-      // iOS-specific: ensure notification is visible
-      renotify: true,
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(title || 'White Red', options)
-        .then(function () {
-          console.log('[Service Worker] Notification shown successfully');
-        })
-        .catch(function (error) {
-          console.error('[Service Worker] Error showing notification:', error);
-        })
-    );
+    // Parse the JSON data from the push event
+    data = event.data.json();
+    console.log('[Service Worker] Parsed push data:', data);
   } catch (error) {
     console.error('[Service Worker] Error parsing push data:', error);
+    // Fallback to text if JSON parsing fails
+    data = {
+      title: 'White Red Hub',
+      body: event.data.text() || 'You have a new notification'
+    };
   }
+
+  // Extract notification properties with proper defaults
+  const title = data.title || 'White Red Hub';
+  const options = {
+    body: data.body || 'You have a new notification',
+    icon: data.icon || '/icon-192x192-WR.png',
+    badge: data.badge || '/icon-192x192-WR.png',
+    data: { url: data.url || '/' },
+    tag: data.tag || 'default-notification',
+    requireInteraction: data.requireInteraction || false,
+    vibrate: [200, 100, 200],
+    // iOS-specific: ensure notification is visible
+    renotify: true,
+  };
+
+  console.log('[Service Worker] Showing notification with title:', title, 'and options:', options);
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+      .then(function () {
+        console.log('[Service Worker] Notification shown successfully');
+      })
+      .catch(function (error) {
+        console.error('[Service Worker] Error showing notification:', error);
+      })
+  );
 });
 
 // Notification click event - handle user interaction
