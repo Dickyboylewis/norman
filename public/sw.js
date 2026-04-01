@@ -43,9 +43,37 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('push', function (event) {
   console.log('[Service Worker] Push event received');
   
-  // Extract data securely
-  const data = event.data ? event.data.json() : {};
-  console.log('[Service Worker] Push data:', data);
+  let data = {};
+  
+  // Extract data with resilient error handling
+  if (event.data) {
+    try {
+      // Try to parse as JSON first
+      data = event.data.json();
+      console.log('[Service Worker] Successfully parsed JSON data:', data);
+    } catch (jsonError) {
+      console.warn('[Service Worker] Failed to parse as JSON:', jsonError);
+      
+      try {
+        // Fallback to text if JSON parsing fails
+        const text = event.data.text();
+        console.log('[Service Worker] Received text data:', text);
+        
+        // Map text to notification body
+        data = {
+          title: 'White Red Hub',
+          body: text || 'You have a new notification'
+        };
+      } catch (textError) {
+        console.error('[Service Worker] Failed to get text data:', textError);
+        // Use default notification
+        data = {
+          title: 'White Red Hub',
+          body: 'You have a new notification'
+        };
+      }
+    }
+  }
 
   // Extract notification properties with defaults
   const title = data.title || 'Notification';
