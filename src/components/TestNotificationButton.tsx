@@ -1,63 +1,50 @@
 'use client';
-
 import { useState } from 'react';
-
 export default function TestNotificationButton() {
   const [status, setStatus] = useState<string>('');
   const [loading, setLoading] = useState(false);
-
   async function sendTestNotification() {
-    console.log('[TestNotification] Button clicked - starting test notification');
+    console.log('[TestNotification] Button clicked');
     setLoading(true);
     setStatus('🔄 Sending test notification...');
-
     try {
-      // Get all subscriptions from the server
-      console.log('[TestNotification] Fetching subscriptions from /api/subscriptions');
       const subsResponse = await fetch('/api/subscriptions');
-      console.log('[TestNotification] Subscriptions response status:', subsResponse.status);
-      
       if (!subsResponse.ok) {
         throw new Error('Failed to fetch subscriptions');
       }
-
       const subsData = await subsResponse.json();
-      console.log('[TestNotification] Subscriptions data:', subsData);
-      
+      console.log('[TestNotification] Found subscriptions:', subsData.total);
       if (!subsData.subscriptions || subsData.subscriptions.length === 0) {
         setStatus('❌ No subscriptions found. Please enable notifications first.');
         setLoading(false);
         return;
       }
-
-      // Send notification to all subscriptions
       const payload = {
         title: 'New Lead Alert',
         body: 'Joe Bloggs just signed up!',
         icon: '/icon-192x192-WR.png',
         url: '/',
       };
-
-      // Send to the first subscription (or you could loop through all)
-      const subscription = subsData.subscriptions[0].subscription;
-      console.log('[TestNotification] Sending to /api/web-push with subscription:', subscription);
-      
-      const response = await fetch('/api/web-push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription, payload }),
-      });
-      
-      console.log('[TestNotification] Web-push response status:', response.status);
-
-      if (response.ok) {
-        setStatus('✅ Test notification sent! Check your device.');
-        console.log('[TestNotification] Notification sent successfully');
-      } else {
-        const data = await response.json();
-        setStatus(`❌ Failed to send notification: ${data.error || 'Unknown error'}`);
-        console.error('[TestNotification] Failed:', data);
+      let successCount = 0;
+      let failCount = 0;
+      for (const sub of subsData.subscriptions) {
+        try {
+          console.log('[TestNotification] Sending to endpoint:', sub.subscription.endpoint.slice(0, 60) + '...');
+          const response = await fetch('/api/web-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription: sub.subscription, payload }),
+          });
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch {
+          failCount++;
+        }
       }
+      setStatus(`✅ Sent to ${successCount} device${successCount !== 1 ? 's' : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`);
     } catch (error) {
       console.error('[TestNotification] Error:', error);
       setStatus(`❌ Error: ${error instanceof Error ? error.message : 'Something went wrong'}`);
@@ -65,7 +52,6 @@ export default function TestNotificationButton() {
       setLoading(false);
     }
   }
-
   return (
     <div className="flex flex-col items-start gap-3">
       <button
@@ -75,7 +61,6 @@ export default function TestNotificationButton() {
       >
         {loading ? 'Sending...' : '🧪 Send Test Notification'}
       </button>
-      
       {status && (
         <p className="text-sm text-muted-foreground max-w-md">{status}</p>
       )}
