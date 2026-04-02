@@ -99,7 +99,7 @@ export async function GET(request: Request) {
       formData.append("fileName", "prospecting.png");
       
       // Create a File/Blob from the buffer
-      const blob = new Blob([screenshotBuffer], { type: "image/png" });
+      const blob = new Blob([Buffer.from(screenshotBuffer)], { type: "image/png" });
       formData.append("file", blob, "prospecting.png");
       
       const whatsappResponse = await fetch(greenApiUrl, {
