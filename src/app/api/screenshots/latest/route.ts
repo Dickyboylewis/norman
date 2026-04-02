@@ -1,5 +1,8 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
+
+const SCREENSHOT_PATH = path.join(os.tmpdir(), "prospecting-latest.png");
 
 /**
  * API Route: GET /api/screenshots/latest
@@ -10,15 +13,14 @@ import path from "path";
 export async function GET() {
   try {
     // Path to the latest screenshot
-    const screenshotPath = path.join("/tmp", "prospecting-latest.png");
 
     // Check if file exists
-    if (!fs.existsSync(screenshotPath)) {
+    if (!fs.existsSync(SCREENSHOT_PATH)) {
       return new Response("No screenshot available", { status: 404 });
     }
 
     // Read the screenshot file
-    const buffer = fs.readFileSync(screenshotPath);
+    const buffer = fs.readFileSync(SCREENSHOT_PATH);
 
     // Return the image with appropriate headers
     return new Response(buffer, {

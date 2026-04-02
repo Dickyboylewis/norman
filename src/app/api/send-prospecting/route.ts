@@ -1,7 +1,10 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import puppeteer from "puppeteer";
 import { getWeeklyQuote } from "@/lib/motivational-quotes";
+
+const SCREENSHOT_PATH = path.join(os.tmpdir(), "prospecting-latest.png");
 
 /**
  * API Route: GET /api/send-prospecting
@@ -71,9 +74,8 @@ export async function GET(request: Request) {
     console.log("Browser closed.");
 
     // STEP 4: Save screenshot to /tmp
-    const screenshotPath = path.join("/tmp", "prospecting-latest.png");
-    fs.writeFileSync(screenshotPath, screenshotBuffer);
-    console.log(`Screenshot saved to ${screenshotPath}`);
+    fs.writeFileSync(SCREENSHOT_PATH, screenshotBuffer);
+    console.log(`Screenshot saved to ${SCREENSHOT_PATH}`);
 
     // STEP 5: Build WhatsApp caption
     let caption: string;
@@ -140,8 +142,19 @@ export async function GET(request: Request) {
           },
           {
             type: "image",
-            image_url: "https://wte.red/api/screenshots/latest",
-            alt_text: "Prospecting Results",
+            image_url: "https://wte.red/api/screenshots/latest?t=" + Date.now(),
+            alt_text: "Weekly Prospecting Results",
+            title: {
+              type: "plain_text",
+              text: "Weekly Prospecting Results",
+            },
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: "<https://wte.red/share/prospecting?key=red-white-prospecting-2026|📈 View Live Chart>",
+            },
           },
         ],
       };
