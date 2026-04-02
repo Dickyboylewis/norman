@@ -59,9 +59,12 @@ export async function GET(request: Request) {
       waitUntil: "networkidle0",
     });
     
-    // Wait additional 3 seconds for chart animations to complete
+    // Wait for chart bars to render in the DOM
+    await page.waitForSelector('.recharts-bar-rectangle', { timeout: 15000 }).catch(() => {});
+    
+    // Wait additional 5 seconds for chart animations to complete
     console.log("Waiting for chart animations...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     
     // Take full page screenshot
     console.log("Taking screenshot...");
