@@ -59,6 +59,20 @@ export async function GET(request: Request) {
       waitUntil: "networkidle0",
     });
     
+    // Disable all animations and transitions for instant rendering
+    await page.evaluate(() => {
+      const style = document.createElement('style');
+      style.textContent = `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
+      `;
+      document.head.appendChild(style);
+    });
+    
     // Wait for chart bars to render in the DOM
     await page.waitForSelector('.recharts-bar-rectangle', { timeout: 15000 }).catch(() => {});
     
