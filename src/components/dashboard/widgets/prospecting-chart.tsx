@@ -271,7 +271,7 @@ function CompactLegend({ isMobile }: { isMobile: boolean }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
-export function ProspectingChart() {
+export function ProspectingChart({ disableAnimations = false }: { disableAnimations?: boolean } = {}) {
   const [data, setData]       = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -381,9 +381,9 @@ export function ProspectingChart() {
              * Stacked bars — bottom to top order matches the legend order
              * (New Lead at the bottom, Appointments at the top).
              */}
-            <Bar dataKey="New Lead"              stackId="a" fill="#FBBF24" radius={[0, 0, 4, 4]} name="New Lead" />
-            <Bar dataKey="Attempted to Contact"  stackId="a" fill="#FBCFE8" name="Attempted to Contact" />
-            <Bar dataKey="Needs Follow up"       stackId="a" fill="#F97316" name="Needs Follow up" />
+            <Bar dataKey="New Lead"              stackId="a" fill="#FBBF24" radius={[0, 0, 4, 4]} name="New Lead" isAnimationActive={!disableAnimations} />
+            <Bar dataKey="Attempted to Contact"  stackId="a" fill="#FBCFE8" name="Attempted to Contact" isAnimationActive={!disableAnimations} />
+            <Bar dataKey="Needs Follow up"       stackId="a" fill="#F97316" name="Needs Follow up" isAnimationActive={!disableAnimations} />
 
             {/*
              * Appointments bar — the green top segment.
@@ -397,6 +397,7 @@ export function ProspectingChart() {
               fill="#34D399"
               radius={[4, 4, 0, 0]}
               name="Appointments"
+              isAnimationActive={!disableAnimations}
             >
               <LabelList
                 dataKey="Appointments"

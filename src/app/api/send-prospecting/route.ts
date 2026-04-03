@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     
     // Navigate to the prospecting page
     console.log("Navigating to prospecting page...");
-    await page.goto("http://localhost:3000/share/prospecting?key=red-white-prospecting-2026", {
+    await page.goto("http://localhost:3000/share/prospecting?key=red-white-prospecting-2026&animate=false", {
       waitUntil: "networkidle0",
     });
     

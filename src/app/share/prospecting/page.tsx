@@ -72,7 +72,7 @@ function ProspectingPageContent() {
 
           {/* Graph */}
           <div className="py-6">
-            <ProspectingChart />
+            <ProspectingChart disableAnimations={searchParams.get("animate") === "false"} />
           </div>
 
           {/* Footer */}
