@@ -74,7 +74,11 @@ export async function GET(request: Request) {
     });
     
     // Wait for chart bars to render in the DOM
-    await page.waitForSelector('.recharts-bar-rectangle', { timeout: 15000 }).catch(() => {});
+    await page.waitForFunction(() => {
+      const bars = document.querySelectorAll('.recharts-bar-rectangle rect');
+      if (bars.length === 0) return false;
+      return Array.from(bars).some(b => parseFloat(b.getAttribute('height') || '0') > 0);
+    }, { timeout: 30000 }).catch(() => {});
     
     // Wait additional 5 seconds for chart animations to complete
     console.log("Waiting for chart animations...");
