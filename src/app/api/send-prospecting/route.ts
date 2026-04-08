@@ -42,26 +42,33 @@ export async function GET(request: Request) {
     }
 
     // STEP 3: Take screenshot using Puppeteer
+    const screenshotUrl = "http://localhost:3000/share/prospecting?key=red-white-prospecting-2026&animate=false";
+    
+    // Warm up the Monday.com API
+    console.log("Warming up Monday.com API...");
+    await fetch("http://localhost:3000/api/monday").catch(() => {});
+
     console.log("Launching browser...");
     const browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
     });
 
     const page = await browser.newPage();
-    
-    // Set viewport size
     await page.setViewport({ width: 1200, height: 900 });
-    
-    // Navigate to the prospecting page
-    console.log("Navigating to prospecting page...");
-    await page.goto("http://localhost:3000/share/prospecting?key=red-white-prospecting-2026&animate=false", {
-      waitUntil: "networkidle0",
-    });
-    
-    // Disable all animations and transitions for instant rendering
+
+    // First load - warm up
+    console.log("First page load (warm-up)...");
+    await page.goto(screenshotUrl, { waitUntil: "networkidle0", timeout: 60000 });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Reload - fast render with warm data
+    console.log("Reloading page for clean render...");
+    await page.reload({ waitUntil: "networkidle0", timeout: 60000 });
+
+    // Disable all animations
     await page.evaluate(() => {
-      const style = document.createElement('style');
+      const style = document.createElement("style");
       style.textContent = `
         *, *::before, *::after {
           animation-duration: 0s !important;
@@ -72,25 +79,23 @@ export async function GET(request: Request) {
       `;
       document.head.appendChild(style);
     });
-    
-    // Wait for chart bars to render in the DOM
+
+    // Wait for bars to have actual rendered height
+    console.log("Waiting for chart bars...");
     await page.waitForFunction(() => {
-      const bars = document.querySelectorAll('.recharts-bar-rectangle rect');
+      const bars = document.querySelectorAll(".recharts-bar-rectangle rect");
       if (bars.length === 0) return false;
-      return Array.from(bars).some(b => parseFloat(b.getAttribute('height') || '0') > 0);
-    }, { timeout: 30000 }).catch(() => {});
-    
-    // Wait additional 5 seconds for chart animations to complete
-    console.log("Waiting for chart animations...");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    
-    // Take full page screenshot
-    console.log("Taking screenshot...");
-    const screenshotBuffer = await page.screenshot({
-      type: "png",
-      fullPage: true,
+      return Array.from(bars).some(b => parseFloat(b.getAttribute("height") || "0") > 0);
+    }, { timeout: 30000 }).catch(() => {
+      console.log("No bars detected - may be a zero-data week");
     });
-    
+
+    // Safety buffer
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    console.log("Taking screenshot...");
+    const screenshotBuffer = await page.screenshot({ fullPage: true });
+
     await browser.close();
     console.log("Browser closed.");
 
