@@ -340,77 +340,100 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
 
       {/* ── Chart ── */}
       <CardContent className="pb-4">
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <BarChart
-            data={data}
-            margin={{ top: 28, right: 16, left: 0, bottom: bottomMargin }}
-            barSize={isMobile ? 40 : 60}
-          >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+        {(() => {
+          // Extract chart children to avoid duplication
+          const chartChildren = (
+            <>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
 
-            {/*
-             * XAxis — uses a custom tick that renders the circular avatar photo
-             * and (on desktop) the person's first name.
-             * The `height` prop gives enough room for the avatar + name below
-             * the bars without being clipped.
-             */}
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              height={bottomMargin}
-              tick={(props) => (
-                <CustomXAxisTick {...props} isMobile={isMobile} />
-              )}
-            />
-
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
-
-            <Tooltip
-              cursor={{ fill: "rgba(0,0,0,0.04)" }}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "none",
-                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                fontFamily: "var(--font-poppins), Poppins, sans-serif",
-                fontSize: 12,
-              }}
-            />
-
-            {/*
-             * Stacked bars — bottom to top order matches the legend order
-             * (New Lead at the bottom, Appointments at the top).
-             */}
-            <Bar dataKey="New Lead"              stackId="a" fill="#FBBF24" radius={[0, 0, 4, 4]} name="New Lead" isAnimationActive={!disableAnimations} />
-            <Bar dataKey="Attempted to Contact"  stackId="a" fill="#FBCFE8" name="Attempted to Contact" isAnimationActive={!disableAnimations} />
-            <Bar dataKey="Needs Follow up"       stackId="a" fill="#F97316" name="Needs Follow up" isAnimationActive={!disableAnimations} />
-
-            {/*
-             * Appointments bar — the green top segment.
-             * LabelList renders the custom label above each bar showing ONLY
-             * the appointment count (not the total stack height).
-             * Zero is always rendered so no column is ever blank.
-             */}
-            <Bar
-              dataKey="Appointments"
-              stackId="a"
-              fill="#34D399"
-              radius={[4, 4, 0, 0]}
-              name="Appointments"
-              isAnimationActive={!disableAnimations}
-            >
-              <LabelList
-                dataKey="Appointments"
-                content={(props: any) => (
-                  <AppointmentLabel
-                    {...props}
-                    scoreRanks={scoreRanks}
-                  />
+              {/*
+               * XAxis — uses a custom tick that renders the circular avatar photo
+               * and (on desktop) the person's first name.
+               * The `height` prop gives enough room for the avatar + name below
+               * the bars without being clipped.
+               */}
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                height={bottomMargin}
+                tick={(props) => (
+                  <CustomXAxisTick {...props} isMobile={isMobile} />
                 )}
               />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9ca3af", fontSize: 11 }} />
+
+              <Tooltip
+                cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "none",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                  fontFamily: "var(--font-poppins), Poppins, sans-serif",
+                  fontSize: 12,
+                }}
+              />
+
+              {/*
+               * Stacked bars — bottom to top order matches the legend order
+               * (New Lead at the bottom, Appointments at the top).
+               */}
+              <Bar dataKey="New Lead"              stackId="a" fill="#FBBF24" radius={[0, 0, 4, 4]} name="New Lead" isAnimationActive={!disableAnimations} />
+              <Bar dataKey="Attempted to Contact"  stackId="a" fill="#FBCFE8" name="Attempted to Contact" isAnimationActive={!disableAnimations} />
+              <Bar dataKey="Needs Follow up"       stackId="a" fill="#F97316" name="Needs Follow up" isAnimationActive={!disableAnimations} />
+
+              {/*
+               * Appointments bar — the green top segment.
+               * LabelList renders the custom label above each bar showing ONLY
+               * the appointment count (not the total stack height).
+               * Zero is always rendered so no column is ever blank.
+               */}
+              <Bar
+                dataKey="Appointments"
+                stackId="a"
+                fill="#34D399"
+                radius={[4, 4, 0, 0]}
+                name="Appointments"
+                isAnimationActive={!disableAnimations}
+              >
+                <LabelList
+                  dataKey="Appointments"
+                  content={(props: any) => (
+                    <AppointmentLabel
+                      {...props}
+                      scoreRanks={scoreRanks}
+                    />
+                  )}
+                />
+              </Bar>
+            </>
+          );
+
+          // When disableAnimations is true (screenshot mode), use fixed-width BarChart
+          // Otherwise, use ResponsiveContainer for responsive sizing
+          return disableAnimations ? (
+            <BarChart
+              width={1000}
+              height={chartHeight}
+              data={data}
+              margin={{ top: 28, right: 16, left: 0, bottom: bottomMargin }}
+              barSize={isMobile ? 40 : 60}
+            >
+              {chartChildren}
+            </BarChart>
+          ) : (
+            <ResponsiveContainer width="100%" height={chartHeight}>
+              <BarChart
+                data={data}
+                margin={{ top: 28, right: 16, left: 0, bottom: bottomMargin }}
+                barSize={isMobile ? 40 : 60}
+              >
+                {chartChildren}
+              </BarChart>
+            </ResponsiveContainer>
+          );
+        })()}
 
         {/* ── Compact single-line legend ── */}
         <CompactLegend isMobile={isMobile} />
