@@ -80,18 +80,17 @@ export async function GET(request: Request) {
       document.head.appendChild(style);
     });
 
-    // Wait for bars to have actual rendered height
+    // Wait for static chart bars to render
     console.log("Waiting for chart bars...");
     await page.waitForFunction(() => {
-      const bars = document.querySelectorAll(".recharts-bar-rectangle rect");
-      if (bars.length === 0) return false;
-      return Array.from(bars).some(b => parseFloat(b.getAttribute("height") || "0") > 0);
+      const bars = document.querySelectorAll('[data-testid="chart-bar"]');
+      return bars.length > 0;
     }, { timeout: 30000 }).catch(() => {
       console.log("No bars detected - may be a zero-data week");
     });
 
     // Safety buffer
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     console.log("Taking screenshot...");
     const screenshotBuffer = await page.screenshot({ fullPage: true });

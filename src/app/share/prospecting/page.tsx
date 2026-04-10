@@ -3,6 +3,7 @@
 import { useSearchParams, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ProspectingChart } from "@/components/dashboard/widgets/prospecting-chart";
+import { ProspectingChartStatic } from "@/components/dashboard/widgets/prospecting-chart-static";
 
 function ProspectingPageContent() {
   const searchParams = useSearchParams();
@@ -11,6 +12,9 @@ function ProspectingPageContent() {
   if (key !== "red-white-prospecting-2026") {
     redirect("/");
   }
+
+  // Check if we should use the static chart (for Puppeteer screenshots)
+  const useStaticChart = searchParams.get("animate") === "false";
 
   // Get current week's date range (Monday to Friday)
   const today = new Date();
@@ -72,7 +76,11 @@ function ProspectingPageContent() {
 
           {/* Graph */}
           <div className="py-6">
-            <ProspectingChart disableAnimations={searchParams.get("animate") === "false"} />
+            {useStaticChart ? (
+              <ProspectingChartStatic />
+            ) : (
+              <ProspectingChart disableAnimations={searchParams.get("animate") === "false"} />
+            )}
           </div>
 
           {/* Footer */}
