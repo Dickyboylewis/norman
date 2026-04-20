@@ -18,12 +18,16 @@
  *    Desktop: full label text.  Mobile: abbreviated labels.
  *    Font size is kept small so everything fits without wrapping.
  *
- * 3. APPOINTMENT COUNT LABELS
- *    The number shown above each bar counts ONLY the green "Appointments"
- *    segment.  Zero is always shown (never blank) so every column has a label.
+ * 3. POINTS LABELS
+ *    The number shown above each bar is a POINTS total calculated as:
+ *    - Appointments = 5 points each
+ *    - Needs Follow up = 2 points each
+ *    - Attempted to Contact = 1 point each
+ *    - New Lead = 0 points (no score value)
+ *    Zero is always shown (never blank) so every column has a label.
  *
  * 4. GOLD / SILVER / BRONZE MEDALS
- *    The label colour and emoji medal (🥇🥈🥉) reflect the appointment ranking.
+ *    The label colour and emoji medal (🥇🥈🥉) reflect the POINTS ranking.
  *    Ties share the same medal.  Ranking is recalculated on every render.
  *
  * 5. MOBILE RESPONSIVENESS
@@ -76,16 +80,16 @@ function getMedalInfo(rank: number): MedalInfo {
 }
 
 /**
- * Compute a score → rank map based on unique appointment scores.
+ * Compute a score → rank map based on unique point totals.
  *
  * Algorithm:
- *  1. Collect all appointment scores.
+ *  1. Collect all point totals (_points field).
  *  2. Deduplicate and sort descending → unique ranked scores.
  *  3. Map each unique score to its rank position (1st, 2nd, 3rd …).
  *
- * Example: scores [4, 1, 1] → unique sorted [4, 1]
- *   → 4 = rank 1 (Gold 🥇), 1 = rank 2 (Silver 🥈)
- *   → both people with score 1 share rank 2
+ * Example: scores [14, 5, 5] → unique sorted [14, 5]
+ *   → 14 = rank 1 (Gold 🥇), 5 = rank 2 (Silver 🥈)
+ *   → both people with score 5 share rank 2
  *
  * Zero is excluded from ranking — the label handles the zero rule separately.
  */
@@ -93,7 +97,7 @@ function computeScoreRanks(data: any[]): Record<number, number> {
   const uniqueScores = Array.from(
     new Set(
       data
-        .map((d) => d["Appointments"] ?? 0)
+        .map((d) => d["_points"] ?? 0)
         .filter((s) => s > 0)
     )
   ).sort((a, b) => b - a); // descending
@@ -174,7 +178,7 @@ function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false }: CustomTick
 }
 
 // ── Custom label above the top bar segment ─────────────────────────────────
-interface AppointmentLabelProps {
+interface PointsLabelProps {
   x?: number;
   y?: number;
   width?: number;
@@ -182,11 +186,11 @@ interface AppointmentLabelProps {
   scoreRanks?: Record<number, number>;
 }
 
-function AppointmentLabel({ x = 0, y = 0, width = 0, value = 0, scoreRanks = {} }: AppointmentLabelProps) {
-  const count = value ?? 0;
+function PointsLabel({ x = 0, y = 0, width = 0, value = 0, scoreRanks = {} }: PointsLabelProps) {
+  const points = value ?? 0;
 
   // Zero rule: plain 0 in neutral grey, no emoji
-  if (count === 0) {
+  if (points === 0) {
     return (
       <text
         x={x + width / 2}
@@ -202,7 +206,7 @@ function AppointmentLabel({ x = 0, y = 0, width = 0, value = 0, scoreRanks = {} 
     );
   }
 
-  const rank  = scoreRanks[count] ?? 99;
+  const rank  = scoreRanks[points] ?? 99;
   const medal = getMedalInfo(rank);
 
   return (
@@ -215,7 +219,7 @@ function AppointmentLabel({ x = 0, y = 0, width = 0, value = 0, scoreRanks = {} 
       fontWeight={700}
       fontFamily="var(--font-roboto), Roboto, sans-serif"
     >
-      {medal.emoji}{count}
+      {medal.emoji}{points}
     </text>
   );
 }
@@ -309,8 +313,14 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
     );
   }
 
+  // Enrich data with computed _points field
+  const enrichedData = data.map((d: any) => ({
+    ...d,
+    _points: (d["Appointments"] ?? 0) * 5 + (d["Needs Follow up"] ?? 0) * 2 + (d["Attempted to Contact"] ?? 0) * 1,
+  }));
+
   // Compute score → rank map once per render so labels and medals stay in sync
-  const scoreRanks = computeScoreRanks(data);
+  const scoreRanks = computeScoreRanks(enrichedData);
 
   // Chart height adapts to screen size
   const chartHeight = isMobile ? 220 : 300;
@@ -344,7 +354,7 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
           <BarChart
             width={1000}
             height={chartHeight}
-            data={data}
+            data={enrichedData}
             margin={{ top: 28, right: 16, left: 0, bottom: bottomMargin }}
             barSize={60}
           >
@@ -389,8 +399,8 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
 
             {/*
              * Appointments bar — the green top segment.
-             * LabelList renders the custom label above each bar showing ONLY
-             * the appointment count (not the total stack height).
+             * LabelList renders the custom label above each bar showing the
+             * computed POINTS total (not the appointment count).
              * Zero is always rendered so no column is ever blank.
              */}
             <Bar
@@ -402,9 +412,9 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
               isAnimationActive={false}
             >
               <LabelList
-                dataKey="Appointments"
+                dataKey="_points"
                 content={(props: any) => (
-                  <AppointmentLabel
+                  <PointsLabel
                     {...props}
                     scoreRanks={scoreRanks}
                   />
@@ -415,7 +425,7 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
         ) : (
           <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart
-              data={data}
+              data={enrichedData}
               margin={{ top: 28, right: 16, left: 0, bottom: bottomMargin }}
               barSize={isMobile ? 40 : 60}
             >
@@ -460,8 +470,8 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
 
               {/*
                * Appointments bar — the green top segment.
-               * LabelList renders the custom label above each bar showing ONLY
-               * the appointment count (not the total stack height).
+               * LabelList renders the custom label above each bar showing the
+               * computed POINTS total (not the appointment count).
                * Zero is always rendered so no column is ever blank.
                */}
               <Bar
@@ -473,9 +483,9 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
                 isAnimationActive={true}
               >
                 <LabelList
-                  dataKey="Appointments"
+                  dataKey="_points"
                   content={(props: any) => (
-                    <AppointmentLabel
+                    <PointsLabel
                       {...props}
                       scoreRanks={scoreRanks}
                     />

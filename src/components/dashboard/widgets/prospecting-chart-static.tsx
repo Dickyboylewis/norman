@@ -8,6 +8,15 @@
  * 
  * Used exclusively for automated screenshots by Puppeteer in headless Chromium.
  * Renders perfectly with zero JavaScript animation dependencies.
+ * 
+ * POINTS SYSTEM:
+ * - Appointments = 5 points each
+ * - Needs Follow up = 2 points each
+ * - Attempted to Contact = 1 point each
+ * - New Lead = 0 points (no score value)
+ * 
+ * The number shown above each bar is the total POINTS, not raw appointment count.
+ * Medal ranking (🥇🥈🥉) is based on points totals.
  */
 
 import React, { useEffect, useState } from "react";
@@ -42,7 +51,7 @@ function computeScoreRanks(data: any[]): Record<number, number> {
   const uniqueScores = Array.from(
     new Set(
       data
-        .map((d) => d["Appointments"] ?? 0)
+        .map((d) => d["_points"] ?? 0)
         .filter((s) => s > 0)
     )
   ).sort((a, b) => b - a);
@@ -84,12 +93,18 @@ export function ProspectingChartStatic() {
     );
   }
 
+  // Enrich data with computed _points field
+  const enrichedData = data.map((d: any) => ({
+    ...d,
+    _points: (d["Appointments"] ?? 0) * 5 + (d["Needs Follow up"] ?? 0) * 2 + (d["Attempted to Contact"] ?? 0) * 1,
+  }));
+
   // Compute score → rank map
-  const scoreRanks = computeScoreRanks(data);
+  const scoreRanks = computeScoreRanks(enrichedData);
 
   // Calculate max total for scaling
   const maxTotal = Math.max(
-    ...data.map((d) => 
+    ...enrichedData.map((d) => 
       (d["New Lead"] ?? 0) + 
       (d["Needs Follow up"] ?? 0) + 
       (d["Attempted to Contact"] ?? 0) + 
@@ -161,7 +176,7 @@ export function ProspectingChartStatic() {
               gap: "32px",
               alignItems: "flex-end",
             }}>
-              {data.map((person) => {
+              {enrichedData.map((person) => {
                 const name = person.name;
                 const meta = PERSON_META[name];
                 if (!meta) return null;
@@ -179,9 +194,9 @@ export function ProspectingChartStatic() {
                 const attemptedContactHeight = attemptedContact * scale;
                 const appointmentsHeight = appointments * scale;
 
-                // Medal info
-                const count = appointments;
-                const rank = count > 0 ? (scoreRanks[count] ?? 99) : 99;
+                // Medal info based on POINTS
+                const points = person["_points"] ?? 0;
+                const rank = points > 0 ? (scoreRanks[points] ?? 99) : 99;
                 const medal = getMedalInfo(rank);
 
                 return (
@@ -194,17 +209,17 @@ export function ProspectingChartStatic() {
                       gap: "12px",
                     }}
                   >
-                    {/* Appointment count label */}
+                    {/* Points label */}
                     <div
                       style={{
                         fontSize: "13px",
                         fontWeight: 700,
-                        color: count === 0 ? "#9CA3AF" : medal.color,
+                        color: points === 0 ? "#9CA3AF" : medal.color,
                         fontFamily: "var(--font-roboto), Roboto, sans-serif",
                         minHeight: "20px",
                       }}
                     >
-                      {count === 0 ? "0" : `${medal.emoji}${count}`}
+                      {points === 0 ? "0" : `${medal.emoji}${points}`}
                     </div>
 
                     {/* Stacked bar */}

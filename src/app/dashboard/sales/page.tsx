@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TopBar } from "@/components/dashboard/topbar";
 import { ProspectingChart } from "@/components/dashboard/widgets/prospecting-chart";
 import { DealRevenueChart } from "@/components/dashboard/widgets/deal-revenue-chart";
+import { CRMNeuralMap } from "@/components/dashboard/widgets/crm-neural-map";
 import { AskJebPanel } from "@/components/dashboard/ask-jeb/ask-jeb-panel";
 import { MessageCircle } from "lucide-react";
 import {
@@ -218,6 +219,11 @@ export default function SalesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <ProspectingChart />
             <DealRevenueChart />
+            <Card className="col-span-1 md:col-span-2">
+              <CardContent className="p-0">
+                <CRMNeuralMap compact={true} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
