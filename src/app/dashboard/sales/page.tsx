@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TopBar } from "@/components/dashboard/topbar";
 import { ProspectingChart } from "@/components/dashboard/widgets/prospecting-chart";
@@ -221,7 +221,9 @@ export default function SalesPage() {
             <DealRevenueChart />
             <Card className="col-span-1 md:col-span-2">
               <CardContent className="p-0">
-                <CRMNeuralMap compact={true} />
+                <Suspense fallback={<div className="h-64" />}>
+                  <CRMNeuralMap compact={true} />
+                </Suspense>
               </CardContent>
             </Card>
           </div>
