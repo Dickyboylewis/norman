@@ -155,10 +155,10 @@ export async function GET() {
 
       if (statusClean.includes("appointment") || statusClean.includes("qualified") || statusClean.includes("4 -")) {
         category = "Appointments";
-      } else if (statusClean.includes("follow") || statusClean.includes("contact") || statusClean.includes("3 -")) {
-        category = "Needs Follow up";
       } else if (statusClean.includes("attempted") || statusClean.includes("2 -")) {
         category = "Attempted to Contact";
+      } else if (statusClean.includes("follow") || statusClean.includes("needs") || statusClean.includes("3 -")) {
+        category = "Needs Follow up";
       } else if (statusClean.includes("new lead") || statusClean.includes("1 -")) {
         category = "New Lead";
       }
