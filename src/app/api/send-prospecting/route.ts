@@ -204,6 +204,42 @@ export async function GET(request: Request) {
       slackStatus = `error: ${error instanceof Error ? error.message : "unknown"}`;
     }
 
+    // Auto-snapshot scores to history on Fridays
+    if (messageType === "final") {
+      try {
+        const mondayRes = await fetch("http://localhost:3000/api/monday");
+        const mondayData = await mondayRes.json();
+
+        const scores: Record<string, number> = {};
+        for (const person of mondayData) {
+          const total =
+            (person["New Lead"] || 0) +
+            (person["Attempted to Contact"] || 0) +
+            (person["Needs Follow up"] || 0) +
+            (person["Appointments"] || 0);
+          scores[person.name] = total;
+        }
+
+        // Get Monday of current week
+        const now = new Date();
+        const day = now.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diff);
+        const weekCommencing = monday.toISOString().split("T")[0];
+
+        await fetch(`http://localhost:3000/api/prospecting-history?secret=norman-send-2026`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ weekCommencing, scores }),
+        });
+
+        console.log("Prospecting history snapshot saved for week:", weekCommencing);
+      } catch (err) {
+        console.error("Failed to snapshot prospecting history:", err);
+      }
+    }
+
     // STEP 8: Return success response
     return Response.json({
       success: true,

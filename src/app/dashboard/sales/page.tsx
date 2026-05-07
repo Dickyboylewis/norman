@@ -6,6 +6,7 @@ import { TopBar } from "@/components/dashboard/topbar";
 import { ProspectingChart } from "@/components/dashboard/widgets/prospecting-chart";
 import { DealRevenueChart } from "@/components/dashboard/widgets/deal-revenue-chart";
 import { CRMNeuralMap } from "@/components/dashboard/widgets/crm-neural-map";
+import { ProspectingHistoryChart } from "@/components/dashboard/widgets/prospecting-history-chart";
 import { AskJebPanel } from "@/components/dashboard/ask-jeb/ask-jeb-panel";
 import { MessageCircle } from "lucide-react";
 import {
@@ -220,13 +221,18 @@ export default function SalesPage() {
             <ProspectingChart />
             <DealRevenueChart />
             <Card className="col-span-1 md:col-span-2">
-              <CardContent className="p-0">
-                <Suspense fallback={<div className="h-64" />}>
-                  <CRMNeuralMap compact={true} />
+              <CardContent className="p-0 h-[700px]">
+                <Suspense fallback={<div className="h-[700px]" />}>
+                  <CRMNeuralMap />
                 </Suspense>
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* ─── Season Leaderboard ─────────────────────────────────────── */}
+        <div className="w-full mt-6">
+          <ProspectingHistoryChart />
         </div>
       </div>
     </div>
