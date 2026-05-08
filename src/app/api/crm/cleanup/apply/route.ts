@@ -17,8 +17,9 @@ type ContactScanItem = {
 };
 
 async function changeItemName(apiKey: string, itemId: string, newName: string) {
+  // change_item_name was deprecated; change_simple_column_value with column_id "name" works in 2024-01
   const escapedName = JSON.stringify(newName);
-  const query = `mutation { change_item_name (item_id: ${itemId}, item_name: ${escapedName}) { id } }`;
+  const query = `mutation { change_simple_column_value (item_id: ${itemId}, board_id: ${ACCOUNTS_BOARD_ID}, column_id: "name", value: ${escapedName}) { id name } }`;
   const res = await fetch("https://api.monday.com/v2", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: apiKey, "API-Version": "2024-01" },
@@ -26,6 +27,7 @@ async function changeItemName(apiKey: string, itemId: string, newName: string) {
   });
   const data = await res.json();
   if (data.errors) throw new Error(JSON.stringify(data.errors));
+  return data.data?.change_simple_column_value;
 }
 
 async function getContactsLinkedToAccount(apiKey: string, accountId: string): Promise<string[]> {

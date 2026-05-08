@@ -18,7 +18,7 @@ interface MondayItem {
   column_values: MondayColumnValue[];
 }
 
-const CRE_DOMAIN_MAP: Record<string, string> = {
+export const CRE_DOMAIN_MAP: Record<string, string> = {
   "CBRE": "cbre.com",
   "JLL": "jll.com",
   "Savills": "savills.com",
