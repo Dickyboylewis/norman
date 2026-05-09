@@ -841,14 +841,12 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const typeX = (accountType: string | undefined): number => {
       const t = (accountType || "").toLowerCase().trim();
       if (t === "client") return 0.85;
-      if (t === "consultant") return 0.42;
-      if (t === "agent") return 0.65;
-      return 0.28; // untyped / unknown
+      if (t === "consultant" || t === "agent") return 0.42; // agents sub-cluster in consultant column
+      return 0.28; // untyped
     };
     const typeStrength = (accountType: string | undefined): number => {
       const t = (accountType || "").toLowerCase().trim();
-      if (t === "client" || t === "consultant") return 0.85;
-      if (t === "agent") return 0.75;
+      if (t === "client" || t === "consultant" || t === "agent") return 0.85;
       return 0.6; // untyped
     };
 
@@ -899,8 +897,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .on("zoom", event => { g.attr("transform", event.transform); });
     svg.call(zoom);
 
-    // Zone dividers — between untyped/consultants (0.535) and between agents/clients (0.75)
-    [0.535, 0.75].forEach(ratio => {
+    // Zone divider between consultant/agent column and client column
+    [0.635].forEach(ratio => {
       g.append("line")
         .attr("x1", ratio * width).attr("y1", 0)
         .attr("x2", ratio * width).attr("y2", height)
@@ -909,22 +907,37 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         .attr("stroke-opacity", 0.6);
     });
 
+    // Background column labels — rendered behind bubbles (labels-layer sits before nodes-layer in SVG order)
+    const labelsLayer = g.append("g").attr("class", "labels-layer").attr("pointer-events", "none");
+
+    // Large watermark labels
     ([
-      { label: "DIRECTORS",   x: CLUSTER_X.directors * width },
       { label: "CONSULTANTS", x: 0.42 * width },
-      { label: "AGENTS",      x: 0.65 * width },
       { label: "CLIENTS",     x: 0.85 * width },
-    ] as { label: string; x: number }[]).forEach(z => {
-      g.append("text")
-        .attr("x", z.x).attr("y", 50)
+    ]).forEach(z => {
+      labelsLayer.append("text")
+        .attr("x", z.x).attr("y", 60)
         .attr("text-anchor", "middle")
-        .attr("font-size", 11)
+        .attr("font-size", 56)
         .attr("font-family", "Poppins, sans-serif")
-        .attr("font-weight", "600")
-        .attr("letter-spacing", "0.1em")
-        .attr("fill", "#d1d5db")
+        .attr("font-weight", "700")
+        .attr("letter-spacing", "0.08em")
+        .attr("fill", "#94a3b8")
+        .attr("opacity", 0.14)
         .text(z.label);
     });
+
+    // Small agents sub-header above the agent cluster
+    labelsLayer.append("text")
+      .attr("x", 0.42 * width).attr("y", 130)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 18)
+      .attr("font-family", "Poppins, sans-serif")
+      .attr("font-weight", "600")
+      .attr("letter-spacing", "0.12em")
+      .attr("fill", "#94a3b8")
+      .attr("opacity", 0.55)
+      .text("AGENTS");
 
     // Defs
     const defs = g.append("defs");
@@ -1172,16 +1185,27 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       }))
       .force("centerY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.y ?? height / 2;
+        const t = (d.accountType || "").toLowerCase().trim();
+        if (t === "agent") return height * 0.18; // agents pinned to top band
         const topPadding = 80;
         const bottomPadding = 60;
         const score = accountYScores.get(d.id) ?? 0.5;
         return topPadding + (1 - score) * (height - topPadding - bottomPadding);
-      }).strength(d => d.kind === "director" ? 0 : 0.18))
+      }).strength(d => {
+        if (d.kind === "director") return 0;
+        const t = (d.accountType || "").toLowerCase().trim();
+        return t === "agent" ? 0.7 : 0.18;
+      }))
       .on("tick", () => {
         simNodesRef.current = simNodes;
         // Clamp non-director nodes to stay right of the directors column
         simNodes.forEach(d => {
           if (d.kind !== "director" && d.x != null && d.x < width * 0.18) d.x = width * 0.18;
+          // Consultants stay below the agent band
+          if (d.kind === "account" && d.y != null) {
+            const t = (d.accountType || "").toLowerCase().trim();
+            if (t === "consultant" && d.y < height * 0.32) d.y = height * 0.32;
+          }
         });
         links
           .attr("x1", d => (d.source as SimNode).x!)
@@ -1205,6 +1229,14 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         .reduce((m, n) => Math.max(m, n.x ?? 0), 0);
       if (maxAccountX < width * 0.7) {
         console.warn(`[CRM Neural Map] Max account x=${maxAccountX.toFixed(0)} < 0.7*width (${(width * 0.7).toFixed(0)}) — clients not reaching right column`);
+      }
+      const agentLeaked = simNodes.filter(n =>
+        n.kind === "account" &&
+        (n.accountType || "").toLowerCase().trim() === "agent" &&
+        n.y != null && n.y > height * 0.30
+      ).length;
+      if (agentLeaked > 0) {
+        console.warn(`[CRM Neural Map] ${agentLeaked} agent(s) leaked below 0.30*height`);
       }
     }, 2000);
 
