@@ -704,6 +704,19 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     return { dirConfig, totalContacts, totalAccounts: accountContactCounts.size, topAccounts };
   }, [selectedDirector, lookupMaps, data]);
 
+  // ── Type distribution diagnostic log ─────────────────────────────────────
+
+  useEffect(() => {
+    if (!data?.nodes) return;
+    const dist = new Map<string, number>();
+    for (const n of data.nodes) {
+      const t = n.accountType || "(empty)";
+      dist.set(t, (dist.get(t) ?? 0) + 1);
+    }
+    const sorted = [...dist.entries()].sort((a, b) => b[1] - a[1]);
+    console.log("[CRM Neural Map] Type distribution:", Object.fromEntries(sorted));
+  }, [data]);
+
   // ── Keep spotlightDataRef in sync ─────────────────────────────────────────
 
   useEffect(() => {
@@ -824,6 +837,21 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     const { width, height } = dimensions;
 
+    // Maps accountType label → column X fraction (source of truth for forceX)
+    const typeX = (accountType: string | undefined): number => {
+      const t = (accountType || "").toLowerCase().trim();
+      if (t === "client") return 0.85;
+      if (t === "consultant") return 0.42;
+      if (t === "agent") return 0.65;
+      return 0.28; // untyped / unknown
+    };
+    const typeStrength = (accountType: string | undefined): number => {
+      const t = (accountType || "").toLowerCase().trim();
+      if (t === "client" || t === "consultant") return 0.85;
+      if (t === "agent") return 0.75;
+      return 0.6; // untyped
+    };
+
     // Fixed director anchor nodes — each director is fully pinned (fx+fy)
     const dirFy = [0.30, 0.50, 0.70];
     const directorSimNodes: SimNode[] = DIRECTOR_NODES.map((d, i) => ({
@@ -843,7 +871,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const accountSimNodes: SimNode[] = filteredNodes.map(n => ({
       ...n,
       kind: "account" as const,
-      x: CLUSTER_X[n.cluster] * width + (Math.random() - 0.5) * 200,
+      x: typeX(n.accountType) * width + (Math.random() - 0.5) * 200,
       y: height / 2 + (Math.random() - 0.5) * 300,
       vx: 0,
       vy: 0,
@@ -871,8 +899,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .on("zoom", event => { g.attr("transform", event.transform); });
     svg.call(zoom);
 
-    // Zone divider between consultant and client columns
-    [0.635].forEach(ratio => {
+    // Zone dividers — between untyped/consultants (0.535) and between agents/clients (0.75)
+    [0.535, 0.75].forEach(ratio => {
       g.append("line")
         .attr("x1", ratio * width).attr("y1", 0)
         .attr("x2", ratio * width).attr("y2", height)
@@ -882,10 +910,11 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     });
 
     ([
-      { label: "DIRECTORS",   x: CLUSTER_X.directors   * width },
-      { label: "CONSULTANTS", x: CLUSTER_X.consultants * width },
-      { label: "CLIENTS",     x: CLUSTER_X.clients     * width },
-    ] as const).forEach(z => {
+      { label: "DIRECTORS",   x: CLUSTER_X.directors * width },
+      { label: "CONSULTANTS", x: 0.42 * width },
+      { label: "AGENTS",      x: 0.65 * width },
+      { label: "CLIENTS",     x: 0.85 * width },
+    ] as { label: string; x: number }[]).forEach(z => {
       g.append("text")
         .attr("x", z.x).attr("y", 50)
         .attr("text-anchor", "middle")
@@ -1134,12 +1163,12 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .force("collide", d3.forceCollide<SimNode>().radius(d =>
         d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 20
       ))
-      .force("clusterX", d3.forceX<SimNode>(d =>
-        d.kind === "director" ? (d.x ?? 0) : CLUSTER_X[d.cluster ?? "unknown"] * width
-      ).strength(d => {
-        if (d.kind === "director") return 0;
-        const c = d.cluster ?? "unknown";
-        return (c === "consultants" || c === "clients") ? 0.5 : 0.4;
+      .force("clusterX", d3.forceX<SimNode>(d => {
+        if (d.kind === "director") return d.x ?? 0;
+        return typeX(d.accountType) * width;
+      }).strength(d => {
+        if (d.kind === "director") return 0; // directors are pinned via fx only
+        return typeStrength(d.accountType);
       }))
       .force("centerY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.y ?? height / 2;
@@ -1152,7 +1181,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         simNodesRef.current = simNodes;
         // Clamp non-director nodes to stay right of the directors column
         simNodes.forEach(d => {
-          if (d.kind !== "director" && d.x != null && d.x < width * 0.12) d.x = width * 0.12;
+          if (d.kind !== "director" && d.x != null && d.x < width * 0.18) d.x = width * 0.18;
         });
         links
           .attr("x1", d => (d.source as SimNode).x!)
@@ -1163,7 +1192,23 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       });
 
     simRef.current = sim;
-    return () => { sim.stop(); };
+
+    const sanityTimer = setTimeout(() => {
+      const directorX = width * CLUSTER_X.directors;
+      for (const d of simNodes) {
+        if (d.kind === "director" && d.x != null && Math.abs(d.x - directorX) > 5) {
+          console.warn(`[CRM Neural Map] Director ${d.name} x=${d.x.toFixed(0)} deviates from fx=${directorX.toFixed(0)}`);
+        }
+      }
+      const maxAccountX = simNodes
+        .filter(n => n.kind === "account")
+        .reduce((m, n) => Math.max(m, n.x ?? 0), 0);
+      if (maxAccountX < width * 0.7) {
+        console.warn(`[CRM Neural Map] Max account x=${maxAccountX.toFixed(0)} < 0.7*width (${(width * 0.7).toFixed(0)}) — clients not reaching right column`);
+      }
+    }, 2000);
+
+    return () => { sim.stop(); clearTimeout(sanityTimer); };
   }, [filteredNodes, filteredEdges, dimensions, accountYScores]);
 
   // ── Loading / error ────────────────────────────────────────────────────────
