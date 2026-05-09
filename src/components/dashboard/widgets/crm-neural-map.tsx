@@ -22,7 +22,7 @@ const DIRECTOR_NODES = [
 // ── Cluster x-positions ──────────────────────────────────────────────────────
 
 const CLUSTER_X: Record<string, number> = {
-  directors:   0.10,
+  directors:   0.05,
   consultants: 0.45,
   clients:     0.82,
   unknown:     0.55,
@@ -564,6 +564,28 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
   const effectiveMin = viewMode === "priority" ? Math.max(2, minContacts) : minContacts;
 
+  // ── Per-account Y scores (recency + known) ────────────────────────────────
+
+  const accountYScores = useMemo(() => {
+    const maxContactCount = Math.max(1, ...filteredNodes.map(n => n.contactCount));
+    const now = Date.now();
+    const scores = new Map<string, number>();
+    for (const n of filteredNodes) {
+      let recencyScore = 0;
+      const latest = n.contacts
+        .map(c => c.lastContacted ? new Date(c.lastContacted).getTime() : 0)
+        .filter(t => t > 0)
+        .reduce((a, b) => Math.max(a, b), 0);
+      if (latest > 0) {
+        const daysSince = (now - latest) / (1000 * 60 * 60 * 24);
+        recencyScore = Math.max(0, 1 - daysSince / 180);
+      }
+      const knownScore = (n.contactCount ?? 0) / maxContactCount;
+      scores.set(n.id, recencyScore * 0.6 + knownScore * 0.4);
+    }
+    return scores;
+  }, [filteredNodes]);
+
   // ── Lookup maps (from all data) ───────────────────────────────────────────
 
   const lookupMaps = useMemo(() => {
@@ -757,6 +779,38 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }
   }, [spotlightData, selectedContact, lookupMaps]);
 
+  // ── Contact name label ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!gRef.current) return;
+    const labelLayer = d3.select(gRef.current).select<SVGGElement>(".contact-label-layer");
+    if (labelLayer.empty()) return;
+    labelLayer.selectAll("*").remove();
+    if (!selectedContact || simNodesRef.current.length === 0) return;
+
+    const accountId = lookupMaps.contactToAccountId.get(selectedContact.id);
+    const accountNode = accountId ? simNodesRef.current.find(n => n.id === accountId) : undefined;
+    if (!accountNode || accountNode.x == null || accountNode.y == null) return;
+
+    const radius = nodeRadius(accountNode.contactCount ?? 0);
+    const owningDirector = (selectedContact.directors ?? [])[0];
+    const fillColor = owningDirector ? (DIRECTOR_COLORS[owningDirector] ?? "#6b7280") : "#6b7280";
+
+    labelLayer.append("text")
+      .attr("x", accountNode.x)
+      .attr("y", accountNode.y + radius + 16)
+      .attr("text-anchor", "middle")
+      .attr("font-size", 12)
+      .attr("font-family", "Poppins, sans-serif")
+      .attr("font-weight", "600")
+      .attr("fill", fillColor)
+      .attr("stroke", "white")
+      .attr("stroke-width", 3)
+      .attr("paint-order", "stroke")
+      .attr("pointer-events", "none")
+      .text(selectedContact.name);
+  }, [selectedContact, lookupMaps]);
+
   // ── D3 simulation ─────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -817,7 +871,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     svg.call(zoom);
 
     // Zone dividers (midpoints between cluster positions)
-    [0.275, 0.635].forEach(ratio => {
+    [0.25, 0.635].forEach(ratio => {
       g.append("line")
         .attr("x1", ratio * width).attr("y1", 0)
         .attr("x2", ratio * width).attr("y2", height)
@@ -873,6 +927,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     // Pathway lines layer (populated by spotlight effect)
     g.append("g").attr("class", "pathways-layer");
+
+    // Contact label layer (populated by selectedContact effect)
+    g.append("g").attr("class", "contact-label-layer");
 
     // Links
     const links = g.append("g")
@@ -956,15 +1013,31 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("pointer-events", "none")
       .text(d => d.name.split(/\s+/).map((w: string) => w[0]?.toUpperCase()).filter(Boolean).slice(0, 3).join(""));
 
-    nodeGroups.filter(d => d.kind === "account" && ((d.contactCount ?? 0) > 1 || nodeRadius(d.contactCount ?? 0) > 35))
-      .append("text")
-      .attr("text-anchor", "middle")
-      .attr("dy", d => nodeRadius(d.contactCount ?? 0) + 14)
-      .attr("font-size", 11)
-      .attr("font-family", "Poppins, sans-serif")
-      .attr("fill", "#374151")
-      .attr("pointer-events", "none")
-      .text(d => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
+    if (isFullscreen) {
+      nodeGroups.filter(d => d.kind === "account")
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", d => nodeRadius(d.contactCount ?? 0) + 14)
+        .attr("font-size", 11)
+        .attr("font-family", "Poppins, sans-serif")
+        .attr("font-weight", "500")
+        .attr("fill", "#1f2937")
+        .attr("stroke", "white")
+        .attr("stroke-width", 3)
+        .attr("paint-order", "stroke")
+        .attr("pointer-events", "none")
+        .text(d => d.name.length > 22 ? d.name.slice(0, 21) + "…" : d.name);
+    } else {
+      nodeGroups.filter(d => d.kind === "account" && ((d.contactCount ?? 0) > 1 || nodeRadius(d.contactCount ?? 0) > 35))
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", d => nodeRadius(d.contactCount ?? 0) + 14)
+        .attr("font-size", 11)
+        .attr("font-family", "Poppins, sans-serif")
+        .attr("fill", "#374151")
+        .attr("pointer-events", "none")
+        .text(d => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
+    }
 
     nodeGroups.filter(d => d.kind === "account" && (d.contactCount ?? 0) > 0)
       .append("circle")
@@ -1058,14 +1131,24 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       )
       .force("charge", d3.forceManyBody<SimNode>().strength(-800))
       .force("collide", d3.forceCollide<SimNode>().radius(d =>
-        d.kind === "director" ? 70 : nodeRadius(d.contactCount ?? 0) + 20
+        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 20
       ))
       .force("clusterX", d3.forceX<SimNode>(d =>
         d.kind === "director" ? (d.x ?? 0) : CLUSTER_X[d.cluster ?? "unknown"] * width
       ).strength(d => d.kind === "director" ? 0 : 0.6))
-      .force("centerY", d3.forceY<SimNode>(height / 2).strength(0.1))
+      .force("centerY", d3.forceY<SimNode>(d => {
+        if (d.kind === "director") return d.y ?? height / 2;
+        const topPadding = 80;
+        const bottomPadding = 60;
+        const score = accountYScores.get(d.id) ?? 0.5;
+        return topPadding + (1 - score) * (height - topPadding - bottomPadding);
+      }).strength(d => d.kind === "director" ? 0 : 0.18))
       .on("tick", () => {
         simNodesRef.current = simNodes;
+        // Clamp non-director nodes to stay right of the directors column
+        simNodes.forEach(d => {
+          if (d.kind !== "director" && d.x != null && d.x < width * 0.12) d.x = width * 0.12;
+        });
         links
           .attr("x1", d => (d.source as SimNode).x!)
           .attr("y1", d => (d.source as SimNode).y!)
@@ -1076,7 +1159,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     simRef.current = sim;
     return () => { sim.stop(); };
-  }, [filteredNodes, filteredEdges, dimensions]);
+  }, [filteredNodes, filteredEdges, dimensions, accountYScores]);
 
   // ── Loading / error ────────────────────────────────────────────────────────
 
@@ -1198,8 +1281,11 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
           )}
 
           {/* Stats */}
-          <div className="ml-auto text-xs text-gray-400 bg-white px-2 py-1 rounded border border-gray-200 whitespace-nowrap">
-            {filteredNodes.length} companies · {filteredEdges.length} connections
+          <div className="ml-auto flex flex-col items-end gap-0.5">
+            <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded border border-gray-200 whitespace-nowrap">
+              {filteredNodes.length} companies · {filteredEdges.length} connections
+            </div>
+            <span className="text-[11px] text-gray-400 leading-none">Recent + known sit higher</span>
           </div>
 
           {/* Fullscreen */}
