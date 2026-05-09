@@ -824,7 +824,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     const { width, height } = dimensions;
 
-    // Fixed director anchor nodes
+    // Fixed director anchor nodes — each director is fully pinned (fx+fy)
+    const dirFy = [0.30, 0.50, 0.70];
     const directorSimNodes: SimNode[] = DIRECTOR_NODES.map((d, i) => ({
       id: d.id,
       kind: "director" as const,
@@ -832,9 +833,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       director: d.director,
       photo: d.photo,
       fx: width * CLUSTER_X.directors,
-      fy: height * (0.25 + i * 0.25),
+      fy: height * dirFy[i],
       x: width * CLUSTER_X.directors,
-      y: height * (0.25 + i * 0.25),
+      y: height * dirFy[i],
       vx: 0,
       vy: 0,
     }));
@@ -870,8 +871,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .on("zoom", event => { g.attr("transform", event.transform); });
     svg.call(zoom);
 
-    // Zone dividers (midpoints between cluster positions)
-    [0.25, 0.635].forEach(ratio => {
+    // Zone divider between consultant and client columns
+    [0.635].forEach(ratio => {
       g.append("line")
         .attr("x1", ratio * width).attr("y1", 0)
         .attr("x2", ratio * width).attr("y2", height)
@@ -1135,7 +1136,11 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       ))
       .force("clusterX", d3.forceX<SimNode>(d =>
         d.kind === "director" ? (d.x ?? 0) : CLUSTER_X[d.cluster ?? "unknown"] * width
-      ).strength(d => d.kind === "director" ? 0 : 0.6))
+      ).strength(d => {
+        if (d.kind === "director") return 0;
+        const c = d.cluster ?? "unknown";
+        return (c === "consultants" || c === "clients") ? 0.5 : 0.4;
+      }))
       .force("centerY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.y ?? height / 2;
         const topPadding = 80;
