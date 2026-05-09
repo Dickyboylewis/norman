@@ -278,7 +278,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [selectedContact, setSelectedContact] = useState<ContactNode | null>(null);
   const [selectedDirector, setSelectedDirector] = useState<"dicky" | "joe" | "jesus" | null>(null);
   const [filter, setFilter] = useState<"all" | "dicky" | "joe" | "jesus">("all");
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 1800 });
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 1200 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [viewMode, setViewMode] = useState<"all" | "priority" | "search">("all");
   const [searchText, setSearchText] = useState("");
@@ -513,7 +513,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const update = () => {
       if (svgRef.current?.parentElement) {
         const w = svgRef.current.parentElement.getBoundingClientRect().width;
-        if (w > 0) setDimensions({ width: w, height: 1800 });
+        if (w > 0) setDimensions({ width: w, height: 1200 });
       }
     };
     update();
@@ -525,7 +525,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const t = setTimeout(() => {
       if (svgRef.current?.parentElement) {
         const w = svgRef.current.parentElement.getBoundingClientRect().width;
-        if (w > 0) setDimensions({ width: w, height: 1800 });
+        if (w > 0) setDimensions({ width: w, height: 1200 });
       }
     }, 50);
     return () => clearTimeout(t);
@@ -835,26 +835,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       setSelectedDirector(null);
     };
 
-    const { width, height } = dimensions;
+    const { width } = dimensions;
 
-    // Hard lane definitions — forceX pulls nodes toward xTarget; tick clamp enforces [xMin, xMax]
-    const LANES: Record<"director"|"untyped"|"consultant"|"agent"|"client", {
-      xMin: number; xMax: number; xTarget: number; xStrength: number;
-    }> = {
-      director:   { xMin: 0.02, xMax: 0.10, xTarget: 0.05,  xStrength: 0   },
-      untyped:    { xMin: 0.13, xMax: 0.22, xTarget: 0.175, xStrength: 0.5 },
-      consultant: { xMin: 0.27, xMax: 0.55, xTarget: 0.41,  xStrength: 0.6 },
-      agent:      { xMin: 0.27, xMax: 0.55, xTarget: 0.41,  xStrength: 0.6 },
-      client:     { xMin: 0.68, xMax: 0.96, xTarget: 0.82,  xStrength: 0.6 },
-    };
-    const Y_ZONES: Record<"agent"|"consultant"|"client"|"untyped", {
-      yMin: number; yMax: number;
-    }> = {
-      agent:      { yMin: 120,  yMax: 320  },
-      consultant: { yMin: 400,  yMax: 1720 },
-      client:     { yMin: 120,  yMax: 1720 },
-      untyped:    { yMin: 400,  yMax: 1720 },
-    };
     const typeLane = (accountType: string | undefined): "client"|"consultant"|"agent"|"untyped" => {
       const t = (accountType || "").toLowerCase().trim();
       if (t === "client") return "client";
@@ -863,8 +845,22 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       return "untyped";
     };
 
+    // Soft force targets — no hard lane boundaries, bubbles spread organically
+    const TARGET_X: Record<"untyped"|"consultant"|"agent"|"client", number> = {
+      untyped:    0.20,
+      consultant: 0.42,
+      agent:      0.42,
+      client:     0.82,
+    };
+    const STRENGTH_X: Record<"untyped"|"consultant"|"agent"|"client", number> = {
+      untyped:    0.5,
+      consultant: 0.9,
+      agent:      0.9,
+      client:     0.9,
+    };
+
     // Fixed director anchor nodes — each director is fully pinned (fx+fy)
-    const dirFy = [280, 480, 680]; // pixel positions in 1800px canvas
+    const dirFy = [280, 480, 680]; // pixel positions in 1200px canvas
     const directorSimNodes: SimNode[] = DIRECTOR_NODES.map((d, i) => ({
       id: d.id,
       kind: "director" as const,
@@ -882,10 +878,13 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const accountSimNodes: SimNode[] = filteredNodes.map(n => ({
       ...n,
       kind: "account" as const,
-      x: LANES[typeLane(n.accountType)].xTarget * width + (Math.random() - 0.5) * 80,
+      x: TARGET_X[typeLane(n.accountType)] * width + (Math.random() - 0.5) * 80,
       y: (() => {
-        const yz = Y_ZONES[typeLane(n.accountType)];
-        return yz.yMin + Math.random() * (yz.yMax - yz.yMin);
+        const lane = typeLane(n.accountType);
+        if (lane === "agent") return 100 + Math.random() * 160;
+        if (lane === "consultant") return 340 + Math.random() * 760;
+        if (lane === "client") return 180 + Math.random() * 920;
+        return 400 + Math.random() * 400; // untyped
       })(),
       vx: 0,
       vy: 0,
@@ -1045,32 +1044,6 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("pointer-events", "none")
       .text(d => d.name.split(/\s+/).map((w: string) => w[0]?.toUpperCase()).filter(Boolean).slice(0, 3).join(""));
 
-    if (isFullscreen) {
-      nodeGroups.filter(d => d.kind === "account")
-        .append("text")
-        .attr("text-anchor", "middle")
-        .attr("dy", d => nodeRadius(d.contactCount ?? 0) + 14)
-        .attr("font-size", 13)
-        .attr("font-family", "Poppins, sans-serif")
-        .attr("font-weight", "500")
-        .attr("fill", "#1f2937")
-        .attr("stroke", "white")
-        .attr("stroke-width", 3)
-        .attr("paint-order", "stroke")
-        .attr("pointer-events", "none")
-        .text(d => d.name.length > 18 ? d.name.slice(0, 17) + "…" : d.name);
-    } else {
-      nodeGroups.filter(d => d.kind === "account" && ((d.contactCount ?? 0) > 1 || nodeRadius(d.contactCount ?? 0) > 35))
-        .append("text")
-        .attr("text-anchor", "middle")
-        .attr("dy", d => nodeRadius(d.contactCount ?? 0) + 14)
-        .attr("font-size", 11)
-        .attr("font-family", "Poppins, sans-serif")
-        .attr("fill", "#374151")
-        .attr("pointer-events", "none")
-        .text(d => d.name.length > 20 ? d.name.slice(0, 18) + "…" : d.name);
-    }
-
     nodeGroups.filter(d => d.kind === "account" && (d.contactCount ?? 0) > 0)
       .append("circle")
       .attr("cx", d => nodeRadius(d.contactCount ?? 0) - 6)
@@ -1158,9 +1131,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const pillsLayer = g.append("g").attr("class", "pills-layer").attr("pointer-events", "none");
     const PILL_DEFS = [
       { label: "DIRECTORS",   cx: 0.05 * width, cy: 200 },
-      { label: "AGENTS",      cx: 0.41 * width, cy: 90  },
-      { label: "CONSULTANTS", cx: 0.41 * width, cy: 370 },
-      { label: "CLIENTS",     cx: 0.82 * width, cy: 90  },
+      { label: "AGENTS",      cx: 0.42 * width, cy: 80  },
+      { label: "CONSULTANTS", cx: 0.42 * width, cy: 320 },
+      { label: "CLIENTS",     cx: 0.82 * width, cy: 80  },
     ];
     PILL_DEFS.forEach(({ label, cx, cy }) => {
       const pillW = label.length * 11 + 36;
@@ -1185,6 +1158,25 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         .text(label);
     });
 
+    // ── Always-on account name labels (rendered above all bubbles) ──────
+
+    const labelsGroup = g.append("g").attr("class", "account-labels-layer").attr("pointer-events", "none");
+    const accountLabels = labelsGroup.selectAll<SVGTextElement, SimNode>("text")
+      .data(accountSimNodes)
+      .join("text")
+      .attr("text-anchor", "middle")
+      .attr("font-size", isFullscreen ? 13 : 11)
+      .attr("font-family", "Poppins, sans-serif")
+      .attr("font-weight", "500")
+      .attr("fill", "#1f2937")
+      .attr("stroke", "white")
+      .attr("stroke-width", 3)
+      .attr("paint-order", "stroke")
+      .text(d => {
+        const limit = isFullscreen ? 22 : 16;
+        return d.name.length > limit ? d.name.slice(0, limit - 1) + "…" : d.name;
+      });
+
     // ── Forces ───────────────────────────────────────────────────────────
 
     const sim = d3.forceSimulation<SimNode>(simNodes)
@@ -1195,38 +1187,38 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       )
       .force("charge", d3.forceManyBody<SimNode>().strength(-800))
       .force("collide", d3.forceCollide<SimNode>().radius(d =>
-        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 28
-      ))
+        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 10
+      ).strength(1.2))
       .force("clusterX", d3.forceX<SimNode>(d => {
-        if (d.kind === "director") return LANES.director.xTarget * width;
-        return LANES[typeLane(d.accountType)].xTarget * width;
-      }).strength(d => {
-        if (d.kind === "director") return 0; // directors pinned via fx only
-        return LANES[typeLane(d.accountType)].xStrength;
-      }))
-      .force("centerY", d3.forceY<SimNode>(d => {
-        if (d.kind === "director") return d.y ?? 900;
-        const lane = typeLane(d.accountType);
-        if (lane === "agent") return 220;
-        const zone = Y_ZONES[lane];
-        const score = accountYScores.get(d.id) ?? 0.5;
-        return zone.yMin + (1 - score) * (zone.yMax - zone.yMin);
+        if (d.kind === "director") return CLUSTER_X.directors * width;
+        return TARGET_X[typeLane(d.accountType)] * width;
       }).strength(d => {
         if (d.kind === "director") return 0;
-        return typeLane(d.accountType) === "agent" ? 0.7 : 0.18;
+        return STRENGTH_X[typeLane(d.accountType)];
+      }))
+      .force("centerY", d3.forceY<SimNode>(d => {
+        if (d.kind === "director") return d.y ?? 600;
+        const lane = typeLane(d.accountType);
+        if (lane === "agent") return 180;
+        if (lane === "untyped") return 600;
+        const score = accountYScores.get(d.id) ?? 0.5;
+        if (lane === "consultant") return 340 + (1 - score) * (1100 - 340);
+        return 180 + (1 - score) * (1100 - 180); // client
+      }).strength(d => {
+        if (d.kind === "director") return 0;
+        const lane = typeLane(d.accountType);
+        if (lane === "agent") return 0.9;
+        if (lane === "untyped") return 0.4;
+        return 0.3; // consultant / client — loose pull, lets cloud spread
       }))
       .on("tick", () => {
         simNodesRef.current = simNodes;
-        // Clamp non-director nodes to stay right of the directors column
+        // Minimal clamps — only protect directors' column and agents' top band
         simNodes.forEach(d => {
           if (d.kind === "director" || d.x == null || d.y == null) return;
+          if (d.x < 0.13 * width) d.x = 0.13 * width;
           const lane = typeLane(d.accountType);
-          const lx = LANES[lane];
-          if (d.x < lx.xMin * width) d.x = lx.xMin * width;
-          if (d.x > lx.xMax * width) d.x = lx.xMax * width;
-          const yz = Y_ZONES[lane];
-          if (d.y < yz.yMin) d.y = yz.yMin;
-          if (d.y > yz.yMax) d.y = yz.yMax;
+          if (lane !== "agent" && d.y < 320) d.y = 320;
         });
         links
           .attr("x1", d => (d.source as SimNode).x!)
@@ -1234,46 +1226,29 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
           .attr("x2", d => (d.target as SimNode).x!)
           .attr("y2", d => (d.target as SimNode).y!);
         nodeGroups.attr("transform", d => `translate(${d.x},${d.y})`);
+        accountLabels.attr("transform", d =>
+          `translate(${d.x ?? 0},${(d.y ?? 0) + nodeRadius(d.contactCount ?? 0) + 12})`
+        );
       });
 
     simRef.current = sim;
 
     const sanityTimer = setTimeout(() => {
       const directorX = width * CLUSTER_X.directors;
-      let clientLeaks = 0, consultantXLeaks = 0, consultantYLeaks = 0, agentLeaks = 0;
+      let agentLeaks = 0, consultantClientLeaks = 0;
       let maxClientX = 0;
       for (const d of simNodes) {
         if (d.kind === "director" && d.x != null && Math.abs(d.x - directorX) > 5)
           console.warn(`[CRM Neural Map] Director ${d.name} x=${d.x.toFixed(0)} deviates`);
         if (d.kind !== "account" || d.x == null || d.y == null) continue;
         const lane = typeLane(d.accountType);
-        if (lane === "client") {
-          if (d.x < width * 0.68) clientLeaks++;
-          maxClientX = Math.max(maxClientX, d.x);
-        }
-        if (lane === "consultant") {
-          if (d.x < width * 0.27 || d.x > width * 0.55) consultantXLeaks++;
-          if (d.y < 400) consultantYLeaks++;
-        }
-        if (lane === "agent" && d.y > 320) agentLeaks++;
+        if (lane === "client") maxClientX = Math.max(maxClientX, d.x);
+        if (lane === "agent" && d.y > 280) agentLeaks++;
+        if ((lane === "consultant" || lane === "client") && d.y < 320) consultantClientLeaks++;
       }
-      const acctNodes = simNodes.filter(d => d.kind === "account" && d.x != null && d.y != null);
-      let collisionViolations = 0;
-      for (let i = 0; i < acctNodes.length; i++) {
-        for (let j = i + 1; j < acctNodes.length; j++) {
-          const a = acctNodes[i], b = acctNodes[j];
-          const dx = (a.x ?? 0) - (b.x ?? 0);
-          const dy = (a.y ?? 0) - (b.y ?? 0);
-          const minDist = nodeRadius(a.contactCount ?? 0) + nodeRadius(b.contactCount ?? 0) + 4;
-          if (dx * dx + dy * dy < minDist * minDist) collisionViolations++;
-        }
-      }
-      if (clientLeaks > 0) console.warn(`[CRM Neural Map] ${clientLeaks} client(s) leaked outside client lane (x < 0.68*width)`);
-      if (consultantXLeaks > 0) console.warn(`[CRM Neural Map] ${consultantXLeaks} consultant(s) outside X lane`);
-      if (consultantYLeaks > 0) console.warn(`[CRM Neural Map] ${consultantYLeaks} consultant(s) leaked into agent zone (y < 400)`);
-      if (agentLeaks > 0) console.warn(`[CRM Neural Map] ${agentLeaks} agent(s) leaked below y=320`);
-      if (maxClientX > 0 && maxClientX < width * 0.78) console.warn(`[CRM Neural Map] Max client x=${maxClientX.toFixed(0)} < 0.78*width`);
-      if (collisionViolations > 0) console.warn(`[CRM Neural Map] ${collisionViolations} bubble pairs overlapping (dist < r1+r2+4)`);
+      if (agentLeaks > 0) console.warn(`[CRM Neural Map] ${agentLeaks} agent(s) y > 280`);
+      if (consultantClientLeaks > 0) console.warn(`[CRM Neural Map] ${consultantClientLeaks} consultant/client node(s) leaked into agents zone (y < 320)`);
+      if (maxClientX > 0 && maxClientX < width * 0.72) console.warn(`[CRM Neural Map] Max client x=${maxClientX.toFixed(0)} < 0.72*width`);
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
@@ -1436,7 +1411,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
       {/* SVG canvas — scrollable */}
       <div className="flex-1 overflow-y-auto relative">
-        <svg ref={svgRef} width="100%" height="1800" style={{ cursor: "grab", display: "block" }}>
+        <svg ref={svgRef} width="100%" height="1200" style={{ cursor: "grab", display: "block" }}>
           <g ref={gRef} />
         </svg>
       </div>
