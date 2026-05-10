@@ -376,6 +376,18 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [connSearchResults, setConnSearchResults] = useState<{ id: string; name: string; company: string }[]>([]);
   const [connSearchOpen, setConnSearchOpen] = useState(false);
 
+  // Tag filter + agent sweep
+  const [tagFilter, setTagFilter] = useState<"all" | "Landlord" | "Occupier">("all");
+  const [agentSweep, setAgentSweep] = useState(false);
+
+  // Account tag write-back
+  const [accountTagSaving, setAccountTagSaving] = useState(false);
+  const [accountTagStatus, setAccountTagStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  // Contact tag write-back
+  const [contactTagSaving, setContactTagSaving] = useState(false);
+  const [contactTagStatus, setContactTagStatus] = useState<"idle" | "saved" | "error">("idle");
+
   // Move contact
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveQuery, setMoveQuery] = useState("");
@@ -404,6 +416,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setFormNameResults([]); setShowFormNameDropdown(false);
     setMoveConfirmContact(null); setIsLinkingContact(false);
     setLinkStatus("idle"); setLinkMessage(""); setDuplicateContactInfo(null);
+    setAccountTagSaving(false); setAccountTagStatus("idle");
   }, [selectedAccount]);
 
   // Reset contact interaction state
@@ -419,6 +432,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setMoveOpen(false); setMoveQuery(""); setMovePending(null);
     setMoveStatus("idle"); setMoveError("");
     setShowDeleteContactModal(false); setDeletingContact(false); setDeleteContactError("");
+    setContactTagSaving(false); setContactTagStatus("idle");
   }, [selectedContact]);
 
   // Escape clears all selections
@@ -537,6 +551,76 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       setTimeout(() => setTypeSaveStatus("idle"), 3000);
     } finally {
       setIsSavingType(false);
+    }
+  };
+
+  const handleAccountTagChange = async (newTag: string) => {
+    if (!selectedAccount) return;
+    setAccountTagSaving(true);
+    setAccountTagStatus("idle");
+    try {
+      const tag = newTag || null;
+      const res = await fetch("/api/crm/update-account-tag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: selectedAccount.id, tag }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const updatedTag = tag as "Landlord" | "Occupier" | "Both" | null;
+      setAccountTagStatus("saved");
+      setSelectedAccount(prev => prev ? { ...prev, tag: updatedTag } : null);
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return { ...old, nodes: old.nodes.map(n => n.id === selectedAccount.id ? { ...n, tag: updatedTag } : n) };
+        },
+      );
+      setTimeout(() => setAccountTagStatus("idle"), 2000);
+    } catch {
+      setAccountTagStatus("error");
+      setTimeout(() => setAccountTagStatus("idle"), 3000);
+    } finally {
+      setAccountTagSaving(false);
+    }
+  };
+
+  const handleContactTagChange = async (newTag: string) => {
+    if (!selectedContact) return;
+    setContactTagSaving(true);
+    setContactTagStatus("idle");
+    try {
+      const tag = newTag || null;
+      const res = await fetch("/api/crm/update-contact-tag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: selectedContact.id, tag }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const updatedTag = tag as "Landlord" | "Occupier" | "Both" | null;
+      setContactTagStatus("saved");
+      setSelectedContact(prev => prev ? { ...prev, tag: updatedTag } : null);
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            nodes: old.nodes.map(n => ({
+              ...n,
+              contacts: n.contacts.map(c =>
+                c.id === selectedContact.id ? { ...c, tag: updatedTag } : c,
+              ),
+            })),
+          };
+        },
+      );
+      setTimeout(() => setContactTagStatus("idle"), 2000);
+    } catch {
+      setContactTagStatus("error");
+      setTimeout(() => setContactTagStatus("idle"), 3000);
+    } finally {
+      setContactTagSaving(false);
     }
   };
 
@@ -1036,8 +1120,17 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     } else {
       nodes = nodes.filter(n => n.contactCount >= minContacts);
     }
+    if (tagFilter !== "all") {
+      nodes = nodes.filter(n =>
+        n.tag === tagFilter || n.tag === "Both" ||
+        n.contacts.some(c => c.tag === tagFilter || c.tag === "Both"),
+      );
+    }
+    if (agentSweep) {
+      nodes = nodes.filter(n => typeLane(n.accountType) === "agent");
+    }
     return nodes;
-  }, [data, filter, viewMode, searchText, minContacts]);
+  }, [data, filter, viewMode, searchText, minContacts, tagFilter, agentSweep]);
 
   const filteredEdges = useMemo(() => {
     const nodeIds = new Set(filteredNodes.map(n => n.id));
@@ -1581,7 +1674,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       setSelectedDirector(null);
     };
 
-    const { centres, radii, canvasHeight } = clusterLayout;
+    const { centres, radii, canvasHeight, counts } = clusterLayout;
 
     // Force targets = cluster centres
     const CLUSTERS: Record<"untyped"|"consultant"|"agent"|"client"|"contractor", { x: number; y: number }> = {
@@ -1886,7 +1979,13 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     const pillGroupMap: Record<string, d3.Selection<SVGGElement, unknown, null, undefined>> = {};
 
+    const PILL_COUNT_MAP: Record<string, number> = {
+      agents: counts.agent, consultants: counts.consultant,
+      clients: counts.client, contractors: counts.contractor,
+    };
+
     OVERLAY_PILL_DEFS.forEach(({ key, label, dataX, dataY }) => {
+      if (key !== "directors" && (PILL_COUNT_MAP[key] ?? 0) === 0) return;
       const pillW = label.length * 10 + 28;
       const pillH = 28;
       const pg = pillOverlay.append<SVGGElement>("g")
@@ -2136,6 +2235,36 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
           <div className="w-px h-4 bg-gray-300" />
 
+          {/* Tag filters */}
+          {(["Landlord", "Occupier"] as const).map(tag => (
+            <button
+              key={tag}
+              onClick={() => setTagFilter(prev => prev === tag ? "all" : tag)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                tagFilter === tag
+                  ? "text-white"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"
+              }`}
+              style={tagFilter === tag ? { background: tag === "Landlord" ? "#16a34a" : "#9333ea" } : {}}
+            >
+              {tag}
+            </button>
+          ))}
+
+          {/* Agent sweep */}
+          <button
+            onClick={() => setAgentSweep(v => !v)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+              agentSweep
+                ? "bg-indigo-700 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            Agents only
+          </button>
+
+          <div className="w-px h-4 bg-gray-300" />
+
           {/* View mode */}
           {(["all", "priority", "search"] as const).map(m => (
             <button
@@ -2272,6 +2401,22 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                   {typeSaveStatus === "saved" && <span className="text-xs text-green-300">✓ Saved</span>}
                   {typeSaveStatus === "error" && <span className="text-xs text-red-300">Failed — try again</span>}
                 </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <select
+                    value={selectedAccount.tag || ""}
+                    onChange={(e) => handleAccountTagChange(e.target.value)}
+                    disabled={accountTagSaving}
+                    className="text-xs bg-white/15 hover:bg-white/25 disabled:opacity-50 text-white rounded px-2 py-1 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer"
+                    style={{ pointerEvents: "auto" }}
+                  >
+                    <option value="">— tag —</option>
+                    <option value="Landlord">Landlord</option>
+                    <option value="Occupier">Occupier</option>
+                    <option value="Both">Both</option>
+                  </select>
+                  {accountTagStatus === "saved" && <span className="text-xs text-green-300">✓</span>}
+                  {accountTagStatus === "error" && <span className="text-xs text-red-300">!</span>}
+                </div>
               </div>
             </div>
             <button
@@ -2398,10 +2543,20 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
               <button
                 key={contact.id}
                 onClick={() => handleContactClick(contact)}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 flex items-center gap-2"
               >
-                <p className="text-sm font-medium text-gray-800">{contact.name}</p>
-                <p className="text-xs text-gray-400">{contact.position || contact.contactType || "—"}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">{contact.name}</p>
+                  <p className="text-xs text-gray-400">{contact.position || contact.contactType || "—"}</p>
+                </div>
+                {contact.tag === "Landlord" && <span className="w-2 h-2 rounded-full bg-green-600 flex-shrink-0" title="Landlord" />}
+                {contact.tag === "Occupier" && <span className="w-2 h-2 rounded-full bg-purple-600 flex-shrink-0" title="Occupier" />}
+                {contact.tag === "Both" && (
+                  <span className="flex gap-0.5 flex-shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-green-600" title="Landlord" />
+                    <span className="w-2 h-2 rounded-full bg-purple-600" title="Occupier" />
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -2743,6 +2898,22 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
           <div className="max-h-96 overflow-y-auto">
             <div className="px-4 py-3 space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-xs w-8 flex-shrink-0">Tag</span>
+                <select
+                  value={selectedContact.tag || ""}
+                  onChange={(e) => handleContactTagChange(e.target.value)}
+                  disabled={contactTagSaving}
+                  className="text-xs border border-gray-200 rounded px-2 py-1 outline-none focus:border-purple-400 bg-white disabled:opacity-50 cursor-pointer flex-1"
+                >
+                  <option value="">— none —</option>
+                  <option value="Landlord">Landlord</option>
+                  <option value="Occupier">Occupier</option>
+                  <option value="Both">Both</option>
+                </select>
+                {contactTagStatus === "saved" && <span className="text-xs text-green-600">✓</span>}
+                {contactTagStatus === "error" && <span className="text-xs text-red-500">!</span>}
+              </div>
               {selectedContact.email && (
                 <div><span className="text-gray-400 text-xs">Email</span><p className="text-gray-800 text-xs">{selectedContact.email}</p></div>
               )}

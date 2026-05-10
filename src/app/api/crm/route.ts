@@ -383,6 +383,7 @@ export async function GET() {
         contacts: [],
         contactCount: 0,
         directors: [],
+        tag: parseTag(getCol(item, "color_mm3691qy")),
       });
     }
 
@@ -413,6 +414,7 @@ export async function GET() {
         lastContacted: getCol(item, "date_mm25bz34"),
         notes: getCol(item, "long_text4"),
         connectedToIds: parseBoardRelation(item, "board_relation_mm25s0kr"),
+        tag: parseTag(getCol(item, "color_mm37sdf")),
       };
 
       allContacts.push(contact);
@@ -615,6 +617,14 @@ function normalizeForMatch(s: string): string {
     .replace(/\b(ltd|limited|llp|inc|plc|group|holdings|international|uk|gb|advisors|advisers|partners|llc)\b/g, "")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+function parseTag(text: string): "Landlord" | "Occupier" | "Both" | null {
+  const t = (text || "").trim().toLowerCase();
+  if (t === "landlord") return "Landlord";
+  if (t === "occupier") return "Occupier";
+  if (t === "both") return "Both";
+  return null;
 }
 
 function guessDomain(name: string): string {

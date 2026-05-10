@@ -10,6 +10,7 @@ export interface ContactNode {
   lastContacted: string;
   notes: string;
   connectedToIds: string[];
+  tag?: "Landlord" | "Occupier" | "Both" | null;
 }
 
 export interface AccountNode {
@@ -22,6 +23,7 @@ export interface AccountNode {
   contacts: ContactNode[];
   contactCount: number;
   directors: string[];
+  tag?: "Landlord" | "Occupier" | "Both" | null;
 }
 
 export interface AccountEdge {
