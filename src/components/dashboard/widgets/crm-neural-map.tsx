@@ -275,6 +275,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const simNodesRef = useRef<SimNode[]>([]);
   const updateLabelsRef = useRef<(k: number) => void>(() => {});
   const connectionCardAccountsRef = useRef<Set<string>>(new Set());
+  const updateContactLabelRef = useRef<(k: number) => void>(() => {});
+  const updateConnectionCardsRef = useRef<(k: number) => void>(() => {});
 
   const [selectedAccount, setSelectedAccount] = useState<AccountNode | null>(null);
   const [selectedContact, setSelectedContact] = useState<ContactNode | null>(null);
@@ -1190,6 +1192,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const labelLayer = d3.select(gRef.current).select<SVGGElement>(".contact-label-layer");
     if (labelLayer.empty()) return;
     labelLayer.selectAll("*").remove();
+    updateContactLabelRef.current = () => {};
     if (!selectedContact || simNodesRef.current.length === 0) return;
 
     const accountId = lookupMaps.contactToAccountId.get(selectedContact.id);
@@ -1199,10 +1202,11 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const radius = nodeRadius(accountNode.contactCount ?? 0);
     const owningDirector = (selectedContact.directors ?? [])[0];
     const fillColor = owningDirector ? (DIRECTOR_COLORS[owningDirector] ?? "#6b7280") : "#6b7280";
+    const cx = accountNode.x, cy = accountNode.y + radius + 16;
+    const k0 = svgRef.current ? d3.zoomTransform(svgRef.current).k : 1;
 
-    labelLayer.append("text")
-      .attr("x", accountNode.x)
-      .attr("y", accountNode.y + radius + 16)
+    const textEl = labelLayer.append("text")
+      .attr("transform", `translate(${cx},${cy}) scale(${1 / k0})`)
       .attr("text-anchor", "middle")
       .attr("font-size", 12)
       .attr("font-family", "Poppins, sans-serif")
@@ -1213,6 +1217,10 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("paint-order", "stroke")
       .attr("pointer-events", "none")
       .text(selectedContact.name);
+
+    updateContactLabelRef.current = (k: number) => {
+      textEl.attr("transform", `translate(${cx},${cy}) scale(${1 / k})`);
+    };
   }, [selectedContact, lookupMaps]);
 
   // ── Connection cards D3 layer ─────────────────────────────────────────────
@@ -1222,6 +1230,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const cardsLayer = d3.select(gRef.current).select<SVGGElement>(".connection-cards-layer");
     if (cardsLayer.empty()) return;
     cardsLayer.selectAll("*").remove();
+    updateConnectionCardsRef.current = () => {};
 
     // Update which accounts have cards (suppresses their text labels)
     connectionCardAccountsRef.current = new Set(connectionCards.keys());
@@ -1250,9 +1259,13 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       ));
       const cardH = (displayEntries.length + (overflow > 0 ? 1 : 0)) * LINE_H + PAD_Y * 2;
 
+      const cardCx = node.x, cardCy = node.y + radius + 8;
+      const k0 = svgRef.current ? d3.zoomTransform(svgRef.current).k : 1;
       const cardG = cardsLayer.append("g")
         .attr("class", "connection-card")
-        .attr("transform", `translate(${node.x},${node.y + radius + 8})`);
+        .attr("data-cx", String(cardCx))
+        .attr("data-cy", String(cardCy))
+        .attr("transform", `translate(${cardCx},${cardCy}) scale(${1 / k0})`);
 
       // Background
       cardG.append("rect")
@@ -1333,6 +1346,15 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
           .text(`+ ${overflow} more`);
       }
     }
+
+    updateConnectionCardsRef.current = (k: number) => {
+      cardsLayer.selectAll<SVGGElement, unknown>(".connection-card").each(function() {
+        const el = d3.select(this);
+        const cx = parseFloat(el.attr("data-cx") || "0");
+        const cy = parseFloat(el.attr("data-cy") || "0");
+        el.attr("transform", `translate(${cx},${cy}) scale(${1 / k})`);
+      });
+    };
   }, [connectionCards, lookupMaps]);
 
   // ── D3 simulation ─────────────────────────────────────────────────────────
@@ -1429,6 +1451,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         g.attr("transform", event.transform);
         updateLabels(event.transform.k);
         updatePillPositions(event.transform);
+        updateContactLabelRef.current(event.transform.k);
+        updateConnectionCardsRef.current(event.transform.k);
       });
     svg.call(zoom);
 
@@ -1702,16 +1726,21 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("paint-order", "stroke")
       .text(d => d.name.length > labelLimit ? d.name.slice(0, labelLimit - 1) + "…" : d.name);
 
-    // Assign real updateLabels now that accountLabels exists
+    // Assign real updateLabels — handles both visibility and counter-scale so labels stay
+    // at constant screen size regardless of zoom level.
     updateLabels = (k: number) => {
-      accountLabels.style("display", (d: SimNode) => {
-        if (connectionCardAccountsRef.current.has(d.id)) return "none";
-        if (k < 0.9) return "none";
-        const sd = spotlightDataRef.current;
-        const inSpotlight = sd ? sd.accounts.has(d.id) : false;
-        if (k <= 1.4 && (d.contactCount ?? 0) < 3 && !inSpotlight) return "none";
-        return null;
-      });
+      accountLabels
+        .style("display", (d: SimNode) => {
+          if (connectionCardAccountsRef.current.has(d.id)) return "none";
+          if (k < 0.9) return "none";
+          const sd = spotlightDataRef.current;
+          const inSpotlight = sd ? sd.accounts.has(d.id) : false;
+          if (k <= 1.4 && (d.contactCount ?? 0) < 3 && !inSpotlight) return "none";
+          return null;
+        })
+        .attr("transform", (d: SimNode) =>
+          `translate(${d.x ?? 0},${(d.y ?? 0) + nodeRadius(d.contactCount ?? 0) + 13}) scale(${1 / k})`
+        );
     };
     updateLabels(1); // apply initial state at default zoom
     updateLabelsRef.current = updateLabels;
@@ -1780,9 +1809,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
           .attr("x2", d => (d.target as SimNode).x!)
           .attr("y2", d => (d.target as SimNode).y!);
         nodeGroups.attr("transform", d => `translate(${d.x},${d.y})`);
-        accountLabels.attr("transform", d =>
-          `translate(${d.x ?? 0},${(d.y ?? 0) + nodeRadius(d.contactCount ?? 0) + 13})`
-        );
+        updateLabels(svgRef.current ? d3.zoomTransform(svgRef.current).k : 1);
         updatePillPositions(d3.zoomTransform(svgRef.current!));
       });
 
