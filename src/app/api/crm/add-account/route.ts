@@ -10,7 +10,7 @@ function typeToCluster(type: string | null): "consultants" | "clients" | "unknow
   if (!type) return "unknown";
   const t = type.toLowerCase();
   if (t === "client") return "clients";
-  if (t === "consultant" || t === "agent") return "consultants";
+  if (t === "consultant" || t === "agent" || t === "contractor") return "consultants";
   return "unknown";
 }
 
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     const rawDomain: string = (body.domain || "").trim();
 
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    if (type && !["Client", "Consultant", "Agent"].includes(type))
+    if (type && !["Client", "Consultant", "Agent", "Contractor"].includes(type))
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
 
     const domain = rawDomain

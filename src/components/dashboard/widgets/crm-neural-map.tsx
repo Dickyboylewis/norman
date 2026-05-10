@@ -1340,19 +1340,21 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     const { width, height } = dimensions;
 
-    const typeLane = (accountType: string | undefined): "client"|"consultant"|"agent"|"untyped" => {
+    const typeLane = (accountType: string | undefined): "client"|"consultant"|"agent"|"contractor"|"untyped" => {
       const t = (accountType || "").toLowerCase().trim();
       if (t === "client") return "client";
       if (t === "consultant") return "consultant";
       if (t === "agent") return "agent";
+      if (t === "contractor") return "contractor";
       return "untyped";
     };
 
     // Cluster centres — equal X+Y forces produce organic circular clouds
-    const CLUSTERS: Record<"untyped"|"consultant"|"agent"|"client", { x: number; y: number }> = {
+    const CLUSTERS: Record<"untyped"|"consultant"|"agent"|"client"|"contractor", { x: number; y: number }> = {
       agent:      { x: 0.36 * width, y: 0.15 * height },
       consultant: { x: 0.36 * width, y: 0.55 * height },
       client:     { x: 0.86 * width, y: 0.50 * height },
+      contractor: { x: 0.50 * width, y: 0.85 * height },
       untyped:    { x: 0.18 * width, y: 0.55 * height },
     };
 
@@ -1633,6 +1635,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       { key: "agents",      label: "AGENTS",       dataX: 0.36 * width,  screenY: 50 },
       { key: "consultants", label: "CONSULTANTS",  dataX: 0.36 * width,  screenY: 90 },
       { key: "clients",     label: "CLIENTS",      dataX: 0.86 * width,  screenY: 50 },
+      { key: "contractors", label: "CONTRACTORS",  dataX: 0.50 * width,  screenY: height - 80 },
     ];
 
     const pillGroupMap: Record<string, d3.Selection<SVGGElement, unknown, null, undefined>> = {};
@@ -1705,6 +1708,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, 50)`);
       pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, 90)`);
       pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.86 * width)}, 50)`);
+      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.50 * width)}, ${height - 80})`);
     };
     updatePillPositions(d3.zoomIdentity); // initial state
 
@@ -1726,7 +1730,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       }).strength(d => {
         if (d.kind === "director") return 1.0;
         const lane = typeLane(d.accountType);
-        return (lane === "consultant" || lane === "client") ? 0.8 : 0.6;
+        return (lane === "consultant" || lane === "client" || lane === "contractor") ? 0.8 : 0.6;
       }))
       .force("clusterY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.fy ?? height / 2;
@@ -1734,6 +1738,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       }).strength(d => {
         if (d.kind === "director") return 0;
         const lane = typeLane(d.accountType);
+        if (lane === "contractor") return 0.85;
         return (lane === "consultant" || lane === "client") ? 0.7 : 0.6;
       }))
       .on("tick", () => {
@@ -1754,7 +1759,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     const sanityTimer = setTimeout(() => {
       let maxClientX = 0;
-      const consultantNodes: SimNode[] = [], clientNodes: SimNode[] = [], agentNodes: SimNode[] = [];
+      const consultantNodes: SimNode[] = [], clientNodes: SimNode[] = [], agentNodes: SimNode[] = [], contractorNodes: SimNode[] = [];
       for (const d of simNodes) {
         if (d.kind === "director" && d.x != null) {
           if (d.x < 40 || d.x > 120)
@@ -1765,6 +1770,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         if (lane === "client") { maxClientX = Math.max(maxClientX, d.x); clientNodes.push(d); }
         if (lane === "consultant") consultantNodes.push(d);
         if (lane === "agent") agentNodes.push(d);
+        if (lane === "contractor") contractorNodes.push(d);
       }
       if (maxClientX > 0 && maxClientX < width * 0.78)
         console.warn(`[CRM Neural Map] Max client x=${maxClientX.toFixed(0)} < 0.78*width`);
@@ -1774,6 +1780,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       const overlapClients = clientNodes.filter(d => (d.x ?? 0) < 0.65 * width);
       if (overlapClients.length > 0)
         console.warn(`[CRM Neural Map] ${overlapClients.length} client node(s) x < 0.65*width`);
+      const lowContractors = contractorNodes.filter(d => (d.y ?? 0) < 0.70 * height);
+      if (lowContractors.length > 0)
+        console.warn(`[CRM Neural Map] ${lowContractors.length} contractor node(s) y < 0.70*height`);
       const checkCluster = (nodes: SimNode[], cx: number, cy: number, threshold: number, label: string) => {
         if (!nodes.length) return;
         const far = nodes.filter(d => {
@@ -1786,6 +1795,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       checkCluster(consultantNodes, 0.36 * width, 0.55 * height, 350, "consultant");
       checkCluster(clientNodes,     0.86 * width, 0.50 * height, 350, "client");
       checkCluster(agentNodes,      0.36 * width, 0.15 * height, 220, "agent");
+      checkCluster(contractorNodes, 0.50 * width, 0.85 * height, 300, "contractor");
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
@@ -1988,6 +1998,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                     <option value="Client">Client</option>
                     <option value="Consultant">Consultant</option>
                     <option value="Agent">Agent</option>
+                    <option value="Contractor">Contractor</option>
                   </select>
                   {typeSaveStatus === "saving" && <span className="text-xs text-white/70">Saving…</span>}
                   {typeSaveStatus === "saved" && <span className="text-xs text-green-300">✓ Saved</span>}
@@ -2562,6 +2573,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                   <option value="Client">Client</option>
                   <option value="Consultant">Consultant</option>
                   <option value="Agent">Agent</option>
+                  <option value="Contractor">Contractor</option>
                 </select>
               </div>
               <div>
