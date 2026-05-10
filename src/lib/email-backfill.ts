@@ -14,6 +14,8 @@ export interface BackfillEntry {
   confidence: "high" | "medium" | "low";
   addedAt: string;
   status: "pending" | "applied" | "rejected" | "dry-run";
+  appliedAt?: string;
+  decidedBy?: string;
 }
 
 function readFile(): BackfillEntry[] {
@@ -113,4 +115,44 @@ export async function processBackfillQueue(
 
 export function getBackfillEntries(): BackfillEntry[] {
   return readFile();
+}
+
+export function updateBackfillStatus(
+  contactId: string,
+  action: "approved" | "rejected",
+  chosenEmail: string | null,
+  decidedBy: string,
+): BackfillEntry[] {
+  const entries = readFile();
+  const forContact = entries.filter(e => e.contactId === contactId);
+  if (forContact.length === 0) return [];
+
+  const now = new Date().toISOString();
+
+  for (const entry of entries) {
+    if (entry.contactId !== contactId) continue;
+    if (action === "rejected") {
+      if (entry.status === "pending" || entry.status === "dry-run") {
+        entry.status = "rejected";
+        entry.decidedBy = decidedBy;
+      }
+    } else {
+      // approved: mark chosen as applied, all others rejected
+      if (chosenEmail === null || entry.proposedEmail === chosenEmail) {
+        if (entry.status !== "applied") {
+          entry.status = "applied";
+          entry.appliedAt = now;
+          entry.decidedBy = decidedBy;
+        }
+      } else {
+        if (entry.status === "pending" || entry.status === "dry-run") {
+          entry.status = "rejected";
+          entry.decidedBy = decidedBy;
+        }
+      }
+    }
+  }
+
+  writeFile(entries);
+  return entries.filter(e => e.contactId === contactId);
 }

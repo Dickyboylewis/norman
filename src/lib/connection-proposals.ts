@@ -19,6 +19,8 @@ export interface ConnectionProposal {
   directors: string[];
   status: "pending" | "accepted" | "rejected";
   createdAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
 }
 
 function readFile(): ConnectionProposal[] {
@@ -82,4 +84,21 @@ export function generateProposals(contactIndex: ContactIndex): ConnectionProposa
 
 export function getProposals(): ConnectionProposal[] {
   return readFile();
+}
+
+export function updateProposalStatus(
+  proposalId: string,
+  newStatus: "accepted" | "rejected",
+  decidedBy: string,
+): ConnectionProposal | null {
+  const proposals = readFile();
+  const proposal = proposals.find(p => p.id === proposalId);
+  if (!proposal) return null;
+  if (proposal.status !== "pending") return proposal; // idempotent
+
+  proposal.status = newStatus;
+  proposal.decidedAt = new Date().toISOString();
+  proposal.decidedBy = decidedBy;
+  writeFile(proposals);
+  return proposal;
 }

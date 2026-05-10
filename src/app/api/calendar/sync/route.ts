@@ -50,7 +50,7 @@ export async function GET(req: Request) {
 
         if (matchedContactIds.length >= 2) {
           const eventDate = event.start.dateTime ?? new Date().toISOString();
-          recordCoOccurrences(matchedContactIds, director.name, eventDate);
+          recordCoOccurrences(matchedContactIds, director.name, eventDate, event.summary);
           eventsWithMatches++;
         }
       }

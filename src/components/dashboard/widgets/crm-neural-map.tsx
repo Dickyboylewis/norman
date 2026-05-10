@@ -318,6 +318,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [calendarStatuses, setCalendarStatuses] = useState<CalendarStatus[]>([]);
   const [calendarToast, setCalendarToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [calendarTooltip, setCalendarTooltip] = useState<string | null>(null);
+  const [reviewPendingCount, setReviewPendingCount] = useState<number>(0);
 
   const [selectedAccount, setSelectedAccount] = useState<AccountNode | null>(null);
   const [selectedContact, setSelectedContact] = useState<ContactNode | null>(null);
@@ -492,6 +493,29 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const interval = setInterval(fetchStatus, 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  // Review queue count polling
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const res = await fetch("/api/calendar/proposals");
+        if (res.ok) {
+          const json = await res.json() as { proposals?: unknown[]; backfills?: unknown[] };
+          setReviewPendingCount((json.proposals?.length ?? 0) + (json.backfills?.length ?? 0));
+        }
+      } catch { /* silent */ }
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Invalidate CRM data when a connection is approved on the review page
+  useEffect(() => {
+    const handler = () => queryClient.invalidateQueries({ queryKey: ["crm-network"] });
+    window.addEventListener("norman:contact-data-changed", handler);
+    return () => window.removeEventListener("norman:contact-data-changed", handler);
+  }, [queryClient]);
 
   // Handle calendarConnected / calendarError query params on mount
   useEffect(() => {
@@ -2446,12 +2470,34 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
             </div>
           )}
 
-          {/* Stats */}
-          <div className="ml-auto flex flex-col items-end gap-0.5">
-            <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded border border-gray-200 whitespace-nowrap">
-              {filteredNodes.length} companies · {filteredEdges.length} connections
+          {/* Stats + review badge */}
+          <div className="ml-auto flex items-center gap-2">
+            {calendarStatuses.some(s => s.connected) && (
+              <a
+                href="/dashboard/sales/review"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+                  reviewPendingCount > 0
+                    ? "bg-white border-red-300 text-red-700 hover:border-red-500"
+                    : "bg-white border-gray-200 text-gray-400 hover:border-gray-400"
+                }`}
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                Review queue
+                {reviewPendingCount > 0 && (
+                  <span className="ml-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                    {reviewPendingCount}
+                  </span>
+                )}
+              </a>
+            )}
+            <div className="flex flex-col items-end gap-0.5">
+              <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded border border-gray-200 whitespace-nowrap">
+                {filteredNodes.length} companies · {filteredEdges.length} connections
+              </div>
             </div>
-            <span className="text-[11px] text-gray-400 leading-none" style={{ display: "none" }}>Recent + known sit higher</span>
           </div>
 
           {/* Fullscreen */}
