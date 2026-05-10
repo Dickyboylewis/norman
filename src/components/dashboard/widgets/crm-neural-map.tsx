@@ -893,6 +893,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const svg = d3.select(svgRef.current);
     const g = d3.select(gRef.current);
     g.selectAll("*").remove();
+    svg.selectAll(".pill-overlay").remove();
 
     // Placeholders — reassigned after their selections are created
     let updateLabels: (k: number) => void = () => {};
