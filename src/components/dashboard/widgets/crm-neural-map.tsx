@@ -847,13 +847,13 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     // Cluster centres — equal X+Y forces produce organic circular clouds
     const CLUSTERS: Record<"untyped"|"consultant"|"agent"|"client", { x: number; y: number }> = {
-      agent:      { x: 0.42 * width, y: 0.15 * height },
-      consultant: { x: 0.42 * width, y: 0.55 * height },
-      client:     { x: 0.82 * width, y: 0.50 * height },
+      agent:      { x: 0.36 * width, y: 0.15 * height },
+      consultant: { x: 0.36 * width, y: 0.55 * height },
+      client:     { x: 0.86 * width, y: 0.50 * height },
       untyped:    { x: 0.18 * width, y: 0.55 * height },
     };
 
-    // Fixed director anchor nodes — each director is fully pinned (fx+fy)
+    // Director nodes — fy pins Y, forceX pulls to far-left edge (no fx)
     const dirFy = [280, 480, 680]; // pixel positions in 900px canvas
     const directorSimNodes: SimNode[] = DIRECTOR_NODES.map((d, i) => ({
       id: d.id,
@@ -861,9 +861,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       name: d.name,
       director: d.director,
       photo: d.photo,
-      fx: width * CLUSTER_X.directors,
       fy: dirFy[i],
-      x: width * CLUSTER_X.directors,
+      x: 60,
       y: dirFy[i],
       vx: 0,
       vy: 0,
@@ -895,8 +894,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const g = d3.select(gRef.current);
     g.selectAll("*").remove();
 
-    // Placeholder — reassigned after accountLabels is created
+    // Placeholders — reassigned after their selections are created
     let updateLabels: (k: number) => void = () => {};
+    let updatePillPositions: (t: d3.ZoomTransform) => void = () => {};
 
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 4])
@@ -904,6 +904,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .on("zoom", event => {
         g.attr("transform", event.transform);
         updateLabels(event.transform.k);
+        updatePillPositions(event.transform);
       });
     svg.call(zoom);
 
@@ -1117,28 +1118,35 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       );
     }
 
-    // ── Floating pill labels (above all bubbles) ─────────────────────────
+    // ── Cluster pill labels — non-zoomed overlay (appended to SVG, not g) ──
 
-    const pillsLayer = g.append("g").attr("class", "pills-layer").attr("pointer-events", "none");
-    const PILL_DEFS = [
-      { label: "DIRECTORS",   cx: 0.05 * width, cy: 200 },
-      { label: "AGENTS",      cx: 0.42 * width, cy: 80  },
-      { label: "CONSULTANTS", cx: 0.42 * width, cy: 320 },
-      { label: "CLIENTS",     cx: 0.82 * width, cy: 80  },
+    const pillOverlay = svg.append("g")
+      .attr("class", "pill-overlay")
+      .attr("pointer-events", "none");
+
+    const OVERLAY_PILL_DEFS = [
+      { key: "directors",   label: "DIRECTORS",   dataX: 60,             screenY: 50 },
+      { key: "agents",      label: "AGENTS",       dataX: 0.36 * width,  screenY: 50 },
+      { key: "consultants", label: "CONSULTANTS",  dataX: 0.36 * width,  screenY: 90 },
+      { key: "clients",     label: "CLIENTS",      dataX: 0.86 * width,  screenY: 50 },
     ];
-    PILL_DEFS.forEach(({ label, cx, cy }) => {
+
+    const pillGroupMap: Record<string, d3.Selection<SVGGElement, unknown, null, undefined>> = {};
+
+    OVERLAY_PILL_DEFS.forEach(({ key, label, dataX, screenY }) => {
       const pillW = label.length * 10 + 28;
       const pillH = 28;
-      const pg = pillsLayer.append("g");
+      const pg = pillOverlay.append<SVGGElement>("g")
+        .attr("transform", `translate(${dataX}, ${screenY})`);
       pg.append("rect")
-        .attr("x", cx - pillW / 2).attr("y", cy - pillH / 2)
+        .attr("x", -pillW / 2).attr("y", -pillH / 2)
         .attr("width", pillW).attr("height", pillH)
         .attr("rx", 14).attr("ry", 14)
         .attr("fill", "#ffffff").attr("fill-opacity", 0.92)
         .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
         .attr("filter", "url(#pill-shadow)");
       pg.append("text")
-        .attr("x", cx).attr("y", cy)
+        .attr("x", 0).attr("y", 0)
         .attr("text-anchor", "middle")
         .attr("dominant-baseline", "central")
         .attr("font-size", 13)
@@ -1147,6 +1155,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         .attr("letter-spacing", "0.12em")
         .attr("fill", "#475569")
         .text(label);
+      pillGroupMap[key] = pg;
     });
 
     // ── Account name labels — zoom-aware progressive disclosure ─────────
@@ -1180,6 +1189,16 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     };
     updateLabels(1); // apply initial state at default zoom
 
+    // Assign real updatePillPositions — tracks directors dynamically via zoomTransform
+    updatePillPositions = (transform: d3.ZoomTransform) => {
+      const dirAvgX = directorSimNodes.reduce((s, d) => s + (d.x ?? 60), 0) / directorSimNodes.length;
+      pillGroupMap.directors.attr("transform",   `translate(${transform.applyX(dirAvgX)}, 50)`);
+      pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, 50)`);
+      pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, 90)`);
+      pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.86 * width)}, 50)`);
+    };
+    updatePillPositions(d3.zoomIdentity); // initial state
+
     // ── Forces ───────────────────────────────────────────────────────────
 
     const sim = d3.forceSimulation<SimNode>(simNodes)
@@ -1193,13 +1212,21 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 14
       ).strength(1.4))
       .force("clusterX", d3.forceX<SimNode>(d => {
-        if (d.kind === "director") return CLUSTER_X.directors * width;
+        if (d.kind === "director") return 60;
         return CLUSTERS[typeLane(d.accountType)].x;
-      }).strength(d => d.kind === "director" ? 0 : 0.6))
+      }).strength(d => {
+        if (d.kind === "director") return 1.0;
+        const lane = typeLane(d.accountType);
+        return (lane === "consultant" || lane === "client") ? 0.8 : 0.6;
+      }))
       .force("clusterY", d3.forceY<SimNode>(d => {
-        if (d.kind === "director") return d.y ?? height / 2;
+        if (d.kind === "director") return d.fy ?? height / 2;
         return CLUSTERS[typeLane(d.accountType)].y;
-      }).strength(d => d.kind === "director" ? 0 : 0.6))
+      }).strength(d => {
+        if (d.kind === "director") return 0;
+        const lane = typeLane(d.accountType);
+        return (lane === "consultant" || lane === "client") ? 0.7 : 0.6;
+      }))
       .on("tick", () => {
         simNodesRef.current = simNodes;
         links
@@ -1211,25 +1238,33 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         accountLabels.attr("transform", d =>
           `translate(${d.x ?? 0},${(d.y ?? 0) + nodeRadius(d.contactCount ?? 0) + 13})`
         );
+        updatePillPositions(d3.zoomTransform(svgRef.current!));
       });
 
     simRef.current = sim;
 
     const sanityTimer = setTimeout(() => {
-      const directorX = width * CLUSTER_X.directors;
       let maxClientX = 0;
       const consultantNodes: SimNode[] = [], clientNodes: SimNode[] = [], agentNodes: SimNode[] = [];
       for (const d of simNodes) {
-        if (d.kind === "director" && d.x != null && Math.abs(d.x - directorX) > 5)
-          console.warn(`[CRM Neural Map] Director ${d.name} x=${d.x.toFixed(0)} deviates`);
+        if (d.kind === "director" && d.x != null) {
+          if (d.x < 40 || d.x > 120)
+            console.warn(`[CRM Neural Map] Director ${d.name} x=${d.x.toFixed(0)} outside [40, 120]`);
+        }
         if (d.kind !== "account" || d.x == null || d.y == null) continue;
         const lane = typeLane(d.accountType);
         if (lane === "client") { maxClientX = Math.max(maxClientX, d.x); clientNodes.push(d); }
         if (lane === "consultant") consultantNodes.push(d);
         if (lane === "agent") agentNodes.push(d);
       }
-      if (maxClientX > 0 && maxClientX < width * 0.70)
-        console.warn(`[CRM Neural Map] Max client x=${maxClientX.toFixed(0)} < 0.70*width`);
+      if (maxClientX > 0 && maxClientX < width * 0.78)
+        console.warn(`[CRM Neural Map] Max client x=${maxClientX.toFixed(0)} < 0.78*width`);
+      const overlapConsultants = consultantNodes.filter(d => (d.x ?? 0) > 0.55 * width);
+      if (overlapConsultants.length > 0)
+        console.warn(`[CRM Neural Map] ${overlapConsultants.length} consultant node(s) x > 0.55*width`);
+      const overlapClients = clientNodes.filter(d => (d.x ?? 0) < 0.65 * width);
+      if (overlapClients.length > 0)
+        console.warn(`[CRM Neural Map] ${overlapClients.length} client node(s) x < 0.65*width`);
       const checkCluster = (nodes: SimNode[], cx: number, cy: number, threshold: number, label: string) => {
         if (!nodes.length) return;
         const far = nodes.filter(d => {
@@ -1239,9 +1274,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         if (far.length / nodes.length > 0.2)
           console.warn(`[CRM Neural Map] ${((far.length / nodes.length) * 100).toFixed(0)}% of ${label} nodes > ${threshold}px from centre`);
       };
-      checkCluster(consultantNodes, 0.42 * width, 0.55 * height, 350, "consultant");
-      checkCluster(clientNodes,     0.82 * width, 0.50 * height, 350, "client");
-      checkCluster(agentNodes,      0.42 * width, 0.15 * height, 220, "agent");
+      checkCluster(consultantNodes, 0.36 * width, 0.55 * height, 350, "consultant");
+      checkCluster(clientNodes,     0.86 * width, 0.50 * height, 350, "client");
+      checkCluster(agentNodes,      0.36 * width, 0.15 * height, 220, "agent");
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
