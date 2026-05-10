@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loadContactCache, getContactCache } from "@/lib/contacts-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,26 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     if (!name?.trim()) return NextResponse.json({ error: "Missing name" }, { status: 400 });
+
+    // Layer 2: check for existing contact with same name at same account
+    if (accountId) {
+      try {
+        await loadContactCache(apiKey);
+        const cache = getContactCache();
+        const nameLower = name.trim().toLowerCase();
+        const duplicate = cache.find(
+          c => c.name.toLowerCase().trim() === nameLower && c.accountId === String(accountId)
+        );
+        if (duplicate) {
+          return NextResponse.json({
+            error: "duplicate",
+            existingContactId: duplicate.id,
+            existingContactName: duplicate.name,
+            message: `A contact named "${duplicate.name}" already exists at ${accountName || "this account"}.`,
+          }, { status: 409 });
+        }
+      } catch { /* cache unavailable — proceed with creation */ }
+    }
 
     const columnValues: Record<string, unknown> = {};
     if (accountName) columnValues["text8"] = accountName;

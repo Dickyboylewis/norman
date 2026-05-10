@@ -333,6 +333,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [isLinkingContact, setIsLinkingContact] = useState(false);
   const [linkStatus, setLinkStatus] = useState<"idle" | "success" | "error">("idle");
   const [linkMessage, setLinkMessage] = useState("");
+  const [duplicateContactInfo, setDuplicateContactInfo] = useState<{ id: string; name: string } | null>(null);
 
   // Connection search
   const [connectionSearchQuery, setConnectionSearchQuery] = useState("");
@@ -402,7 +403,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setDeletingAccount(false); setDeleteAccountError("");
     setFormNameResults([]); setShowFormNameDropdown(false);
     setMoveConfirmContact(null); setIsLinkingContact(false);
-    setLinkStatus("idle"); setLinkMessage("");
+    setLinkStatus("idle"); setLinkMessage(""); setDuplicateContactInfo(null);
   }, [selectedAccount]);
 
   // Reset contact interaction state
@@ -611,11 +612,19 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed");
 
+      if (body.alreadyLinked) {
+        setMoveConfirmContact(null);
+        setShowAddForm(false);
+        setLinkStatus("success");
+        setLinkMessage(`${contactName} is already linked to ${selectedAccount.name}`);
+        setTimeout(() => setLinkStatus("idle"), 3000);
+        return;
+      }
+
       queryClient.setQueryData(
         ["crm-network"],
         (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
           if (!old) return old;
-          // Find the contact object if it exists on the old account
           const existingContact = fromAccountId
             ? old.nodes.find(n => n.id === fromAccountId)?.contacts.find(c => c.id === contactId)
             : undefined;
@@ -631,6 +640,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                 return { ...n, contacts: updated, contactCount: updated.length };
               }
               if (n.id === selectedAccount.id) {
+                // Layer 3: skip insert if already in cache
+                if (n.contacts.some(c => c.id === contactId)) return n;
                 return { ...n, contacts: [...n.contacts, contactObj], contactCount: n.contactCount + 1 };
               }
               return n;
@@ -674,8 +685,14 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         }),
       });
       const body = await res.json();
+      if (res.status === 409 && body.error === "duplicate") {
+        setDuplicateContactInfo({ id: body.existingContactId, name: body.existingContactName });
+        setContactSaveStatus("error");
+        return;
+      }
       if (!res.ok) throw new Error(body.error || "Create failed");
       setContactSaveStatus("saved");
+      setDuplicateContactInfo(null);
       setShowAddForm(false);
       setFormName(""); setFormPosition(""); setFormEmail(""); setFormPhone("");
       setFormNote(""); setFormDirector(""); setFormAlsoCreateLead(false);
@@ -2554,7 +2571,16 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                 </button>
               </div>
               {contactSaveStatus === "saved" && <p className="text-xs text-green-600">✓ Contact created in Monday</p>}
-              {contactSaveStatus === "error" && <p className="text-xs text-red-500">Failed to create contact</p>}
+              {contactSaveStatus === "error" && !duplicateContactInfo && <p className="text-xs text-red-500">Failed to create contact</p>}
+              {duplicateContactInfo && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                  <strong>{duplicateContactInfo.name}</strong> already exists at {selectedAccount.name}.{" "}
+                  <button
+                    className="underline hover:no-underline"
+                    onClick={() => { setShowAddForm(false); setDuplicateContactInfo(null); }}
+                  >Dismiss</button>
+                </p>
+              )}
             </div>
           )}
 

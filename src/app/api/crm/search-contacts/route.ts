@@ -1,75 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loadContactCache, getContactCache } from "@/lib/contacts-cache";
 
 export const dynamic = "force-dynamic";
-
-const CONTACTS_BOARD_ID = 1461714569;
-
-interface CachedContact {
-  id: string;
-  name: string;
-  company: string;
-  director: string;
-  position: string;
-  accountId: string | null;
-}
-
-let contactCache: CachedContact[] = [];
-let contactCacheTime = 0;
-const CACHE_TTL = 1000 * 60 * 10;
-
-async function loadContacts(apiKey: string) {
-  if (Date.now() - contactCacheTime < CACHE_TTL && contactCache.length > 0) return;
-
-  // Paginate with cursor to handle large boards
-  const items: CachedContact[] = [];
-  let cursor: string | null = null;
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const pageArg: string = cursor ? `limit: 250, cursor: "${cursor}"` : `limit: 250`;
-    const gql: string = `query {
-      boards(ids: [${CONTACTS_BOARD_ID}]) {
-        items_page(${pageArg}) {
-          cursor
-          items {
-            id
-            name
-            column_values(ids: ["text8", "people__1", "text_mm25ab00", "contact_account"]) {
-              id
-              text
-              ... on BoardRelationValue { linked_items { id } }
-            }
-          }
-        }
-      }
-    }`;
-
-    const res: Response = await fetch("https://api.monday.com/v2", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: apiKey },
-      body: JSON.stringify({ query: gql }),
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const json: any = await res.json();
-    const page = json.data?.boards?.[0]?.items_page;
-    cursor = page?.cursor ?? null;
-
-    const pageItems: { id: string; name: string; column_values: { id: string; text: string; linked_items?: { id: string }[] }[] }[] = page?.items ?? [];
-    for (const item of pageItems) {
-      const text8 = item.column_values?.find(c => c.id === "text8")?.text || "";
-      const people = item.column_values?.find(c => c.id === "people__1")?.text || "";
-      const position = item.column_values?.find(c => c.id === "text_mm25ab00")?.text || "";
-      const acctCol = item.column_values?.find(c => c.id === "contact_account");
-      const accountId = acctCol?.linked_items?.[0]?.id ?? null;
-      items.push({ id: item.id, name: item.name, company: text8, director: people.toLowerCase(), position, accountId });
-    }
-
-    if (!cursor) break;
-  }
-
-  contactCache = items;
-  contactCacheTime = Date.now();
-}
 
 export async function GET(request: NextRequest) {
   const apiKey = process.env.MONDAY_API_KEY;
@@ -82,9 +14,10 @@ export async function GET(request: NextRequest) {
   if (!q) return NextResponse.json({ contacts: [] });
 
   try {
-    await loadContacts(apiKey);
+    await loadContactCache(apiKey);
+    const cache = getContactCache();
 
-    const scored = contactCache
+    const scored = cache
       .filter(c =>
         c.name.toLowerCase().includes(q) ||
         c.company.toLowerCase().includes(q)
