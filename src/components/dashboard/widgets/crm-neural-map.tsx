@@ -336,6 +336,17 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [addAccSaving, setAddAccSaving] = useState(false);
   const [addAccError, setAddAccError] = useState("");
 
+  // Delete account
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountArchiveContacts, setDeleteAccountArchiveContacts] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState("");
+
+  // Delete contact
+  const [showDeleteContactModal, setShowDeleteContactModal] = useState(false);
+  const [deletingContact, setDeletingContact] = useState(false);
+  const [deleteContactError, setDeleteContactError] = useState("");
+
   // Contact connections
   const [connAddOpen, setConnAddOpen] = useState(false);
   const [connSearchQuery, setConnSearchQuery] = useState("");
@@ -365,6 +376,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setLogoUploadFile(null); setLogoUploadPreview("");
     setLogoUrlInput(""); setLogoUrlPreviewOk(false);
     setLogoSaving(false); setLogoSaveError("");
+    setShowDeleteAccountModal(false); setDeleteAccountArchiveContacts(false);
+    setDeletingAccount(false); setDeleteAccountError("");
   }, [selectedAccount]);
 
   // Reset contact interaction state
@@ -379,6 +392,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setConnSearchQuery(""); setConnSearchResults([]); setConnSearchOpen(false);
     setMoveOpen(false); setMoveQuery(""); setMovePending(null);
     setMoveStatus("idle"); setMoveError("");
+    setShowDeleteContactModal(false); setDeletingContact(false); setDeleteContactError("");
   }, [selectedContact]);
 
   // Escape clears all selections
@@ -738,6 +752,95 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       setMoveStatus("error");
       setMoveError(e instanceof Error ? e.message : "Move failed");
       setTimeout(() => { setMoveStatus("idle"); setMoveError(""); }, 3000);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!selectedAccount) return;
+    setDeletingAccount(true);
+    setDeleteAccountError("");
+    try {
+      const res = await fetch("/api/crm/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountId: selectedAccount.id,
+          archiveContacts: deleteAccountArchiveContacts,
+          contactIds: selectedAccount.contacts.map(c => c.id),
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Delete failed");
+
+      const removedId = selectedAccount.id;
+      const archivedContactIds = deleteAccountArchiveContacts
+        ? new Set(selectedAccount.contacts.map(c => c.id))
+        : new Set<string>();
+
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          let nodes = old.nodes.filter(n => n.id !== removedId);
+          if (archivedContactIds.size > 0) {
+            nodes = nodes.map(n => {
+              const filtered = n.contacts.filter(c => !archivedContactIds.has(c.id));
+              return { ...n, contacts: filtered, contactCount: filtered.length };
+            });
+          }
+          const edges = old.edges.filter(e => e.source !== removedId && e.target !== removedId);
+          return { nodes, edges };
+        },
+      );
+      setShowDeleteAccountModal(false);
+      setSelectedAccount(null);
+    } catch (e) {
+      setDeleteAccountError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const handleDeleteContact = async () => {
+    if (!selectedContact) return;
+    setDeletingContact(true);
+    setDeleteContactError("");
+    try {
+      const res = await fetch("/api/crm/delete-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: selectedContact.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Delete failed");
+
+      const deletedId = selectedContact.id;
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            nodes: old.nodes.map(n => {
+              const filtered = n.contacts.filter(c => c.id !== deletedId);
+              return {
+                ...n,
+                contacts: filtered.map(c => ({
+                  ...c,
+                  connectedToIds: (c.connectedToIds ?? []).filter(id => id !== deletedId),
+                })),
+                contactCount: filtered.length,
+              };
+            }),
+          };
+        },
+      );
+      setShowDeleteContactModal(false);
+      setSelectedContact(null);
+    } catch (e) {
+      setDeleteContactError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingContact(false);
     }
   };
 
@@ -2126,6 +2229,15 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
               {contactSaveStatus === "error" && <p className="text-xs text-red-500">Failed to create contact</p>}
             </div>
           )}
+
+          <div className="border-t border-red-100">
+            <button
+              onClick={() => setShowDeleteAccountModal(true)}
+              className="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+            >
+              Delete account
+            </button>
+          </div>
         </div>
       )}
 
@@ -2407,6 +2519,15 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
               {leadStatus === "error" && <p className="text-xs text-red-500">{leadError || "Failed to create lead"}</p>}
             </div>
           </div>
+
+          <div className="border-t border-red-100">
+            <button
+              onClick={() => setShowDeleteContactModal(true)}
+              className="w-full text-left px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+            >
+              Delete contact
+            </button>
+          </div>
         </div>
       )}
 
@@ -2470,6 +2591,101 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                 className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete account modal */}
+      {showDeleteAccountModal && selectedAccount && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center"
+          style={{ background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)" }}
+          onClick={() => { setShowDeleteAccountModal(false); setDeleteAccountError(""); }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-[420px] max-w-[calc(100%-32px)]"
+            style={{ boxShadow: "0 20px 48px rgba(0,0,0,0.15)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">Delete {selectedAccount.name}?</h3>
+            <p className="text-sm text-slate-500 mb-4">
+              {selectedAccount.contactCount === 0
+                ? "This account has no contacts. It will be archived on Monday and removed from the map."
+                : `This account has ${selectedAccount.contactCount} contact${selectedAccount.contactCount !== 1 ? "s" : ""}. Archiving the account will remove it from the map. Their contact records will remain but will no longer be linked to a company.`
+              }
+            </p>
+            {selectedAccount.contactCount > 0 && (
+              <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={deleteAccountArchiveContacts}
+                  onChange={e => setDeleteAccountArchiveContacts(e.target.checked)}
+                  className="accent-red-500"
+                />
+                <span className="text-xs text-slate-500">Also archive all contacts at this account</span>
+              </label>
+            )}
+            {deleteAccountError && <p className="text-xs text-red-500 mb-3">{deleteAccountError}</p>}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowDeleteAccountModal(false); setDeleteAccountError(""); }}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-slate-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-50 hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                {deletingAccount && <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {deletingAccount ? "Deleting…" : "Delete account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete contact modal */}
+      {showDeleteContactModal && selectedContact && (
+        <div
+          className="absolute inset-0 z-30 flex items-center justify-center"
+          style={{ background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)" }}
+          onClick={() => { setShowDeleteContactModal(false); setDeleteContactError(""); }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-[420px] max-w-[calc(100%-32px)]"
+            style={{ boxShadow: "0 20px 48px rgba(0,0,0,0.15)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">Delete {selectedContact.name}?</h3>
+            <p className="text-sm text-slate-500 mb-4">
+              {(() => {
+                const connCount = selectedContact.connectedToIds?.length ?? 0;
+                const accId = lookupMaps.contactToAccountId.get(selectedContact.id);
+                const accName = accId ? data?.nodes.find(n => n.id === accId)?.name : null;
+                if (connCount === 0)
+                  return `This contact will be archived on Monday and removed from ${accName ?? "their account"}.`;
+                return `This contact will be archived on Monday. They will also be removed from ${connCount} other contact${connCount !== 1 ? "s'" : "'s"} connection list${connCount !== 1 ? "s" : ""}.`;
+              })()}
+            </p>
+            {deleteContactError && <p className="text-xs text-red-500 mb-3">{deleteContactError}</p>}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowDeleteContactModal(false); setDeleteContactError(""); }}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-slate-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteContact}
+                disabled={deletingContact}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-50 hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                {deletingContact && <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {deletingContact ? "Deleting…" : "Delete contact"}
               </button>
             </div>
           </div>
