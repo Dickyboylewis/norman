@@ -9,6 +9,8 @@ interface CachedContact {
   name: string;
   company: string;
   director: string;
+  position: string;
+  accountId: string | null;
 }
 
 let contactCache: CachedContact[] = [];
@@ -32,9 +34,10 @@ async function loadContacts(apiKey: string) {
           items {
             id
             name
-            column_values(ids: ["text8", "people__1"]) {
+            column_values(ids: ["text8", "people__1", "text_mm25ab00", "contact_account"]) {
               id
               text
+              ... on BoardRelationValue { linked_items { id } }
             }
           }
         }
@@ -51,11 +54,14 @@ async function loadContacts(apiKey: string) {
     const page = json.data?.boards?.[0]?.items_page;
     cursor = page?.cursor ?? null;
 
-    const pageItems: { id: string; name: string; column_values: { id: string; text: string }[] }[] = page?.items ?? [];
+    const pageItems: { id: string; name: string; column_values: { id: string; text: string; linked_items?: { id: string }[] }[] }[] = page?.items ?? [];
     for (const item of pageItems) {
       const text8 = item.column_values?.find(c => c.id === "text8")?.text || "";
       const people = item.column_values?.find(c => c.id === "people__1")?.text || "";
-      items.push({ id: item.id, name: item.name, company: text8, director: people.toLowerCase() });
+      const position = item.column_values?.find(c => c.id === "text_mm25ab00")?.text || "";
+      const acctCol = item.column_values?.find(c => c.id === "contact_account");
+      const accountId = acctCol?.linked_items?.[0]?.id ?? null;
+      items.push({ id: item.id, name: item.name, company: text8, director: people.toLowerCase(), position, accountId });
     }
 
     if (!cursor) break;
@@ -92,7 +98,7 @@ export async function GET(request: NextRequest) {
         if (companyLower.startsWith(q)) score += 4;
         else if (companyLower.includes(q)) score += 2;
         if (director && c.director.includes(director)) score += 3;
-        return { id: c.id, name: c.name, company: c.company, score };
+        return { id: c.id, name: c.name, company: c.company, position: c.position, accountId: c.accountId, score };
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)

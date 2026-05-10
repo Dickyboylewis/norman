@@ -325,6 +325,14 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [formAlsoCreateLead, setFormAlsoCreateLead] = useState(false);
   const [isSavingContact, setIsSavingContact] = useState(false);
   const [contactSaveStatus, setContactSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  // Smart contact lookup state
+  type ContactSuggestion = { id: string; name: string; position: string; accountId: string | null; accountName: string | null };
+  const [formNameResults, setFormNameResults] = useState<ContactSuggestion[]>([]);
+  const [showFormNameDropdown, setShowFormNameDropdown] = useState(false);
+  const [moveConfirmContact, setMoveConfirmContact] = useState<{ id: string; name: string; fromAccountId: string | null; fromAccountName: string | null } | null>(null);
+  const [isLinkingContact, setIsLinkingContact] = useState(false);
+  const [linkStatus, setLinkStatus] = useState<"idle" | "success" | "error">("idle");
+  const [linkMessage, setLinkMessage] = useState("");
 
   // Connection search
   const [connectionSearchQuery, setConnectionSearchQuery] = useState("");
@@ -392,6 +400,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setLogoSaving(false); setLogoSaveError("");
     setShowDeleteAccountModal(false); setDeleteAccountArchiveContacts(false);
     setDeletingAccount(false); setDeleteAccountError("");
+    setFormNameResults([]); setShowFormNameDropdown(false);
+    setMoveConfirmContact(null); setIsLinkingContact(false);
+    setLinkStatus("idle"); setLinkMessage("");
   }, [selectedAccount]);
 
   // Reset contact interaction state
@@ -465,6 +476,43 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }, 200);
     return () => clearTimeout(timer);
   }, [connSearchQuery, selectedContact]);
+
+  // ── Add Contact name autocomplete ────────────────────────────────────────
+
+  useEffect(() => {
+    if (!showAddForm || formName.trim().length < 2) {
+      setFormNameResults([]);
+      setShowFormNameDropdown(false);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/crm/search-contacts?q=${encodeURIComponent(formName.trim())}&limit=8`,
+          { signal: ctrl.signal },
+        );
+        if (!res.ok || ctrl.signal.aborted) return;
+        const json = await res.json();
+        const crmData = queryClient.getQueryData<{ nodes: AccountNode[]; edges: AccountEdge[] }>(["crm-network"]);
+        const results: { id: string; name: string; position: string; accountId: string | null }[] =
+          (json.contacts ?? []).filter(
+            (c: { id: string; accountId: string | null }) => c.accountId !== selectedAccount?.id,
+          );
+        const withNames = results.map(c => ({
+          ...c,
+          accountName: c.accountId
+            ? (crmData?.nodes.find(n => n.id === c.accountId)?.name ?? null)
+            : null,
+        }));
+        setFormNameResults(withNames);
+        setShowFormNameDropdown(withNames.length > 0);
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") console.error(e);
+      }
+    }, 200);
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [formName, showAddForm, selectedAccount, queryClient]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -548,6 +596,60 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
   const handleContactBack = () => {
     setSelectedContact(null);
+  };
+
+  const doLinkOrMove = async (contactId: string, contactName: string, fromAccountId: string | null) => {
+    if (!selectedAccount) return;
+    setIsLinkingContact(true);
+    setLinkStatus("idle");
+    try {
+      const res = await fetch("/api/crm/move-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId, newAccountId: selectedAccount.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed");
+
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          // Find the contact object if it exists on the old account
+          const existingContact = fromAccountId
+            ? old.nodes.find(n => n.id === fromAccountId)?.contacts.find(c => c.id === contactId)
+            : undefined;
+          const contactObj: ContactNode = existingContact ?? {
+            id: contactId, name: contactName, contactType: "", directors: [],
+            position: "", email: "", phone: "", linkedIn: "", lastContacted: "", notes: "", connectedToIds: [],
+          };
+          return {
+            ...old,
+            nodes: old.nodes.map(n => {
+              if (fromAccountId && n.id === fromAccountId) {
+                const updated = n.contacts.filter(c => c.id !== contactId);
+                return { ...n, contacts: updated, contactCount: updated.length };
+              }
+              if (n.id === selectedAccount.id) {
+                return { ...n, contacts: [...n.contacts, contactObj], contactCount: n.contactCount + 1 };
+              }
+              return n;
+            }),
+          };
+        },
+      );
+
+      setMoveConfirmContact(null);
+      setShowAddForm(false);
+      setLinkStatus("success");
+      setLinkMessage(`${contactName} added to ${selectedAccount.name}`);
+      setTimeout(() => setLinkStatus("idle"), 3000);
+    } catch (e) {
+      setLinkStatus("error");
+      setLinkMessage(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setIsLinkingContact(false);
+    }
   };
 
   const handleAddContact = async () => {
@@ -2300,8 +2402,74 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
             <div className="border-t border-gray-100 px-4 py-3 space-y-2">
               <p className="text-xs font-semibold text-gray-700">New Contact</p>
 
-              <input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Full name *" autoFocus
-                className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-400" />
+              {/* Name field with existing-contact autocomplete */}
+              <div className="relative">
+                <input
+                  value={formName}
+                  onChange={e => { setFormName(e.target.value); setMoveConfirmContact(null); }}
+                  onKeyDown={e => { if (e.key === "Escape") { setShowFormNameDropdown(false); e.preventDefault(); } }}
+                  onBlur={() => setTimeout(() => setShowFormNameDropdown(false), 150)}
+                  placeholder="Full name *"
+                  autoFocus
+                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-400"
+                />
+                {showFormNameDropdown && formNameResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b shadow-lg z-50 max-h-52 overflow-y-auto">
+                    {formNameResults.map(r => (
+                      <button
+                        key={r.id}
+                        onMouseDown={() => {
+                          setShowFormNameDropdown(false);
+                          if (r.accountId === null) {
+                            doLinkOrMove(r.id, r.name, null);
+                          } else {
+                            setMoveConfirmContact({ id: r.id, name: r.name, fromAccountId: r.accountId, fromAccountName: r.accountName });
+                          }
+                        }}
+                        className="w-full text-left px-2.5 py-2 hover:bg-gray-50 border-b border-gray-50 last:border-0 flex items-start justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-800 truncate">{r.name}</p>
+                          {r.position && <p className="text-xs text-slate-500 truncate">{r.position}</p>}
+                        </div>
+                        {r.accountId === null
+                          ? <span className="text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-700 font-medium flex-shrink-0 self-center">Available</span>
+                          : <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium flex-shrink-0 self-center max-w-[100px] truncate">At {r.accountName ?? "another account"}</span>
+                        }
+                      </button>
+                    ))}
+                    <button
+                      onMouseDown={() => setShowFormNameDropdown(false)}
+                      className="w-full text-left px-2.5 py-2 text-xs text-gray-400 hover:text-gray-600 border-t border-gray-100"
+                    >
+                      Continue creating new…
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Move confirmation */}
+              {moveConfirmContact && (
+                <div className="rounded bg-slate-50 border border-slate-200 p-3 space-y-2">
+                  <p className="text-xs text-slate-700">
+                    Move <strong>{moveConfirmContact.name}</strong> from{" "}
+                    <strong>{moveConfirmContact.fromAccountName ?? "their current account"}</strong> to{" "}
+                    <strong>{selectedAccount.name}</strong>?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => doLinkOrMove(moveConfirmContact.id, moveConfirmContact.name, moveConfirmContact.fromAccountId)}
+                      disabled={isLinkingContact}
+                      className="flex-1 py-1.5 rounded bg-slate-600 text-white text-xs font-semibold disabled:opacity-50 hover:bg-slate-700 transition-colors"
+                    >
+                      {isLinkingContact ? "Moving…" : "Move"}
+                    </button>
+                    <button onClick={() => setMoveConfirmContact(null)} className="px-3 py-1.5 rounded bg-gray-100 text-gray-600 text-xs hover:bg-gray-200">Cancel</button>
+                  </div>
+                  {linkStatus === "error" && <p className="text-xs text-red-500">{linkMessage}</p>}
+                </div>
+              )}
+              {linkStatus === "success" && <p className="text-xs text-green-600">✓ {linkMessage}</p>}
               <input value={formPosition} onChange={e => setFormPosition(e.target.value)} placeholder="Position"
                 className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-400" />
               <input value={formEmail} onChange={e => setFormEmail(e.target.value)} type="email" placeholder="Email"
