@@ -1716,7 +1716,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, 50)`);
       pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, 90)`);
       pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.86 * width)}, 50)`);
-      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.88 * height) - 50})`);
+      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.81 * height)})`);
     };
     updatePillPositions(d3.zoomIdentity); // initial state
 
@@ -1751,6 +1751,18 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         return (lane === "consultant" || lane === "client") ? 0.7 : 0.6;
       }))
       .on("tick", () => {
+        // Hard Y clamps — create a clear gap between consultants and contractors
+        for (const d of simNodes) {
+          if (d.kind === "director" || d.y == null) continue;
+          const lane = typeLane(d.accountType);
+          if (lane === "contractor") {
+            if (d.y < 0.83 * height) d.y = 0.83 * height;
+            if (d.y > 0.96 * height) d.y = 0.96 * height;
+          } else if (lane !== "agent") {
+            // Consultants, clients, untyped: ceiling at 0.78H
+            if (d.y > 0.78 * height) d.y = 0.78 * height;
+          }
+        }
         simNodesRef.current = simNodes;
         links
           .attr("x1", d => (d.source as SimNode).x!)
@@ -1791,9 +1803,14 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         console.warn(`[CRM Neural Map] ${overlapClients.length} client node(s) x < 0.65*width`);
       if (contractorNodes.length === 0)
         console.warn("[CRM Neural Map] Contractor cluster has 0 nodes — accountType matching may be failing");
-      const highContractors = contractorNodes.filter(d => (d.y ?? 0) < 0.75 * height);
-      if (highContractors.length > 0)
-        console.warn(`[CRM Neural Map] ${highContractors.length} contractor node(s) y < 0.75*height (leaking into consultants)`);
+      // Verify clamps held
+      const consultantLeakers = [...consultantNodes, ...clientNodes, ...(simNodes.filter(d => d.kind === "account" && typeLane(d.accountType) === "untyped"))]
+        .filter(d => (d.y ?? 0) > 0.78 * height + 1);
+      if (consultantLeakers.length > 0)
+        console.warn(`[CRM Neural Map] ${consultantLeakers.length} non-contractor node(s) y > 0.78H — ceiling clamp may not be firing`);
+      const contractorOutOfRange = contractorNodes.filter(d => (d.y ?? 0) < 0.83 * height || (d.y ?? 0) > 0.96 * height);
+      if (contractorOutOfRange.length > 0)
+        console.warn(`[CRM Neural Map] ${contractorOutOfRange.length} contractor node(s) outside [0.83H, 0.96H]`);
       if (contractorNodes.length > 0 && consultantNodes.length > 0) {
         const contractorAvgX = contractorNodes.reduce((s, d) => s + (d.x ?? 0), 0) / contractorNodes.length;
         const consultantAvgX = consultantNodes.reduce((s, d) => s + (d.x ?? 0), 0) / consultantNodes.length;
