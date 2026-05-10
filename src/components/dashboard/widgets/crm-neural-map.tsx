@@ -316,6 +316,24 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [selectedConnection, setSelectedConnection] = useState<{ id: string; name: string } | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = useState(false);
 
+  // Logo replace
+  const [showLogoReplace, setShowLogoReplace] = useState(false);
+  const [logoReplaceMode, setLogoReplaceMode] = useState<"upload" | "url">("upload");
+  const [logoUploadFile, setLogoUploadFile] = useState<File | null>(null);
+  const [logoUploadPreview, setLogoUploadPreview] = useState("");
+  const [logoUrlInput, setLogoUrlInput] = useState("");
+  const [logoUrlPreviewOk, setLogoUrlPreviewOk] = useState(false);
+  const [logoSaving, setLogoSaving] = useState(false);
+  const [logoSaveError, setLogoSaveError] = useState("");
+
+  // Add Account
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [addAccName, setAddAccName] = useState("");
+  const [addAccType, setAddAccType] = useState("");
+  const [addAccDomain, setAddAccDomain] = useState("");
+  const [addAccSaving, setAddAccSaving] = useState(false);
+  const [addAccError, setAddAccError] = useState("");
+
   const queryClient = useQueryClient();
 
   // Reset account panel state when account changes
@@ -328,6 +346,10 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setSelectedConnection(null); setConnectionSearchQuery(""); setConnectionSearchResults([]);
     setContactSaveStatus("idle"); setIsSavingContact(false);
     setShowConnectionDropdown(false);
+    setShowLogoReplace(false);
+    setLogoUploadFile(null); setLogoUploadPreview("");
+    setLogoUrlInput(""); setLogoUrlPreviewOk(false);
+    setLogoSaving(false); setLogoSaveError("");
   }, [selectedAccount]);
 
   // Reset contact interaction state
@@ -492,6 +514,82 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       setTimeout(() => setContactSaveStatus("idle"), 3000);
     } finally {
       setIsSavingContact(false);
+    }
+  };
+
+  const handleLogoSave = async () => {
+    if (!selectedAccount) return;
+    setLogoSaving(true);
+    setLogoSaveError("");
+    try {
+      let logoUrl = "";
+      if (logoReplaceMode === "upload") {
+        if (!logoUploadFile) throw new Error("No file selected");
+        const fd = new FormData();
+        fd.append("file", logoUploadFile);
+        const uploadRes = await fetch("/api/crm/upload-logo", { method: "POST", body: fd });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+        logoUrl = uploadData.url;
+      } else {
+        if (!logoUrlInput.trim()) throw new Error("No URL entered");
+        logoUrl = logoUrlInput.trim();
+      }
+      const updateRes = await fetch("/api/crm/update-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: selectedAccount.id, logoUrl }),
+      });
+      const updateData = await updateRes.json();
+      if (!updateRes.ok) throw new Error(updateData.error || "Save failed");
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return { ...old, nodes: old.nodes.map(n => n.id === selectedAccount.id ? { ...n, logoUrl } : n) };
+        },
+      );
+      setSelectedAccount(prev => prev ? { ...prev, logoUrl } : null);
+      setShowLogoReplace(false);
+      setLogoUploadFile(null); setLogoUploadPreview("");
+      setLogoUrlInput(""); setLogoUrlPreviewOk(false);
+    } catch (e) {
+      setLogoSaveError(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setLogoSaving(false);
+    }
+  };
+
+  const handleAddAccount = async () => {
+    if (!addAccName.trim()) return;
+    setAddAccSaving(true);
+    setAddAccError("");
+    try {
+      const res = await fetch("/api/crm/add-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: addAccName.trim(),
+          type: addAccType || null,
+          domain: addAccDomain.trim() || null,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Create failed");
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return { ...old, nodes: [...old.nodes, body.account] };
+        },
+      );
+      setMinContacts(0); // show newly created 0-contact account
+      setShowAddAccount(false);
+      setAddAccName(""); setAddAccType(""); setAddAccDomain("");
+    } catch (e) {
+      setAddAccError(e instanceof Error ? e.message : "Create failed");
+    } finally {
+      setAddAccSaving(false);
     }
   };
 
@@ -1340,6 +1438,16 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
           <div className="w-px h-4 bg-gray-300" />
 
+          {/* Add Account */}
+          <button
+            onClick={() => setShowAddAccount(true)}
+            className="px-3 py-1 rounded-full text-xs font-semibold bg-white text-gray-600 border border-gray-200 hover:border-red-400 hover:text-red-600 transition-all"
+          >
+            + Account
+          </button>
+
+          <div className="w-px h-4 bg-gray-300" />
+
           {/* View mode */}
           {(["all", "priority", "search"] as const).map(m => (
             <button
@@ -1430,7 +1538,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
           <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-lg border border-gray-200 w-fit">
             <span className="text-xs text-gray-500 whitespace-nowrap">Min contacts: {effectiveMin}</span>
             <input
-              type="range" min={1} max={10} value={minContacts}
+              type="range" min={0} max={10} value={minContacts}
               onChange={e => setMinContacts(Number(e.target.value))}
               className="w-24 accent-red-500 cursor-pointer"
             />
@@ -1495,6 +1603,102 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                 : <span className="text-xs text-gray-400">None assigned</span>
               }
             </div>
+          </div>
+
+          {/* Logo replace */}
+          <div className="border-b border-gray-100">
+            {!showLogoReplace ? (
+              <button
+                onClick={() => setShowLogoReplace(true)}
+                className="w-full text-left px-4 py-2 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1.5 transition-colors"
+              >
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                Replace logo
+              </button>
+            ) : (
+              <div className="px-4 py-3 space-y-2">
+                <div className="flex gap-1">
+                  {(["upload", "url"] as const).map(m => (
+                    <button
+                      key={m}
+                      onClick={() => { setLogoReplaceMode(m); setLogoSaveError(""); }}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                        logoReplaceMode === m
+                          ? "bg-gray-800 text-white"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      {m === "upload" ? "Upload file" : "Paste URL"}
+                    </button>
+                  ))}
+                </div>
+
+                {logoReplaceMode === "upload" ? (
+                  <div className="space-y-1.5">
+                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg px-3 py-3 cursor-pointer hover:border-gray-400 transition-colors">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                      <span className="text-xs text-gray-400">{logoUploadFile ? logoUploadFile.name : "Choose image (PNG, JPG, SVG, WebP · 2MB max)"}</span>
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.svg,.webp"
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setLogoUploadFile(f);
+                          const reader = new FileReader();
+                          reader.onload = ev => setLogoUploadPreview(ev.target?.result as string);
+                          reader.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                    {logoUploadPreview && (
+                      <img src={logoUploadPreview} alt="preview" className="h-10 w-10 object-contain rounded border border-gray-100 mx-auto" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <input
+                      type="url"
+                      value={logoUrlInput}
+                      onChange={e => { setLogoUrlInput(e.target.value); setLogoUrlPreviewOk(false); }}
+                      placeholder="https://example.com/logo.png"
+                      className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-400"
+                    />
+                    {logoUrlInput && (
+                      <img
+                        src={logoUrlInput}
+                        alt="preview"
+                        className="h-10 w-10 object-contain rounded border border-gray-100 mx-auto"
+                        onLoad={() => setLogoUrlPreviewOk(true)}
+                        onError={() => setLogoUrlPreviewOk(false)}
+                      />
+                    )}
+                    {logoUrlInput && !logoUrlPreviewOk && (
+                      <p className="text-xs text-amber-500 text-center">Image not loading — check URL</p>
+                    )}
+                  </div>
+                )}
+
+                {logoSaveError && <p className="text-xs text-red-500">{logoSaveError}</p>}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleLogoSave}
+                    disabled={logoSaving || (logoReplaceMode === "upload" ? !logoUploadFile : !logoUrlInput.trim())}
+                    className="flex-1 py-1.5 rounded bg-gray-800 text-white text-xs font-semibold disabled:opacity-40 hover:bg-gray-700 transition-colors"
+                  >
+                    {logoSaving ? "Saving…" : "Save logo"}
+                  </button>
+                  <button
+                    onClick={() => { setShowLogoReplace(false); setLogoSaveError(""); }}
+                    className="px-3 py-1.5 rounded bg-gray-100 text-gray-600 text-xs hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="max-h-56 overflow-y-auto">
@@ -1773,6 +1977,72 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
                 </div>
               )}
               {leadStatus === "error" && <p className="text-xs text-red-500">{leadError || "Failed to create lead"}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Account modal */}
+      {showAddAccount && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] z-30 flex items-center justify-center" onClick={() => setShowAddAccount(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <p className="font-semibold text-gray-800 text-sm">New Account</p>
+              <button onClick={() => setShowAddAccount(false)} className="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Account name <span className="text-red-500">*</span></label>
+                <input
+                  autoFocus
+                  value={addAccName}
+                  onChange={e => setAddAccName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAddAccount()}
+                  placeholder="e.g. Acme Consulting"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Type</label>
+                <select
+                  value={addAccType}
+                  onChange={e => setAddAccType(e.target.value)}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 bg-white cursor-pointer"
+                >
+                  <option value="">No type</option>
+                  <option value="Client">Client</option>
+                  <option value="Consultant">Consultant</option>
+                  <option value="Agent">Agent</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Domain</label>
+                <input
+                  value={addAccDomain}
+                  onChange={e => setAddAccDomain(e.target.value)}
+                  placeholder="e.g. example.com — used for auto-logo lookup"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+                />
+              </div>
+              {addAccError && <p className="text-xs text-red-500">{addAccError}</p>}
+            </div>
+            <div className="px-5 pb-5 flex gap-2">
+              <button
+                onClick={handleAddAccount}
+                disabled={!addAccName.trim() || addAccSaving}
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-40 hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {addAccSaving && (
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
+                {addAccSaving ? "Creating…" : "Create account"}
+              </button>
+              <button
+                onClick={() => { setShowAddAccount(false); setAddAccError(""); }}
+                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

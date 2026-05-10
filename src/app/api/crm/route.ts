@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { AccountNode, AccountEdge, ContactNode } from "@/types/crm";
+import { ensureLogoColumns } from "@/lib/monday-columns";
 
 export const dynamic = "force-dynamic";
 
@@ -352,9 +353,10 @@ export async function GET() {
   }
 
   try {
-    const [rawContacts, rawAccounts] = await Promise.all([
+    const [rawContacts, rawAccounts, logoColumnIds] = await Promise.all([
       fetchAllItems(apiKey, 1461714569),
       fetchAllItems(apiKey, 1461714573),
+      ensureLogoColumns(apiKey),
     ]);
 
     // Build accountMap from the Accounts board
@@ -362,11 +364,20 @@ export async function GET() {
     for (const item of rawAccounts) {
       const rawDomain = getCol(item, "company_domain");
       const domain = cleanDomain(rawDomain) || guessDomain(item.name);
+      // Prefer the stored Logo URL (set by manual override or bulk-fetch-logos) over domain proxy
+      const storedLogoUrl = getCol(item, logoColumnIds.logoUrlColId);
+      const logoSource = getCol(item, logoColumnIds.logoSourceColId);
+      const logoUrl =
+        storedLogoUrl && logoSource !== "auto-failed"
+          ? storedLogoUrl
+          : domain
+            ? `/api/logo?domain=${domain}`
+            : "";
       accountMap.set(item.id, {
         id: item.id,
         name: item.name,
         domain,
-        logoUrl: domain ? `/api/logo?domain=${domain}` : "",
+        logoUrl,
         cluster: "unknown",
         accountType: getCol(item, "status"),
         contacts: [],
