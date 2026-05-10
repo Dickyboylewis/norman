@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import * as d3 from "d3";
 import type { AccountNode, AccountEdge, ContactNode } from "@/types/crm";
 
@@ -18,6 +19,18 @@ const DIRECTOR_NODES = [
   { id: "director-joe",   name: "Joe",   director: "joe"   as const, photo: "/joe.png",    color: "#DC2626" },
   { id: "director-jesus", name: "Jesus", director: "jesus" as const, photo: "/jesus.png",  color: "#2563EB" },
 ];
+
+// Maps from the short director key to full name and email
+const DIR_FULL_NAMES: Record<string, string> = {
+  dicky: "Dicky Lewis",
+  joe:   "Joe Haire",
+  jesus: "Jesus Jimenez",
+};
+const DIR_EMAILS: Record<string, string> = {
+  dicky: "dicky@white-red.co.uk",
+  joe:   "joe@white-red.co.uk",
+  jesus: "jesus@white-red.co.uk",
+};
 
 // ── Cluster x-positions ──────────────────────────────────────────────────────
 
@@ -275,6 +288,14 @@ interface SimEdge extends d3.SimulationLinkDatum<SimNode> {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+type CalendarStatus = {
+  name: string;
+  connected: boolean;
+  googleEmail: string | null;
+  connectedAt: string | null;
+  lastSyncAt: string | null;
+};
+
 export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<SVGGElement>(null);
@@ -289,6 +310,14 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const focalPositionRef = useRef<{ x: number; y: number } | null>(null);
   const spotlitSetRef = useRef<Set<string>>(new Set());
   const focalNodeRef = useRef<SimNode | null>(null);
+
+  const { data: session } = useSession();
+  const sessionEmail = (session?.user?.email ?? "").toLowerCase();
+
+  // Calendar connection state
+  const [calendarStatuses, setCalendarStatuses] = useState<CalendarStatus[]>([]);
+  const [calendarToast, setCalendarToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [calendarTooltip, setCalendarTooltip] = useState<string | null>(null);
 
   const [selectedAccount, setSelectedAccount] = useState<AccountNode | null>(null);
   const [selectedContact, setSelectedContact] = useState<ContactNode | null>(null);
@@ -447,6 +476,47 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // Calendar connection status polling
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch("/api/calendar/connection-status");
+        if (res.ok) {
+          const json = await res.json() as { directors?: CalendarStatus[] };
+          setCalendarStatuses(json.directors ?? []);
+        }
+      } catch { /* silent */ }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle calendarConnected / calendarError query params on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("calendarConnected")) {
+      setCalendarToast({ type: "success", message: "Calendar connected. New connections will start appearing in the queue once sync runs." });
+      params.delete("calendarConnected");
+      const newUrl = [window.location.pathname, params.toString()].filter(Boolean).join("?");
+      window.history.replaceState({}, "", newUrl);
+    } else if (params.has("calendarError")) {
+      const reason = params.get("calendarError") ?? "unknown error";
+      setCalendarToast({ type: "error", message: `Calendar connection failed: ${reason.replace(/_/g, " ")}` });
+      params.delete("calendarError");
+      const newUrl = [window.location.pathname, params.toString()].filter(Boolean).join("?");
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
+
+  // Auto-dismiss calendar toast after 8 seconds
+  useEffect(() => {
+    if (!calendarToast) return;
+    const t = setTimeout(() => setCalendarToast(null), 8000);
+    return () => clearTimeout(t);
+  }, [calendarToast]);
 
   // Connection search debounce (for "add contact" form)
   useEffect(() => {
@@ -2202,6 +2272,55 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         ? "fixed inset-0 z-50 bg-white flex flex-col overflow-hidden"
         : "relative w-full h-full bg-[#f9fafb] rounded-xl flex flex-col overflow-hidden"
     }>
+      {/* Calendar connect row */}
+      <div className="flex-shrink-0 bg-slate-50 border-b border-slate-100 px-3 py-1.5 flex items-center gap-4 flex-wrap">
+        {DIRECTOR_NODES.map(d => {
+          const fullName  = DIR_FULL_NAMES[d.director];
+          const status    = calendarStatuses.find(s => s.name === fullName);
+          const isMe      = !!sessionEmail && DIR_EMAILS[d.director] === sessionEmail;
+          const connected = status?.connected ?? false;
+          return (
+            <div key={d.id} className="flex items-center gap-1.5">
+              <img
+                src={d.photo}
+                alt={d.name}
+                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+              <span className="text-xs text-slate-600 font-medium">{d.name}</span>
+              {connected ? (
+                <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-700 text-white">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
+                  Calendar connected
+                </span>
+              ) : (
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (isMe) {
+                        window.location.href = "/api/calendar/oauth-start";
+                      } else {
+                        setCalendarTooltip(d.director);
+                        setTimeout(() => setCalendarTooltip(null), 3000);
+                      }
+                    }}
+                    className="text-xs px-2 py-0.5 rounded-full border border-slate-300 text-slate-500 hover:border-slate-500 hover:text-slate-700 transition-all"
+                  >
+                    Connect Calendar
+                  </button>
+                  {calendarTooltip === d.director && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded shadow-lg whitespace-nowrap z-50 pointer-events-none">
+                      Each director must connect their own calendar from their own login
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       {/* Toolbar */}
       <div className="flex-shrink-0 z-10 px-3 pt-3 pb-2 flex flex-col gap-1.5">
 
@@ -3231,6 +3350,21 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         </div>
         <span className="text-xs text-gray-400">Scroll to zoom · Drag to pan · Click bubble to spotlight · Esc to clear</span>
       </div>
+
+      {/* Calendar toast */}
+      {calendarToast && (
+        <div
+          className={`absolute top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium transition-all ${
+            calendarToast.type === "success"
+              ? "bg-green-700 text-white"
+              : "bg-red-700 text-white"
+          }`}
+        >
+          <span>{calendarToast.type === "success" ? "✓" : "✕"}</span>
+          <span>{calendarToast.message}</span>
+          <button onClick={() => setCalendarToast(null)} className="ml-2 opacity-70 hover:opacity-100 text-lg leading-none">×</button>
+        </div>
+      )}
     </div>
   );
 }
