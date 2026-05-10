@@ -1098,6 +1098,14 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }
     const sorted = [...dist.entries()].sort((a, b) => b[1] - a[1]);
     console.log("[CRM Neural Map] Type distribution:", Object.fromEntries(sorted));
+    // Sample raw types to confirm format (helps debug if contractor matching fails)
+    const sample = data.nodes.slice(0, 8).map(n => ({ name: n.name, accountType: n.accountType || "(empty)" }));
+    console.log("[CRM Neural Map] Raw accountType sample:", sample);
+    const contractorCount = dist.get("Contractor") ?? dist.get("contractor") ?? 0;
+    if (contractorCount === 0)
+      console.warn("[CRM Neural Map] No contractor accounts detected — check accountType values above");
+    else
+      console.log(`[CRM Neural Map] Contractor count: ${contractorCount}`);
   }, [data]);
 
   // ── Keep spotlightDataRef in sync ─────────────────────────────────────────
@@ -1354,7 +1362,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       agent:      { x: 0.36 * width, y: 0.15 * height },
       consultant: { x: 0.36 * width, y: 0.55 * height },
       client:     { x: 0.86 * width, y: 0.50 * height },
-      contractor: { x: 0.50 * width, y: 0.85 * height },
+      contractor: { x: 0.36 * width, y: 0.88 * height },
       untyped:    { x: 0.18 * width, y: 0.55 * height },
     };
 
@@ -1635,7 +1643,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       { key: "agents",      label: "AGENTS",       dataX: 0.36 * width,  screenY: 50 },
       { key: "consultants", label: "CONSULTANTS",  dataX: 0.36 * width,  screenY: 90 },
       { key: "clients",     label: "CLIENTS",      dataX: 0.86 * width,  screenY: 50 },
-      { key: "contractors", label: "CONTRACTORS",  dataX: 0.50 * width,  screenY: height - 80 },
+      { key: "contractors", label: "CONTRACTORS",  dataX: 0.36 * width,  screenY: 0.88 * height - 50 },
     ];
 
     const pillGroupMap: Record<string, d3.Selection<SVGGElement, unknown, null, undefined>> = {};
@@ -1708,7 +1716,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, 50)`);
       pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, 90)`);
       pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.86 * width)}, 50)`);
-      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.50 * width)}, ${height - 80})`);
+      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.88 * height) - 50})`);
     };
     updatePillPositions(d3.zoomIdentity); // initial state
 
@@ -1730,7 +1738,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       }).strength(d => {
         if (d.kind === "director") return 1.0;
         const lane = typeLane(d.accountType);
-        return (lane === "consultant" || lane === "client" || lane === "contractor") ? 0.8 : 0.6;
+        if (lane === "contractor") return 0.85;
+        return (lane === "consultant" || lane === "client") ? 0.8 : 0.6;
       }))
       .force("clusterY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.fy ?? height / 2;
@@ -1738,7 +1747,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       }).strength(d => {
         if (d.kind === "director") return 0;
         const lane = typeLane(d.accountType);
-        if (lane === "contractor") return 0.85;
+        if (lane === "contractor") return 0.9;
         return (lane === "consultant" || lane === "client") ? 0.7 : 0.6;
       }))
       .on("tick", () => {
@@ -1780,9 +1789,17 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       const overlapClients = clientNodes.filter(d => (d.x ?? 0) < 0.65 * width);
       if (overlapClients.length > 0)
         console.warn(`[CRM Neural Map] ${overlapClients.length} client node(s) x < 0.65*width`);
-      const lowContractors = contractorNodes.filter(d => (d.y ?? 0) < 0.70 * height);
-      if (lowContractors.length > 0)
-        console.warn(`[CRM Neural Map] ${lowContractors.length} contractor node(s) y < 0.70*height`);
+      if (contractorNodes.length === 0)
+        console.warn("[CRM Neural Map] Contractor cluster has 0 nodes — accountType matching may be failing");
+      const highContractors = contractorNodes.filter(d => (d.y ?? 0) < 0.75 * height);
+      if (highContractors.length > 0)
+        console.warn(`[CRM Neural Map] ${highContractors.length} contractor node(s) y < 0.75*height (leaking into consultants)`);
+      if (contractorNodes.length > 0 && consultantNodes.length > 0) {
+        const contractorAvgX = contractorNodes.reduce((s, d) => s + (d.x ?? 0), 0) / contractorNodes.length;
+        const consultantAvgX = consultantNodes.reduce((s, d) => s + (d.x ?? 0), 0) / consultantNodes.length;
+        if (Math.abs(contractorAvgX - consultantAvgX) > 30)
+          console.warn(`[CRM Neural Map] Contractor avg x=${contractorAvgX.toFixed(0)} not aligned with consultant avg x=${consultantAvgX.toFixed(0)} (diff > 30px)`);
+      }
       const checkCluster = (nodes: SimNode[], cx: number, cy: number, threshold: number, label: string) => {
         if (!nodes.length) return;
         const far = nodes.filter(d => {
@@ -1795,7 +1812,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       checkCluster(consultantNodes, 0.36 * width, 0.55 * height, 350, "consultant");
       checkCluster(clientNodes,     0.86 * width, 0.50 * height, 350, "client");
       checkCluster(agentNodes,      0.36 * width, 0.15 * height, 220, "agent");
-      checkCluster(contractorNodes, 0.50 * width, 0.85 * height, 300, "contractor");
+      checkCluster(contractorNodes, 0.36 * width, 0.88 * height, 280, "contractor");
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
