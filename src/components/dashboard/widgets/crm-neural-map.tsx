@@ -334,6 +334,19 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const [addAccSaving, setAddAccSaving] = useState(false);
   const [addAccError, setAddAccError] = useState("");
 
+  // Contact connections
+  const [connAddOpen, setConnAddOpen] = useState(false);
+  const [connSearchQuery, setConnSearchQuery] = useState("");
+  const [connSearchResults, setConnSearchResults] = useState<{ id: string; name: string; company: string }[]>([]);
+  const [connSearchOpen, setConnSearchOpen] = useState(false);
+
+  // Move contact
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveQuery, setMoveQuery] = useState("");
+  const [movePending, setMovePending] = useState<{ id: string; name: string } | null>(null);
+  const [moveStatus, setMoveStatus] = useState<"idle" | "moving" | "moved" | "error">("idle");
+  const [moveError, setMoveError] = useState("");
+
   const queryClient = useQueryClient();
 
   // Reset account panel state when account changes
@@ -360,6 +373,10 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setLeadStatus("idle");
     setLeadUrl("");
     setLeadError("");
+    setConnAddOpen(false);
+    setConnSearchQuery(""); setConnSearchResults([]); setConnSearchOpen(false);
+    setMoveOpen(false); setMoveQuery(""); setMovePending(null);
+    setMoveStatus("idle"); setMoveError("");
   }, [selectedContact]);
 
   // Escape clears all selections
@@ -375,7 +392,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Connection search debounce
+  // Connection search debounce (for "add contact" form)
   useEffect(() => {
     if (!connectionSearchQuery.trim()) {
       setConnectionSearchResults([]);
@@ -394,6 +411,30 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }, 200);
     return () => clearTimeout(timer);
   }, [connectionSearchQuery]);
+
+  // Conn-add search debounce (for contact panel connections)
+  useEffect(() => {
+    if (!connSearchQuery.trim() || !selectedContact) {
+      setConnSearchResults([]);
+      setConnSearchOpen(false);
+      return;
+    }
+    const existing = new Set(selectedContact.connectedToIds ?? []);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/crm/search-contacts?q=${encodeURIComponent(connSearchQuery)}&limit=10`);
+        if (res.ok) {
+          const json = await res.json();
+          const filtered = (json.contacts || []).filter(
+            (c: { id: string }) => c.id !== selectedContact.id && !existing.has(c.id)
+          );
+          setConnSearchResults(filtered);
+          setConnSearchOpen(true);
+        }
+      } catch { /* ignore */ }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [connSearchQuery, selectedContact]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -593,6 +634,111 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }
   };
 
+  const handleAddConnection = async (connectedContactId: string) => {
+    if (!selectedContact) return;
+    try {
+      const res = await fetch("/api/crm/add-contact-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: selectedContact.id, connectedContactId }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed");
+      const newConnIds: string[] = body.connectedToIds;
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            nodes: old.nodes.map(n => ({
+              ...n,
+              contacts: n.contacts.map(c =>
+                c.id === selectedContact.id ? { ...c, connectedToIds: newConnIds } : c
+              ),
+            })),
+          };
+        },
+      );
+      setSelectedContact(prev => prev ? { ...prev, connectedToIds: newConnIds } : null);
+      setConnAddOpen(false);
+      setConnSearchQuery(""); setConnSearchResults([]);
+    } catch { /* silent */ }
+  };
+
+  const handleRemoveConnection = async (connectedContactId: string) => {
+    if (!selectedContact) return;
+    try {
+      const res = await fetch("/api/crm/remove-contact-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: selectedContact.id, connectedContactId }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed");
+      const newConnIds: string[] = body.connectedToIds;
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            nodes: old.nodes.map(n => ({
+              ...n,
+              contacts: n.contacts.map(c =>
+                c.id === selectedContact.id ? { ...c, connectedToIds: newConnIds } : c
+              ),
+            })),
+          };
+        },
+      );
+      setSelectedContact(prev => prev ? { ...prev, connectedToIds: newConnIds } : null);
+    } catch { /* silent */ }
+  };
+
+  const handleMoveContact = async () => {
+    if (!selectedContact || !movePending) return;
+    setMoveStatus("moving");
+    const oldAccountId = lookupMaps.contactToAccountId.get(selectedContact.id);
+    try {
+      const res = await fetch("/api/crm/move-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: selectedContact.id, newAccountId: movePending.id }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Move failed");
+      queryClient.setQueryData(
+        ["crm-network"],
+        (old: { nodes: AccountNode[]; edges: AccountEdge[] } | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            nodes: old.nodes.map(n => {
+              if (n.id === oldAccountId) {
+                const updated = n.contacts.filter(c => c.id !== selectedContact.id);
+                return { ...n, contacts: updated, contactCount: updated.length };
+              }
+              if (n.id === movePending.id) {
+                const updated = [...n.contacts, selectedContact];
+                return { ...n, contacts: updated, contactCount: updated.length };
+              }
+              return n;
+            }),
+          };
+        },
+      );
+      setMoveStatus("moved");
+      setMoveOpen(false);
+      setMovePending(null);
+      setTimeout(() => setSelectedContact(null), 1200);
+    } catch (e) {
+      setMoveStatus("error");
+      setMoveError(e instanceof Error ? e.message : "Move failed");
+      setTimeout(() => { setMoveStatus("idle"); setMoveError(""); }, 3000);
+    }
+  };
+
   // ── Data ──────────────────────────────────────────────────────────────────
 
   const { data, isLoading, error } = useQuery({
@@ -691,6 +837,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     const accountToContactIds = new Map<string, Set<string>>();
     const contactConnections = new Map<string, Set<string>>();
     const directorToContactIds = new Map<string, Set<string>>();
+    const contactById = new Map<string, ContactNode>();
 
     for (const account of (data?.nodes ?? [])) {
       const cids = new Set<string>();
@@ -698,6 +845,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         contactToAccountId.set(contact.id, account.id);
         cids.add(contact.id);
         contactConnections.set(contact.id, new Set(contact.connectedToIds));
+        contactById.set(contact.id, contact);
         for (const dir of (contact.directors ?? [])) {
           if (!directorToContactIds.has(dir)) directorToContactIds.set(dir, new Set());
           directorToContactIds.get(dir)!.add(contact.id);
@@ -706,7 +854,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       accountToContactIds.set(account.id, cids);
     }
 
-    return { contactToAccountId, accountToContactIds, contactConnections, directorToContactIds };
+    return { contactToAccountId, accountToContactIds, contactConnections, directorToContactIds, contactById };
   }, [data]);
 
   // ── Spotlight data ────────────────────────────────────────────────────────
@@ -1889,8 +2037,77 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
               <button onClick={() => setSelectedContact(null)} className="text-gray-300 hover:text-white text-lg leading-none">×</button>
             </div>
             <p className="text-white font-semibold text-sm">{selectedContact.name}</p>
-            <p className="text-gray-400 text-xs">{selectedContact.position || selectedContact.contactType}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-gray-400 text-xs">{selectedContact.position || selectedContact.contactType}</p>
+              {(() => {
+                const accId = lookupMaps.contactToAccountId.get(selectedContact.id);
+                const acc = accId ? data?.nodes.find(n => n.id === accId) : null;
+                return acc ? <span className="text-gray-500 text-xs truncate">{acc.name}</span> : null;
+              })()}
+            </div>
+            <button
+              onClick={() => setMoveOpen(v => !v)}
+              className="mt-2 text-gray-400 hover:text-white text-xs transition-colors"
+            >
+              {moveOpen ? "▲ Cancel move" : "Move to… →"}
+            </button>
           </div>
+
+          {/* Move-to section */}
+          {moveOpen && (
+            <div className="border-b border-gray-100 px-4 py-3 space-y-2 bg-gray-50">
+              <p className="text-xs font-medium text-gray-600">Move to account</p>
+              <input
+                value={moveQuery}
+                onChange={e => { setMoveQuery(e.target.value); setMovePending(null); }}
+                placeholder="Search accounts…"
+                autoFocus
+                className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-400 bg-white"
+              />
+              {moveQuery.trim() && !movePending && (
+                <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                  {(data?.nodes ?? [])
+                    .filter(n =>
+                      n.name.toLowerCase().includes(moveQuery.toLowerCase()) &&
+                      n.id !== lookupMaps.contactToAccountId.get(selectedContact.id)
+                    )
+                    .slice(0, 6)
+                    .map(n => (
+                      <button
+                        key={n.id}
+                        onClick={() => setMovePending({ id: n.id, name: n.name })}
+                        className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-white border border-gray-100 bg-white text-gray-700"
+                      >
+                        {n.name}
+                      </button>
+                    ))
+                  }
+                </div>
+              )}
+              {movePending && (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-gray-600">Move <strong>{selectedContact.name}</strong> to <strong>{movePending.name}</strong>?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleMoveContact}
+                      disabled={moveStatus === "moving"}
+                      className="flex-1 py-1 rounded bg-indigo-600 text-white text-xs font-medium disabled:opacity-50 hover:bg-indigo-700"
+                    >
+                      {moveStatus === "moving" ? "Moving…" : "Confirm"}
+                    </button>
+                    <button
+                      onClick={() => setMovePending(null)}
+                      className="flex-1 py-1 rounded bg-gray-100 text-gray-600 text-xs hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {moveStatus === "moved" && <p className="text-xs text-green-600">✓ Moved!</p>}
+                  {moveStatus === "error" && <p className="text-xs text-red-500">{moveError}</p>}
+                </div>
+              )}
+            </div>
+          )}
 
           {spotlightData && (
             <div className="flex items-center gap-2 px-4 py-1.5 bg-indigo-50 border-b border-indigo-100">
@@ -1910,16 +2127,68 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
               {selectedContact.lastContacted && (
                 <div><span className="text-gray-400 text-xs">Last contacted</span><p className="text-gray-800 text-xs">{selectedContact.lastContacted}</p></div>
               )}
-              {connectedCompanies.length > 0 && (
-                <div>
-                  <span className="text-gray-400 text-xs">Connected to</span>
-                  <div className="flex flex-wrap gap-1 mt-0.5">
-                    {connectedCompanies.map(c => (
-                      <span key={c.id} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">{c.name}</span>
-                    ))}
-                  </div>
+              <div>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-gray-400 text-xs">Connections ({(selectedContact.connectedToIds ?? []).length})</span>
+                  <button
+                    onClick={() => setConnAddOpen(v => !v)}
+                    className="text-xs text-indigo-500 hover:text-indigo-700 font-medium"
+                  >
+                    {connAddOpen ? "▲" : "+ Add"}
+                  </button>
                 </div>
-              )}
+                <div className="space-y-1 mt-0.5">
+                  {(selectedContact.connectedToIds ?? []).map(cid => {
+                    const conn = lookupMaps.contactById.get(cid);
+                    const accId = lookupMaps.contactToAccountId.get(cid);
+                    const acc = accId ? data?.nodes.find(n => n.id === accId) : null;
+                    return (
+                      <div key={cid} className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-700 flex-1 truncate">
+                          {conn?.name ?? cid}
+                          {acc && <span className="text-gray-400"> · {acc.name}</span>}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveConnection(cid)}
+                          className="text-gray-300 hover:text-red-500 text-sm leading-none flex-shrink-0 transition-colors"
+                          title="Remove connection"
+                        >×</button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {connAddOpen && (
+                  <div className="relative mt-1.5">
+                    <input
+                      value={connSearchQuery}
+                      onChange={e => setConnSearchQuery(e.target.value)}
+                      onFocus={() => connSearchResults.length > 0 && setConnSearchOpen(true)}
+                      onBlur={() => setTimeout(() => setConnSearchOpen(false), 150)}
+                      placeholder="Search contacts to link…"
+                      autoFocus
+                      className="w-full text-xs border border-indigo-200 rounded px-2 py-1.5 outline-none focus:border-indigo-400"
+                    />
+                    {connSearchOpen && connSearchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded shadow-lg z-50 max-h-28 overflow-y-auto">
+                        {connSearchResults.map(r => (
+                          <button
+                            key={r.id}
+                            onMouseDown={() => {
+                              handleAddConnection(r.id);
+                              setConnSearchQuery("");
+                              setConnSearchOpen(false);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 hover:bg-gray-50 text-xs border-b border-gray-50 last:border-0"
+                          >
+                            <span className="font-medium text-gray-800">{r.name}</span>
+                            {r.company && <span className="text-gray-400 ml-1">· {r.company}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               {selectedContact.notes && (
                 <div>
                   <span className="text-gray-400 text-xs">Notes</span>
