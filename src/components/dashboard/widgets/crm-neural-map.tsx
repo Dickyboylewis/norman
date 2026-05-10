@@ -230,7 +230,7 @@ function getBubbleColor(name: string): string {
 }
 
 function nodeRadius(contactCount: number): number {
-  return Math.max(24, Math.min(44, 18 + contactCount * 1.8));
+  return Math.max(20, Math.min(36, 16 + contactCount * 1.4));
 }
 
 function getBorderColor(dirs: string[]): string {
@@ -1357,13 +1357,23 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       return "untyped";
     };
 
-    // Cluster centres — equal X+Y forces produce organic circular clouds
+    // Force targets — zone centres. Clamps (below) do the boundary work; forces just pull toward centre.
     const CLUSTERS: Record<"untyped"|"consultant"|"agent"|"client"|"contractor", { x: number; y: number }> = {
-      agent:      { x: 0.36 * width, y: 0.15 * height },
-      consultant: { x: 0.36 * width, y: 0.55 * height },
-      client:     { x: 0.86 * width, y: 0.50 * height },
-      contractor: { x: 0.36 * width, y: 0.88 * height },
-      untyped:    { x: 0.18 * width, y: 0.55 * height },
+      agent:      { x: 0.36 * width, y: 0.115 * height },
+      consultant: { x: 0.36 * width, y: 0.485 * height },
+      client:     { x: 0.81 * width, y: 0.525 * height },
+      contractor: { x: 0.36 * width, y: 0.865 * height },
+      untyped:    { x: 0.36 * width, y: 0.485 * height },
+    };
+
+    // Hard rectangular zones — no node may leave its zone
+    type Zone = { xMin: number; xMax: number; yMin: number; yMax: number };
+    const ZONES: Record<"agent"|"consultant"|"client"|"contractor"|"untyped", Zone> = {
+      agent:      { xMin: 0.18 * width, xMax: 0.55 * width, yMin: 0.05 * height, yMax: 0.18 * height },
+      consultant: { xMin: 0.18 * width, xMax: 0.55 * width, yMin: 0.25 * height, yMax: 0.72 * height },
+      client:     { xMin: 0.65 * width, xMax: 0.97 * width, yMin: 0.10 * height, yMax: 0.95 * height },
+      contractor: { xMin: 0.18 * width, xMax: 0.55 * width, yMin: 0.78 * height, yMax: 0.95 * height },
+      untyped:    { xMin: 0.18 * width, xMax: 0.55 * width, yMin: 0.25 * height, yMax: 0.72 * height },
     };
 
     // Director nodes — fy pins Y, forceX pulls to far-left edge (no fx)
@@ -1639,11 +1649,11 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("pointer-events", "none");
 
     const OVERLAY_PILL_DEFS = [
-      { key: "directors",   label: "DIRECTORS",   dataX: 60,             screenY: 50 },
-      { key: "agents",      label: "AGENTS",       dataX: 0.36 * width,  screenY: 50 },
-      { key: "consultants", label: "CONSULTANTS",  dataX: 0.36 * width,  screenY: 90 },
-      { key: "clients",     label: "CLIENTS",      dataX: 0.86 * width,  screenY: 50 },
-      { key: "contractors", label: "CONTRACTORS",  dataX: 0.36 * width,  screenY: 0.88 * height - 50 },
+      { key: "directors",   label: "DIRECTORS",   dataX: 60,             screenY: 200 },
+      { key: "agents",      label: "AGENTS",       dataX: 0.36 * width,  screenY: 60 },
+      { key: "consultants", label: "CONSULTANTS",  dataX: 0.36 * width,  screenY: 0.215 * height },
+      { key: "clients",     label: "CLIENTS",      dataX: 0.81 * width,  screenY: 60 },
+      { key: "contractors", label: "CONTRACTORS",  dataX: 0.36 * width,  screenY: 0.75 * height },
     ];
 
     const pillGroupMap: Record<string, d3.Selection<SVGGElement, unknown, null, undefined>> = {};
@@ -1712,11 +1722,11 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     // Assign real updatePillPositions — tracks directors dynamically via zoomTransform
     updatePillPositions = (transform: d3.ZoomTransform) => {
       const dirAvgX = directorSimNodes.reduce((s, d) => s + (d.x ?? 60), 0) / directorSimNodes.length;
-      pillGroupMap.directors.attr("transform",   `translate(${transform.applyX(dirAvgX)}, 50)`);
-      pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, 50)`);
-      pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, 90)`);
-      pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.86 * width)}, 50)`);
-      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.81 * height)})`);
+      pillGroupMap.directors.attr("transform",   `translate(${transform.applyX(dirAvgX)}, 200)`);
+      pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, 60)`);
+      pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.215 * height)})`);
+      pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.81 * width)}, 60)`);
+      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.75 * height)})`);
     };
     updatePillPositions(d3.zoomIdentity); // initial state
 
@@ -1730,37 +1740,34 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       )
       .force("charge", d3.forceManyBody<SimNode>().strength(-800))
       .force("collide", d3.forceCollide<SimNode>().radius(d =>
-        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 14
+        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 8
       ).strength(1.4))
       .force("clusterX", d3.forceX<SimNode>(d => {
         if (d.kind === "director") return 60;
         return CLUSTERS[typeLane(d.accountType)].x;
       }).strength(d => {
         if (d.kind === "director") return 1.0;
-        const lane = typeLane(d.accountType);
-        if (lane === "contractor") return 0.85;
-        return (lane === "consultant" || lane === "client") ? 0.8 : 0.6;
+        return typeLane(d.accountType) === "untyped" ? 0.4 : 0.5;
       }))
       .force("clusterY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.fy ?? height / 2;
         return CLUSTERS[typeLane(d.accountType)].y;
       }).strength(d => {
         if (d.kind === "director") return 0;
-        const lane = typeLane(d.accountType);
-        if (lane === "contractor") return 0.9;
-        return (lane === "consultant" || lane === "client") ? 0.7 : 0.6;
+        return typeLane(d.accountType) === "untyped" ? 0.4 : 0.5;
       }))
       .on("tick", () => {
-        // Hard Y clamps — create a clear gap between consultants and contractors
+        // Hard XY zone clamps — every bubble stays inside its zone regardless of collision pressure
         for (const d of simNodes) {
-          if (d.kind === "director" || d.y == null) continue;
-          const lane = typeLane(d.accountType);
-          if (lane === "contractor") {
-            if (d.y < 0.83 * height) d.y = 0.83 * height;
-            if (d.y > 0.96 * height) d.y = 0.96 * height;
-          } else if (lane !== "agent") {
-            // Consultants, clients, untyped: ceiling at 0.78H
-            if (d.y > 0.78 * height) d.y = 0.78 * height;
+          if (d.kind === "director") continue;
+          const zone = ZONES[typeLane(d.accountType)];
+          if (d.x != null) {
+            if (d.x < zone.xMin) d.x = zone.xMin;
+            if (d.x > zone.xMax) d.x = zone.xMax;
+          }
+          if (d.y != null) {
+            if (d.y < zone.yMin) d.y = zone.yMin;
+            if (d.y > zone.yMax) d.y = zone.yMax;
           }
         }
         simNodesRef.current = simNodes;
@@ -1779,57 +1786,39 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     simRef.current = sim;
 
     const sanityTimer = setTimeout(() => {
-      let maxClientX = 0;
-      const consultantNodes: SimNode[] = [], clientNodes: SimNode[] = [], agentNodes: SimNode[] = [], contractorNodes: SimNode[] = [];
+      const lanes = (["agent", "consultant", "client", "contractor", "untyped"] as const);
+      const counts: Record<string, number> = {};
+      let outsideZone = 0, inGap = 0, edgeHuggers = 0, totalNonDir = 0;
+
       for (const d of simNodes) {
-        if (d.kind === "director" && d.x != null) {
-          if (d.x < 40 || d.x > 120)
-            console.warn(`[CRM Neural Map] Director ${d.name} x=${d.x.toFixed(0)} outside [40, 120]`);
-        }
-        if (d.kind !== "account" || d.x == null || d.y == null) continue;
+        if (d.kind === "director") continue;
+        if (d.x == null || d.y == null) continue;
+        totalNonDir++;
         const lane = typeLane(d.accountType);
-        if (lane === "client") { maxClientX = Math.max(maxClientX, d.x); clientNodes.push(d); }
-        if (lane === "consultant") consultantNodes.push(d);
-        if (lane === "agent") agentNodes.push(d);
-        if (lane === "contractor") contractorNodes.push(d);
+        counts[lane] = (counts[lane] ?? 0) + 1;
+        const zone = ZONES[lane];
+
+        // Check zone containment
+        if (d.x < zone.xMin - 1 || d.x > zone.xMax + 1 || d.y < zone.yMin - 1 || d.y > zone.yMax + 1)
+          outsideZone++;
+
+        // Check gap intrusion (reserved columns / rows)
+        const inXGap = (d.x > 0.10 * width && d.x < 0.18 * width) || (d.x > 0.55 * width && d.x < 0.65 * width);
+        const inYGap = (d.y > 0.18 * height && d.y < 0.25 * height) || (d.y > 0.72 * height && d.y < 0.78 * height);
+        if (inXGap || inYGap) inGap++;
+
+        // Check edge-hugging (within 4px of zone boundary)
+        const nearEdge = d.x < zone.xMin + 4 || d.x > zone.xMax - 4 || d.y < zone.yMin + 4 || d.y > zone.yMax - 4;
+        if (nearEdge) edgeHuggers++;
       }
-      if (maxClientX > 0 && maxClientX < width * 0.78)
-        console.warn(`[CRM Neural Map] Max client x=${maxClientX.toFixed(0)} < 0.78*width`);
-      const overlapConsultants = consultantNodes.filter(d => (d.x ?? 0) > 0.55 * width);
-      if (overlapConsultants.length > 0)
-        console.warn(`[CRM Neural Map] ${overlapConsultants.length} consultant node(s) x > 0.55*width`);
-      const overlapClients = clientNodes.filter(d => (d.x ?? 0) < 0.65 * width);
-      if (overlapClients.length > 0)
-        console.warn(`[CRM Neural Map] ${overlapClients.length} client node(s) x < 0.65*width`);
-      if (contractorNodes.length === 0)
+
+      if (outsideZone > 0) console.warn(`[CRM Neural Map] ${outsideZone} node(s) outside assigned zone bounds`);
+      if (inGap > 0) console.warn(`[CRM Neural Map] ${inGap} node(s) in reserved gap region`);
+      if (totalNonDir > 0 && edgeHuggers / totalNonDir > 0.1)
+        console.warn(`[CRM Neural Map] ${((edgeHuggers / totalNonDir) * 100).toFixed(0)}% of nodes hugging zone edge — zones may be too small`);
+      if (!counts["contractor"])
         console.warn("[CRM Neural Map] Contractor cluster has 0 nodes — accountType matching may be failing");
-      // Verify clamps held
-      const consultantLeakers = [...consultantNodes, ...clientNodes, ...(simNodes.filter(d => d.kind === "account" && typeLane(d.accountType) === "untyped"))]
-        .filter(d => (d.y ?? 0) > 0.78 * height + 1);
-      if (consultantLeakers.length > 0)
-        console.warn(`[CRM Neural Map] ${consultantLeakers.length} non-contractor node(s) y > 0.78H — ceiling clamp may not be firing`);
-      const contractorOutOfRange = contractorNodes.filter(d => (d.y ?? 0) < 0.83 * height || (d.y ?? 0) > 0.96 * height);
-      if (contractorOutOfRange.length > 0)
-        console.warn(`[CRM Neural Map] ${contractorOutOfRange.length} contractor node(s) outside [0.83H, 0.96H]`);
-      if (contractorNodes.length > 0 && consultantNodes.length > 0) {
-        const contractorAvgX = contractorNodes.reduce((s, d) => s + (d.x ?? 0), 0) / contractorNodes.length;
-        const consultantAvgX = consultantNodes.reduce((s, d) => s + (d.x ?? 0), 0) / consultantNodes.length;
-        if (Math.abs(contractorAvgX - consultantAvgX) > 30)
-          console.warn(`[CRM Neural Map] Contractor avg x=${contractorAvgX.toFixed(0)} not aligned with consultant avg x=${consultantAvgX.toFixed(0)} (diff > 30px)`);
-      }
-      const checkCluster = (nodes: SimNode[], cx: number, cy: number, threshold: number, label: string) => {
-        if (!nodes.length) return;
-        const far = nodes.filter(d => {
-          const dx = (d.x ?? 0) - cx, dy = (d.y ?? 0) - cy;
-          return Math.sqrt(dx * dx + dy * dy) > threshold;
-        });
-        if (far.length / nodes.length > 0.2)
-          console.warn(`[CRM Neural Map] ${((far.length / nodes.length) * 100).toFixed(0)}% of ${label} nodes > ${threshold}px from centre`);
-      };
-      checkCluster(consultantNodes, 0.36 * width, 0.55 * height, 350, "consultant");
-      checkCluster(clientNodes,     0.86 * width, 0.50 * height, 350, "client");
-      checkCluster(agentNodes,      0.36 * width, 0.15 * height, 220, "agent");
-      checkCluster(contractorNodes, 0.36 * width, 0.88 * height, 280, "contractor");
+      console.log("[CRM Neural Map] Zone counts:", lanes.map(l => `${l}:${counts[l] ?? 0}`).join(", "));
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
