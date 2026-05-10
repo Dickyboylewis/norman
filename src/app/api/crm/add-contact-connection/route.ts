@@ -62,11 +62,25 @@ export async function POST(request: NextRequest) {
     if (contactId === connectedContactId)
       return NextResponse.json({ error: "Cannot connect a contact to themselves" }, { status: 400 });
 
-    const current = await getLinkedIds(apiKey, contactId);
-    const updated = Array.from(new Set([...current, connectedContactId]));
-    await setLinkedIds(apiKey, contactId, updated);
+    // Write A → B
+    const currentA = await getLinkedIds(apiKey, contactId);
+    const updatedA = Array.from(new Set([...currentA, connectedContactId]));
+    await setLinkedIds(apiKey, contactId, updatedA);
 
-    return NextResponse.json({ success: true, connectedToIds: updated });
+    await new Promise(r => setTimeout(r, 100));
+
+    // Write B → A (reciprocal)
+    try {
+      const currentB = await getLinkedIds(apiKey, connectedContactId);
+      const updatedB = Array.from(new Set([...currentB, contactId]));
+      await setLinkedIds(apiKey, connectedContactId, updatedB);
+    } catch (e) {
+      // Rollback A
+      try { await setLinkedIds(apiKey, contactId, currentA); } catch { /* best effort */ }
+      throw new Error(`Reciprocal write failed: ${e instanceof Error ? e.message : "unknown"}`);
+    }
+
+    return NextResponse.json({ success: true, connectedToIds: updatedA });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
   }

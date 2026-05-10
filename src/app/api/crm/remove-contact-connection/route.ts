@@ -60,11 +60,25 @@ export async function POST(request: NextRequest) {
     if (!contactId || !connectedContactId)
       return NextResponse.json({ error: "Missing contactId or connectedContactId" }, { status: 400 });
 
-    const current = await getLinkedIds(apiKey, contactId);
-    const updated = current.filter(id => id !== connectedContactId);
-    await setLinkedIds(apiKey, contactId, updated);
+    // Remove B from A
+    const currentA = await getLinkedIds(apiKey, contactId);
+    const updatedA = currentA.filter(id => id !== connectedContactId);
+    await setLinkedIds(apiKey, contactId, updatedA);
 
-    return NextResponse.json({ success: true, connectedToIds: updated });
+    await new Promise(r => setTimeout(r, 100));
+
+    // Remove A from B (reciprocal)
+    try {
+      const currentB = await getLinkedIds(apiKey, connectedContactId);
+      const updatedB = currentB.filter(id => id !== contactId);
+      await setLinkedIds(apiKey, connectedContactId, updatedB);
+    } catch (e) {
+      // Rollback A
+      try { await setLinkedIds(apiKey, contactId, currentA); } catch { /* best effort */ }
+      throw new Error(`Reciprocal remove failed: ${e instanceof Error ? e.message : "unknown"}`);
+    }
+
+    return NextResponse.json({ success: true, connectedToIds: updatedA });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
   }

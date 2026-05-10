@@ -273,6 +273,8 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const clearSpotlightRef = useRef<() => void>(() => {});
   const spotlightDataRef = useRef<{ accounts: Set<string>; directors: Set<string> } | null>(null);
   const simNodesRef = useRef<SimNode[]>([]);
+  const updateLabelsRef = useRef<(k: number) => void>(() => {});
+  const connectionCardAccountsRef = useRef<Set<string>>(new Set());
 
   const [selectedAccount, setSelectedAccount] = useState<AccountNode | null>(null);
   const [selectedContact, setSelectedContact] = useState<ContactNode | null>(null);
@@ -926,6 +928,38 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     return companies;
   }, [selectedContact, lookupMaps, data]);
 
+  // ── Connection cards data (account → contacts to show when contact spotlit) ─
+
+  const connectionCards = useMemo(() => {
+    type CardEntry = { id: string; name: string; isSelf: boolean; dirColor?: string };
+    if (!selectedContact || !spotlightData) return new Map<string, CardEntry[]>();
+
+    const myAccountId = lookupMaps.contactToAccountId.get(selectedContact.id);
+    const myDirColor = selectedContact.directors?.[0]
+      ? DIRECTOR_COLORS[selectedContact.directors[0]]
+      : undefined;
+    const cards = new Map<string, CardEntry[]>();
+
+    for (const accountId of spotlightData.accounts) {
+      const entries: CardEntry[] = [];
+
+      if (accountId === myAccountId) {
+        entries.push({ id: selectedContact.id, name: selectedContact.name, isSelf: true, dirColor: myDirColor });
+      }
+
+      for (const connId of (selectedContact.connectedToIds ?? [])) {
+        if (lookupMaps.contactToAccountId.get(connId) === accountId) {
+          const conn = lookupMaps.contactById.get(connId);
+          if (conn) entries.push({ id: connId, name: conn.name, isSelf: false });
+        }
+      }
+
+      if (entries.length > 0) cards.set(accountId, entries);
+    }
+
+    return cards;
+  }, [selectedContact, spotlightData, lookupMaps]);
+
   // ── Director panel stats ──────────────────────────────────────────────────
 
   const directorStats = useMemo(() => {
@@ -1069,6 +1103,126 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("pointer-events", "none")
       .text(selectedContact.name);
   }, [selectedContact, lookupMaps]);
+
+  // ── Connection cards D3 layer ─────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!gRef.current) return;
+    const cardsLayer = d3.select(gRef.current).select<SVGGElement>(".connection-cards-layer");
+    if (cardsLayer.empty()) return;
+    cardsLayer.selectAll("*").remove();
+
+    // Update which accounts have cards (suppresses their text labels)
+    connectionCardAccountsRef.current = new Set(connectionCards.keys());
+    if (svgRef.current) {
+      const k = d3.zoomTransform(svgRef.current).k;
+      updateLabelsRef.current(k);
+    }
+
+    if (connectionCards.size === 0) return;
+
+    const LINE_H = 17;
+    const PAD_X = 8;
+    const PAD_Y = 5;
+    const MAX_LINES = 5;
+
+    for (const [accountId, entries] of connectionCards.entries()) {
+      const node = simNodesRef.current.find(n => n.id === accountId);
+      if (!node || node.x == null || node.y == null) continue;
+
+      const radius = nodeRadius(node.contactCount ?? 0);
+      const displayEntries = entries.slice(0, MAX_LINES);
+      const overflow = entries.length - MAX_LINES;
+
+      const cardW = Math.min(200, Math.max(80,
+        Math.max(...displayEntries.map(e => e.name.length * 6.4)) + PAD_X * 2 + 10
+      ));
+      const cardH = (displayEntries.length + (overflow > 0 ? 1 : 0)) * LINE_H + PAD_Y * 2;
+
+      const cardG = cardsLayer.append("g")
+        .attr("class", "connection-card")
+        .attr("transform", `translate(${node.x},${node.y + radius + 8})`);
+
+      // Background
+      cardG.append("rect")
+        .attr("x", -cardW / 2).attr("y", 0)
+        .attr("width", cardW).attr("height", cardH)
+        .attr("rx", 8).attr("ry", 8)
+        .attr("fill", "rgba(255,255,255,0.93)")
+        .attr("stroke", "#e2e8f0").attr("stroke-width", 1)
+        .style("filter", "drop-shadow(0 4px 12px rgba(15,23,42,0.08))")
+        .attr("pointer-events", "none");
+
+      // Name rows
+      displayEntries.forEach((entry, i) => {
+        const rowY = PAD_Y + i * LINE_H;
+
+        const rowG = cardG.append("g").style("cursor", "pointer");
+
+        // Hover bg
+        rowG.append("rect")
+          .attr("class", "card-row-bg")
+          .attr("x", -cardW / 2 + 2).attr("y", rowY)
+          .attr("width", cardW - 4).attr("height", LINE_H)
+          .attr("rx", 4).attr("fill", "transparent");
+
+        // Coloured dot for own-account entry
+        if (entry.isSelf && entry.dirColor) {
+          rowG.append("circle")
+            .attr("cx", -cardW / 2 + PAD_X)
+            .attr("cy", rowY + LINE_H / 2)
+            .attr("r", 3)
+            .attr("fill", entry.dirColor)
+            .attr("pointer-events", "none");
+        }
+
+        const maxChars = Math.floor((cardW - PAD_X * 2 - (entry.isSelf && entry.dirColor ? 10 : 0)) / 6.4);
+        const label = entry.name.length > maxChars ? entry.name.slice(0, maxChars - 1) + "…" : entry.name;
+
+        rowG.append("text")
+          .attr("x", 0)
+          .attr("y", rowY + LINE_H / 2 + 4)
+          .attr("text-anchor", "middle")
+          .attr("font-size", 11)
+          .attr("font-family", "Poppins, sans-serif")
+          .attr("font-weight", entry.isSelf ? "600" : "500")
+          .attr("fill", entry.isSelf ? "#111827" : "#1f2937")
+          .attr("pointer-events", "none")
+          .text(label);
+
+        rowG
+          .on("mouseenter", function(this: SVGGElement) {
+            d3.select(this).select(".card-row-bg").attr("fill", "#f1f5f9");
+          })
+          .on("mouseleave", function(this: SVGGElement) {
+            d3.select(this).select(".card-row-bg").attr("fill", "transparent");
+          })
+          .on("click", (event: Event) => {
+            event.stopPropagation();
+            const contact = lookupMaps.contactById.get(entry.id);
+            if (contact) {
+              setSelectedContact(contact);
+              setSelectedAccount(null);
+              setSelectedDirector(null);
+            }
+          });
+      });
+
+      // "+ N more" overflow line
+      if (overflow > 0) {
+        const overflowY = PAD_Y + displayEntries.length * LINE_H;
+        cardG.append("text")
+          .attr("x", 0)
+          .attr("y", overflowY + LINE_H / 2 + 4)
+          .attr("text-anchor", "middle")
+          .attr("font-size", 10)
+          .attr("font-family", "Poppins, sans-serif")
+          .attr("fill", "#9ca3af")
+          .attr("pointer-events", "none")
+          .text(`+ ${overflow} more`);
+      }
+    }
+  }, [connectionCards, lookupMaps]);
 
   // ── D3 simulation ─────────────────────────────────────────────────────────
 
@@ -1427,6 +1581,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     // Assign real updateLabels now that accountLabels exists
     updateLabels = (k: number) => {
       accountLabels.style("display", (d: SimNode) => {
+        if (connectionCardAccountsRef.current.has(d.id)) return "none";
         if (k < 0.9) return "none";
         const sd = spotlightDataRef.current;
         const inSpotlight = sd ? sd.accounts.has(d.id) : false;
@@ -1435,6 +1590,10 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       });
     };
     updateLabels(1); // apply initial state at default zoom
+    updateLabelsRef.current = updateLabels;
+
+    // Connection cards layer — above account labels, below side panels
+    g.append("g").attr("class", "connection-cards-layer");
 
     // Assign real updatePillPositions — tracks directors dynamically via zoomTransform
     updatePillPositions = (transform: d3.ZoomTransform) => {
