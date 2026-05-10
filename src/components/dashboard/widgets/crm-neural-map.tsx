@@ -229,6 +229,15 @@ function getBubbleColor(name: string): string {
   return HASH_PALETTE[hashName(name) % HASH_PALETTE.length];
 }
 
+function typeLane(accountType: string | undefined): "client" | "consultant" | "agent" | "contractor" | "untyped" {
+  const t = (accountType || "").toLowerCase().trim();
+  if (t === "client") return "client";
+  if (t === "consultant") return "consultant";
+  if (t === "agent") return "agent";
+  if (t === "contractor") return "contractor";
+  return "untyped";
+}
+
 function nodeRadius(contactCount: number): number {
   return Math.max(16, Math.min(28, 12 + contactCount * 1.1));
 }
@@ -913,6 +922,44 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     return (data?.edges ?? []).filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
   }, [data, filteredNodes]);
 
+  // Adaptive cluster geometry — radii and positions derived from bubble counts
+  const clusterLayout = useMemo(() => {
+    const counts = { agent: 0, consultant: 0, client: 0, contractor: 0, untyped: 0 };
+    for (const n of filteredNodes) counts[typeLane(n.accountType)]++;
+
+    const AVG_R = 32; // avg bubble radius (22) + collide padding (10)
+    const PACK = 1.15;
+    const clusterRadius = (count: number) => Math.max(60, Math.sqrt(count * AVG_R * AVG_R * PACK));
+
+    const radii = {
+      agent:      clusterRadius(counts.agent),
+      consultant: clusterRadius(counts.consultant),
+      client:     clusterRadius(counts.client),
+      contractor: clusterRadius(counts.contractor),
+      untyped:    clusterRadius(counts.untyped),
+    };
+
+    const GAP = 80;
+    const TOP_PADDING = 100;
+    const LEFT_PADDING = 200;
+
+    const consultantsCx = LEFT_PADDING + radii.consultant;
+    const consultantsCy = TOP_PADDING + radii.agent + GAP + radii.consultant;
+
+    const centres = {
+      consultant: { x: consultantsCx,                                              y: consultantsCy },
+      agent:      { x: consultantsCx,                                              y: consultantsCy - radii.consultant - GAP - radii.agent },
+      contractor: { x: consultantsCx,                                              y: consultantsCy + radii.consultant + GAP + radii.contractor },
+      client:     { x: consultantsCx + radii.consultant + GAP + radii.client,      y: consultantsCy },
+      untyped:    { x: Math.max(60, consultantsCx - radii.consultant - GAP - radii.untyped), y: consultantsCy },
+    };
+
+    const canvasWidth  = centres.client.x + radii.client + 100;
+    const canvasHeight = centres.contractor.y + radii.contractor + 100;
+
+    return { radii, centres, canvasWidth, canvasHeight, counts };
+  }, [filteredNodes]);
+
   const effectiveMin = viewMode === "priority" ? Math.max(2, minContacts) : minContacts;
 
   // ── Per-account Y scores (recency + known) ────────────────────────────────
@@ -1368,38 +1415,29 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       setSelectedDirector(null);
     };
 
-    const { width, height } = dimensions;
-
-    const typeLane = (accountType: string | undefined): "client"|"consultant"|"agent"|"contractor"|"untyped" => {
-      const t = (accountType || "").toLowerCase().trim();
-      if (t === "client") return "client";
-      if (t === "consultant") return "consultant";
-      if (t === "agent") return "agent";
-      if (t === "contractor") return "contractor";
-      return "untyped";
-    };
+    const { centres, radii, canvasHeight } = clusterLayout;
 
     // Force targets = cluster centres
     const CLUSTERS: Record<"untyped"|"consultant"|"agent"|"client"|"contractor", { x: number; y: number }> = {
-      agent:      { x: 0.36 * width, y: 0.13 * height },
-      consultant: { x: 0.36 * width, y: 0.48 * height },
-      client:     { x: 0.82 * width, y: 0.50 * height },
-      contractor: { x: 0.36 * width, y: 0.93 * height },
-      untyped:    { x: 0.16 * width, y: 0.50 * height },
+      agent:      { x: centres.agent.x,      y: centres.agent.y      },
+      consultant: { x: centres.consultant.x, y: centres.consultant.y },
+      client:     { x: centres.client.x,     y: centres.client.y     },
+      contractor: { x: centres.contractor.x, y: centres.contractor.y },
+      untyped:    { x: centres.untyped.x,    y: centres.untyped.y    },
     };
 
     // Circular cluster bounds — bubbles snapped back along radial line on each tick
     type Circle = { cx: number; cy: number; maxRadius: number };
     const CIRCLES: Record<"agent"|"consultant"|"client"|"contractor"|"untyped", Circle> = {
-      agent:      { cx: 0.36 * width, cy: 0.13 * height,  maxRadius: 130 },
-      consultant: { cx: 0.36 * width, cy: 0.48 * height,  maxRadius: 290 },
-      client:     { cx: 0.82 * width, cy: 0.50 * height,  maxRadius: 270 },
-      contractor: { cx: 0.36 * width, cy: 0.93 * height,  maxRadius: 80  },
-      untyped:    { cx: 0.16 * width, cy: 0.50 * height,  maxRadius: 120 },
+      agent:      { cx: centres.agent.x,      cy: centres.agent.y,      maxRadius: radii.agent      },
+      consultant: { cx: centres.consultant.x, cy: centres.consultant.y, maxRadius: radii.consultant },
+      client:     { cx: centres.client.x,     cy: centres.client.y,     maxRadius: radii.client     },
+      contractor: { cx: centres.contractor.x, cy: centres.contractor.y, maxRadius: radii.contractor },
+      untyped:    { cx: centres.untyped.x,    cy: centres.untyped.y,    maxRadius: radii.untyped    },
     };
 
     // Director nodes — fy pins Y, forceX pulls to far-left edge (no fx)
-    const dirFy = [280, 480, 680]; // pixel positions in 900px canvas
+    const dirFy = [canvasHeight * 0.28, canvasHeight * 0.50, canvasHeight * 0.72].map(Math.round);
     const directorSimNodes: SimNode[] = DIRECTOR_NODES.map((d, i) => ({
       id: d.id,
       kind: "director" as const,
@@ -1538,7 +1576,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
     nodeGroups.filter(d => d.kind === "account")
       .append("circle")
-      .attr("r", d => nodeRadius(d.contactCount ?? 0) + 2)
+      .attr("r", d => nodeRadius(d.contactCount ?? 0) + 1)
       .attr("fill", d => getBorderColor(d.directors ?? []))
       .attr("opacity", 0.95);
 
@@ -1673,20 +1711,20 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       .attr("pointer-events", "none");
 
     const OVERLAY_PILL_DEFS = [
-      { key: "directors",   label: "DIRECTORS",   dataX: 60,             screenY: 200 },
-      { key: "agents",      label: "AGENTS",       dataX: 0.36 * width,  screenY: 0.13 * height - 100 },
-      { key: "consultants", label: "CONSULTANTS",  dataX: 0.36 * width,  screenY: 0.48 * height - 320 },
-      { key: "clients",     label: "CLIENTS",      dataX: 0.82 * width,  screenY: 0.50 * height - 300 },
-      { key: "contractors", label: "CONTRACTORS",  dataX: 0.36 * width,  screenY: 0.93 * height - 100 },
+      { key: "directors",   label: "DIRECTORS",   dataX: 60,                   dataY: centres.consultant.y - 160 },
+      { key: "agents",      label: "AGENTS",       dataX: centres.agent.x,      dataY: centres.agent.y      - radii.agent      - 40 },
+      { key: "consultants", label: "CONSULTANTS",  dataX: centres.consultant.x, dataY: centres.consultant.y - radii.consultant - 40 },
+      { key: "clients",     label: "CLIENTS",      dataX: centres.client.x,     dataY: centres.client.y     - radii.client     - 40 },
+      { key: "contractors", label: "CONTRACTORS",  dataX: centres.contractor.x, dataY: centres.contractor.y - radii.contractor - 40 },
     ];
 
     const pillGroupMap: Record<string, d3.Selection<SVGGElement, unknown, null, undefined>> = {};
 
-    OVERLAY_PILL_DEFS.forEach(({ key, label, dataX, screenY }) => {
+    OVERLAY_PILL_DEFS.forEach(({ key, label, dataX, dataY }) => {
       const pillW = label.length * 10 + 28;
       const pillH = 28;
       const pg = pillOverlay.append<SVGGElement>("g")
-        .attr("transform", `translate(${dataX}, ${screenY})`);
+        .attr("transform", `translate(${dataX}, ${dataY})`);
       pg.append("rect")
         .attr("x", -pillW / 2).attr("y", -pillH / 2)
         .attr("width", pillW).attr("height", pillH)
@@ -1751,11 +1789,12 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     // Assign real updatePillPositions — tracks directors dynamically via zoomTransform
     updatePillPositions = (transform: d3.ZoomTransform) => {
       const dirAvgX = directorSimNodes.reduce((s, d) => s + (d.x ?? 60), 0) / directorSimNodes.length;
-      pillGroupMap.directors.attr("transform",   `translate(${transform.applyX(dirAvgX)}, 200)`);
-      pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.13 * height) - 100})`);
-      pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.48 * height) - 320})`);
-      pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(0.82 * width)}, ${transform.applyY(0.50 * height) - 300})`);
-      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(0.36 * width)}, ${transform.applyY(0.93 * height) - 100})`);
+      const dirAvgY = directorSimNodes.reduce((s, d) => s + (d.y ?? centres.consultant.y), 0) / directorSimNodes.length;
+      pillGroupMap.directors.attr("transform",   `translate(${transform.applyX(dirAvgX)}, ${transform.applyY(dirAvgY - 80)})`);
+      pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(centres.agent.x)},      ${transform.applyY(centres.agent.y      - radii.agent      - 40)})`);
+      pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(centres.consultant.x)}, ${transform.applyY(centres.consultant.y - radii.consultant - 40)})`);
+      pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(centres.client.x)},     ${transform.applyY(centres.client.y     - radii.client     - 40)})`);
+      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(centres.contractor.x)}, ${transform.applyY(centres.contractor.y - radii.contractor - 40)})`);
     };
     updatePillPositions(d3.zoomIdentity); // initial state
 
@@ -1779,7 +1818,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         return typeLane(d.accountType) === "untyped" ? 0.7 : 0.9;
       }))
       .force("clusterY", d3.forceY<SimNode>(d => {
-        if (d.kind === "director") return d.fy ?? height / 2;
+        if (d.kind === "director") return d.fy ?? canvasHeight / 2;
         return CLUSTERS[typeLane(d.accountType)].y;
       }).strength(d => {
         if (d.kind === "director") return 0;
@@ -1848,7 +1887,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
-  }, [filteredNodes, filteredEdges, dimensions]);
+  }, [filteredNodes, filteredEdges, clusterLayout]);
 
   // ── Loading / error ────────────────────────────────────────────────────────
 
@@ -2017,7 +2056,7 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
 
       {/* SVG canvas — scrollable */}
       <div className="flex-1 overflow-y-auto relative">
-        <svg ref={svgRef} width="100%" height="900" style={{ cursor: "grab", display: "block" }}>
+        <svg ref={svgRef} width="100%" height={clusterLayout.canvasHeight} style={{ cursor: "grab", display: "block" }}>
           <g ref={gRef} />
         </svg>
       </div>
