@@ -230,7 +230,7 @@ function getBubbleColor(name: string): string {
 }
 
 function nodeRadius(contactCount: number): number {
-  return Math.max(20, Math.min(36, 16 + contactCount * 1.4));
+  return Math.max(16, Math.min(28, 12 + contactCount * 1.1));
 }
 
 function getBorderColor(dirs: string[]): string {
@@ -1740,21 +1740,21 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       )
       .force("charge", d3.forceManyBody<SimNode>().strength(-800))
       .force("collide", d3.forceCollide<SimNode>().radius(d =>
-        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 8
+        d.kind === "director" ? 94 : nodeRadius(d.contactCount ?? 0) + 4
       ).strength(1.4))
       .force("clusterX", d3.forceX<SimNode>(d => {
         if (d.kind === "director") return 60;
         return CLUSTERS[typeLane(d.accountType)].x;
       }).strength(d => {
         if (d.kind === "director") return 1.0;
-        return typeLane(d.accountType) === "untyped" ? 0.4 : 0.5;
+        return typeLane(d.accountType) === "untyped" ? 0.5 : 0.7;
       }))
       .force("clusterY", d3.forceY<SimNode>(d => {
         if (d.kind === "director") return d.fy ?? height / 2;
         return CLUSTERS[typeLane(d.accountType)].y;
       }).strength(d => {
         if (d.kind === "director") return 0;
-        return typeLane(d.accountType) === "untyped" ? 0.4 : 0.5;
+        return typeLane(d.accountType) === "untyped" ? 0.4 : 0.6;
       }))
       .on("tick", () => {
         // Hard XY zone clamps — every bubble stays inside its zone regardless of collision pressure
@@ -1819,6 +1819,29 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
       if (!counts["contractor"])
         console.warn("[CRM Neural Map] Contractor cluster has 0 nodes — accountType matching may be failing");
       console.log("[CRM Neural Map] Zone counts:", lanes.map(l => `${l}:${counts[l] ?? 0}`).join(", "));
+
+      // Bounding box coverage — aim for 50-70% of zone area
+      const bboxByLane: Record<string, { xMin: number; xMax: number; yMin: number; yMax: number }> = {};
+      for (const d of simNodes) {
+        if (d.kind === "director" || d.x == null || d.y == null) continue;
+        const lane = typeLane(d.accountType);
+        const r = nodeRadius(d.contactCount ?? 0);
+        const bb = bboxByLane[lane] ?? { xMin: Infinity, xMax: -Infinity, yMin: Infinity, yMax: -Infinity };
+        bb.xMin = Math.min(bb.xMin, d.x - r); bb.xMax = Math.max(bb.xMax, d.x + r);
+        bb.yMin = Math.min(bb.yMin, d.y - r); bb.yMax = Math.max(bb.yMax, d.y + r);
+        bboxByLane[lane] = bb;
+      }
+      for (const lane of lanes) {
+        const bb = bboxByLane[lane];
+        if (!bb) continue;
+        const zone = ZONES[lane];
+        const zoneArea = (zone.xMax - zone.xMin) * (zone.yMax - zone.yMin);
+        const bbArea = Math.max(0, bb.xMax - bb.xMin) * Math.max(0, bb.yMax - bb.yMin);
+        const pct = zoneArea > 0 ? Math.round(bbArea / zoneArea * 100) : 0;
+        const msg = `[CRM Neural Map] ${lane} bounding box covers ${pct}% of zone area`;
+        if (pct > 85) console.warn(msg + " — bubbles too large or zone too small");
+        else console.log(msg);
+      }
     }, 2000);
 
     return () => { sim.stop(); clearTimeout(sanityTimer); };
