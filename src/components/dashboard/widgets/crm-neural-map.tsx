@@ -286,6 +286,9 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
   const connectionCardAccountsRef = useRef<Set<string>>(new Set());
   const updateContactLabelRef = useRef<(k: number) => void>(() => {});
   const updateConnectionCardsRef = useRef<(k: number) => void>(() => {});
+  const focalPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const spotlitSetRef = useRef<Set<string>>(new Set());
+  const focalNodeRef = useRef<SimNode | null>(null);
 
   const [selectedAccount, setSelectedAccount] = useState<AccountNode | null>(null);
   const [selectedContact, setSelectedContact] = useState<ContactNode | null>(null);
@@ -1163,6 +1166,50 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     spotlightDataRef.current = spotlightData;
   }, [spotlightData]);
 
+  // ── Focal-pull: update refs and re-energise sim on selection change ───────
+
+  useEffect(() => {
+    // Unpin previously pinned focal node
+    if (focalNodeRef.current) {
+      focalNodeRef.current.fx = null;
+      focalNodeRef.current.fy = null;
+      focalNodeRef.current = null;
+    }
+    focalPositionRef.current = null;
+    spotlitSetRef.current = new Set();
+
+    const sim = simRef.current;
+    if (!sim) return;
+
+    if (!selectedAccount && !selectedContact) {
+      sim.alpha(0.3).restart();
+      return;
+    }
+
+    const focalId = selectedContact
+      ? lookupMaps.contactToAccountId.get(selectedContact.id)
+      : selectedAccount?.id;
+
+    if (!focalId || !spotlightData) {
+      sim.alpha(0.3).restart();
+      return;
+    }
+
+    const focalNode = simNodesRef.current.find(n => n.id === focalId);
+    if (focalNode?.x != null && focalNode?.y != null) {
+      focalPositionRef.current = { x: focalNode.x, y: focalNode.y };
+      focalNode.fx = focalNode.x;
+      focalNode.fy = focalNode.y;
+      focalNodeRef.current = focalNode;
+    }
+
+    const spotlitSet = new Set(spotlightData.accounts);
+    spotlitSet.delete(focalId);
+    spotlitSetRef.current = spotlitSet;
+
+    sim.alpha(0.3).restart();
+  }, [selectedAccount, selectedContact, spotlightData, lookupMaps]);
+
   // ── Spotlight opacity effect ──────────────────────────────────────────────
 
   useEffect(() => {
@@ -1828,10 +1875,24 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
         if (lane === "consultant" || lane === "client") return 0.85;
         return 0.9; // agent
       }))
+      .force("focal", ((alpha: number) => {
+        const fp = focalPositionRef.current;
+        const ss = spotlitSetRef.current;
+        if (!fp || ss.size === 0) return;
+        const STRENGTH = 0.18;
+        for (const node of simNodes) {
+          if (node.kind === "director" || !ss.has(node.id)) continue;
+          if (node.x == null || node.y == null) continue;
+          node.vx = (node.vx ?? 0) + (fp.x - node.x) * STRENGTH * alpha;
+          node.vy = (node.vy ?? 0) + (fp.y - node.y) * STRENGTH * alpha;
+        }
+      }) as never)
       .on("tick", () => {
         // Circular cluster bounds — snap back along radial line if beyond maxRadius
+        // Skip spotlit nodes during focus so they can gather around the focal point
         for (const d of simNodes) {
           if (d.kind === "director" || d.x == null || d.y == null) continue;
+          if (focalPositionRef.current && spotlitSetRef.current.has(d.id)) continue;
           const bound = CIRCLES[typeLane(d.accountType)];
           const dx = d.x - bound.cx, dy = d.y - bound.cy;
           const dist = Math.sqrt(dx * dx + dy * dy);
