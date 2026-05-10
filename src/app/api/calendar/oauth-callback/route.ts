@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
       googleEmail:        userData.email ?? "",
       connectedAt:        new Date().toISOString(),
       lastSyncAt:         null,
+      calendarSyncToken:  null,
     };
 
     setTokens(directorName, tokens);
