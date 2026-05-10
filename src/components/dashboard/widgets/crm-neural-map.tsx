@@ -27,9 +27,9 @@ const DIR_FULL_NAMES: Record<string, string> = {
   jesus: "Jesus Jimenez",
 };
 const DIR_EMAILS: Record<string, string> = {
-  dicky: "dicky@white-red.co.uk",
-  joe:   "joe@white-red.co.uk",
-  jesus: "jesus@white-red.co.uk",
+  dicky: "dicky.lewis@white-red.co.uk",
+  joe:   "joe.haire@white-red.co.uk",
+  jesus: "jesus.jimenez@white-red.co.uk",
 };
 
 // ── Cluster x-positions ──────────────────────────────────────────────────────
