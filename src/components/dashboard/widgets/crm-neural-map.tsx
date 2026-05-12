@@ -465,22 +465,6 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setContactTagSaving(false); setContactTagStatus("idle");
   }, [selectedContact]);
 
-  // Auto-clear spotlight when the selected account is filtered out of the visible set.
-  // Without this, D3 effects that look up the focal node in simNodesRef (which only
-  // contains filtered nodes) would operate on a stale / missing selection.
-  useEffect(() => {
-    if (!selectedAccount) return;
-    const visibleIds = new Set(filteredNodes.map(n => n.id));
-    if (!visibleIds.has(selectedAccount.id)) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[CRMNeuralMap] Spotlight account filtered out — clearing selection");
-      }
-      setSelectedAccount(null);
-      setSelectedContact(null);
-      setSelectedDirector(null);
-    }
-  }, [filteredNodes, selectedAccount]);
-
   // Escape clears all selections
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1241,6 +1225,23 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     }
     return nodes;
   }, [data, filter, viewMode, searchText, minContacts, tagFilter, agentSweep]);
+
+  // Auto-clear spotlight when the selected account is filtered out of the visible set.
+  // Without this, D3 effects that look up the focal node in simNodesRef (which only
+  // contains filtered nodes) would operate on a stale / missing selection.
+  useEffect(() => {
+    if (!selectedAccount) return;
+    const visibleIds = new Set(filteredNodes.map(n => n.id));
+    if (!visibleIds.has(selectedAccount.id)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[CRMNeuralMap] Spotlight account filtered out — clearing selection");
+      }
+      setSelectedAccount(null);
+      setSelectedContact(null);
+      setSelectedDirector(null);
+    }
+  }, [filteredNodes, selectedAccount]);
+
 
   const filteredEdges = useMemo(() => {
     const nodeIds = new Set(filteredNodes.map(n => n.id));
