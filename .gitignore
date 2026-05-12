@@ -47,3 +47,4 @@ subscriptions.json
 
 *.tsbuildinfo
 next-env.d.ts
+src/data/prospecting-history.json
