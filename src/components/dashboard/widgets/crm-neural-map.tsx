@@ -465,6 +465,22 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     setContactTagSaving(false); setContactTagStatus("idle");
   }, [selectedContact]);
 
+  // Auto-clear spotlight when the selected account is filtered out of the visible set.
+  // Without this, D3 effects that look up the focal node in simNodesRef (which only
+  // contains filtered nodes) would operate on a stale / missing selection.
+  useEffect(() => {
+    if (!selectedAccount) return;
+    const visibleIds = new Set(filteredNodes.map(n => n.id));
+    if (!visibleIds.has(selectedAccount.id)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[CRMNeuralMap] Spotlight account filtered out — clearing selection");
+      }
+      setSelectedAccount(null);
+      setSelectedContact(null);
+      setSelectedDirector(null);
+    }
+  }, [filteredNodes, selectedAccount]);
+
   // Escape clears all selections
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -2149,11 +2165,19 @@ export function CRMNeuralMap({ compact: _compact }: { compact?: boolean } = {}) 
     updatePillPositions = (transform: d3.ZoomTransform) => {
       const dirAvgX = directorSimNodes.reduce((s, d) => s + (d.x ?? 60), 0) / directorSimNodes.length;
       const dirAvgY = directorSimNodes.reduce((s, d) => s + (d.y ?? centres.consultant.y), 0) / directorSimNodes.length;
-      pillGroupMap.directors.attr("transform",   `translate(${transform.applyX(dirAvgX)}, ${transform.applyY(dirAvgY - 80)})`);
-      pillGroupMap.agents.attr("transform",      `translate(${transform.applyX(centres.agent.x)},      ${transform.applyY(centres.agent.y      - radii.agent      - 40)})`);
-      pillGroupMap.consultants.attr("transform", `translate(${transform.applyX(centres.consultant.x)}, ${transform.applyY(centres.consultant.y - radii.consultant - 40)})`);
-      pillGroupMap.clients.attr("transform",     `translate(${transform.applyX(centres.client.x)},     ${transform.applyY(centres.client.y     - radii.client     - 40)})`);
-      pillGroupMap.contractors.attr("transform", `translate(${transform.applyX(centres.contractor.x)}, ${transform.applyY(centres.contractor.y - radii.contractor - 40)})`);
+      // Pills for empty clusters are not created — guard with optional chaining to avoid
+      // "Cannot read properties of undefined (reading 'attr')" when search filters a
+      // cluster to zero nodes.
+      if (process.env.NODE_ENV !== "production") {
+        for (const key of ["directors", "agents", "consultants", "clients", "contractors"] as const) {
+          if (!pillGroupMap[key]) console.warn(`[CRMNeuralMap] Skipping update on missing pill: ${key}`);
+        }
+      }
+      pillGroupMap.directors?.attr("transform",   `translate(${transform.applyX(dirAvgX)}, ${transform.applyY(dirAvgY - 80)})`);
+      pillGroupMap.agents?.attr("transform",      `translate(${transform.applyX(centres.agent.x)},      ${transform.applyY(centres.agent.y      - radii.agent      - 40)})`);
+      pillGroupMap.consultants?.attr("transform", `translate(${transform.applyX(centres.consultant.x)}, ${transform.applyY(centres.consultant.y - radii.consultant - 40)})`);
+      pillGroupMap.clients?.attr("transform",     `translate(${transform.applyX(centres.client.x)},     ${transform.applyY(centres.client.y     - radii.client     - 40)})`);
+      pillGroupMap.contractors?.attr("transform", `translate(${transform.applyX(centres.contractor.x)}, ${transform.applyY(centres.contractor.y - radii.contractor - 40)})`);
     };
     updatePillPositions(d3.zoomIdentity); // initial state
 
