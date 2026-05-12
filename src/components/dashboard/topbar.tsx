@@ -9,6 +9,7 @@
  * - Poppins/Roboto typography
  */
 
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, RefreshCw } from "lucide-react";
@@ -35,13 +36,18 @@ export function TopBar({ title, subtitle }: TopBarProps) {
         .slice(0, 2)
     : "?";
 
-  const now = new Date();
-  const dateString = now.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const [dateString, setDateString] = useState("");
+
+  useEffect(() => {
+    setDateString(
+      new Date().toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    );
+  }, []);
 
   const handleRefresh = () => {
     queryClient.invalidateQueries();

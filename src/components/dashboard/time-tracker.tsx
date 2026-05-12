@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 function getISOWeekNumber(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -20,7 +22,19 @@ function getQuarterInfo(date: Date) {
 }
 
 export function TimeTracker() {
-  const now = new Date();
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!now) {
+    // Server render: same outer dimensions, no time-dependent content
+    return <div className="flex items-center gap-2" aria-hidden />;
+  }
+
   const week = getISOWeekNumber(now);
   const { quarter, pct } = getQuarterInfo(now);
 
