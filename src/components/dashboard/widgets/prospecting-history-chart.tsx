@@ -26,14 +26,13 @@ const DIRECTORS = [
   { key: "Dicky Lewis", label: "Dicky", color: "#EAB308" },
 ];
 
-// Generate all 52 Monday dates for 2026
+// Generate all 52 Monday dates for 2026 using UTC math (avoids DST off-by-one)
 function getAll2026Weeks(): string[] {
   const weeks: string[] = [];
-  // First Monday of 2026 is January 5th
-  const start = new Date("2026-01-05");
+  const start = Date.UTC(2026, 0, 5); // First Monday of 2026 (Jan 5) in UTC
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   for (let i = 0; i < 52; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i * 7);
+    const d = new Date(start + i * WEEK_MS);
     weeks.push(d.toISOString().split("T")[0]);
   }
   return weeks;
@@ -48,17 +47,16 @@ function getQuarter(weekIndex: number): number {
 
 function formatWeekLabel(dateStr: string): string {
   const d = new Date(dateStr);
-  const month = d.toLocaleString("en-GB", { month: "short" });
-  const day = d.getDate();
+  const month = d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
+  const day = d.getUTCDate();
   return `${day} ${month}`;
 }
 
 function getCurrentWeekCommencing(): string {
   const now = new Date();
-  const day = now.getDay();
+  const day = now.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff));
   return monday.toISOString().split("T")[0];
 }
 
@@ -96,7 +94,6 @@ export function ProspectingHistoryChart() {
   const allWeeks = getAll2026Weeks();
   const currentWeek = getCurrentWeekCommencing();
 
-  // Build chart data — one entry per week
   const chartData = allWeeks.map((week, i) => {
     const record = history.find((h) => h.weekCommencing === week);
     const entry: any = {
@@ -111,7 +108,6 @@ export function ProspectingHistoryChart() {
     return entry;
   });
 
-  // Find winner per week (for gold medal label)
   const getWinner = (entry: any): string | null => {
     let winner = null;
     let max = 0;
@@ -136,7 +132,6 @@ export function ProspectingHistoryChart() {
     );
   };
 
-  // Quarter reference areas
   const quarterAreas = [
     { x1: allWeeks[0], x2: allWeeks[12], q: 1 },
     { x1: allWeeks[13], x2: allWeeks[25], q: 2 },
