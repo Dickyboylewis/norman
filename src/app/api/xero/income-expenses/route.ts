@@ -10,7 +10,18 @@ export async function GET() {
     const fromDate = twelveMonthsAgo.toISOString().split("T")[0];
     const toDate = now.toISOString().split("T")[0];
 
-    const url = `https://api.xero.com/api.xro/2.0/Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}&periods=12&timeframe=MONTH`;
+    // Xero accepts `periods` only as an integer from 1 to 11 (the base month
+    // plus that many comparison periods), so it is omitted along with
+    // timeframe when the range covers no comparison periods.
+    const monthsInRange =
+      (now.getFullYear() - twelveMonthsAgo.getFullYear()) * 12 +
+      (now.getMonth() - twelveMonthsAgo.getMonth());
+    const periods = Math.min(11, monthsInRange);
+
+    let url = `https://api.xero.com/api.xro/2.0/Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}`;
+    if (periods >= 1) {
+      url += `&periods=${periods}&timeframe=MONTH`;
+    }
 
     const res = await fetch(url, {
       headers: {

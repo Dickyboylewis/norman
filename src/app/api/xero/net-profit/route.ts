@@ -105,7 +105,15 @@ async function fetchNetProfitTotal(
   toDate: string,
   periods: number
 ): Promise<{ total: number; months: { month: string; netProfit: number }[] }> {
-  const url = `https://api.xero.com/api.xro/2.0/Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}&periods=${periods}&timeframe=MONTH`;
+  // Xero accepts `periods` only as an integer from 1 to 11 (the base month plus
+  // that many comparison periods). When the range covers a single month there
+  // are no comparison periods, so periods/timeframe must be omitted entirely.
+  const comparisonPeriods = Math.min(11, Math.floor(periods));
+
+  let url = `https://api.xero.com/api.xro/2.0/Reports/ProfitAndLoss?fromDate=${fromDate}&toDate=${toDate}`;
+  if (comparisonPeriods >= 1) {
+    url += `&periods=${comparisonPeriods}&timeframe=MONTH`;
+  }
 
   const res = await fetch(url, {
     headers: {
