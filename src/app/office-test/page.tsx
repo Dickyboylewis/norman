@@ -17,6 +17,8 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import Link from "next/link";
+import { X } from "lucide-react";
 import {
   DESKS,
   PEOPLE,
@@ -805,6 +807,8 @@ export default function OfficeTestPage() {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const panRef = useRef<{ id: number; sx: number; sy: number; vx: number; vy: number } | null>(null);
+  const touchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{ idA: number; idB: number; d0: number; k0: number; wx: number; wy: number } | null>(null);
 
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
@@ -925,6 +929,14 @@ export default function OfficeTestPage() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const preventTouch = (e: TouchEvent) => e.preventDefault();
+    el.addEventListener("touchmove", preventTouch, { passive: false });
+    return () => el.removeEventListener("touchmove", preventTouch);
+  }, []);
+
   const zoomBy = useCallback(
     (factor: number) => {
       const v = viewRef.current;
@@ -937,12 +949,49 @@ export default function OfficeTestPage() {
     [animateTo, size.w, size.h],
   );
 
-  const onPointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
-    if (e.button !== 0) return;
+  const stopAnim = () => {
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+  };
+
+  const onPointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (e.pointerType === "touch") {
+      stopAnim();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      setTooltip(null);
+      if (touchesRef.current.size === 1) {
+        panRef.current = {
+          id: e.pointerId,
+          sx: e.clientX,
+          sy: e.clientY,
+          vx: viewRef.current.x,
+          vy: viewRef.current.y,
+        };
+        setPanning(true);
+      } else if (touchesRef.current.size === 2) {
+        const [[idA, a], [idB, b]] = [...touchesRef.current.entries()];
+        const rect = e.currentTarget.getBoundingClientRect();
+        const v = viewRef.current;
+        const mx = (a.x + b.x) / 2 - rect.left;
+        const my = (a.y + b.y) / 2 - rect.top;
+        pinchRef.current = {
+          idA,
+          idB,
+          d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+          k0: v.k,
+          wx: (mx - v.x) / v.k,
+          wy: (my - v.y) / v.k,
+        };
+        panRef.current = null;
+        setPanning(true);
+      }
+      return;
+    }
+    if (e.button !== 0) return;
+    stopAnim();
     e.currentTarget.setPointerCapture(e.pointerId);
     panRef.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y };
     setPanning(true);
@@ -950,12 +999,53 @@ export default function OfficeTestPage() {
   };
 
   const onPointerMove = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (e.pointerType === "touch" && touchesRef.current.has(e.pointerId)) {
+      touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pinch = pinchRef.current;
+      if (pinch) {
+        const a = touchesRef.current.get(pinch.idA);
+        const b = touchesRef.current.get(pinch.idB);
+        if (!a || !b) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        const mx = (a.x + b.x) / 2 - rect.left;
+        const my = (a.y + b.y) / 2 - rect.top;
+        const k = clamp(pinch.k0 * (d / pinch.d0), ZOOM_MIN, ZOOM_MAX);
+        setView({ k, x: mx - pinch.wx * k, y: my - pinch.wy * k });
+        return;
+      }
+    }
     const pan = panRef.current;
     if (!pan || pan.id !== e.pointerId) return;
     setView((v) => ({ ...v, x: pan.vx + (e.clientX - pan.sx), y: pan.vy + (e.clientY - pan.sy) }));
   };
 
   const endPan = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (e.pointerType === "touch") {
+      touchesRef.current.delete(e.pointerId);
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      const pinch = pinchRef.current;
+      if (pinch && (pinch.idA === e.pointerId || pinch.idB === e.pointerId)) {
+        pinchRef.current = null;
+        const remaining = [...touchesRef.current.entries()][0];
+        if (remaining) {
+          panRef.current = {
+            id: remaining[0],
+            sx: remaining[1].x,
+            sy: remaining[1].y,
+            vx: viewRef.current.x,
+            vy: viewRef.current.y,
+          };
+        }
+      } else if (panRef.current?.id === e.pointerId) {
+        panRef.current = null;
+      }
+      if (touchesRef.current.size === 0) {
+        panRef.current = null;
+        setPanning(false);
+      }
+      return;
+    }
     const pan = panRef.current;
     if (!pan || pan.id !== e.pointerId) return;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
@@ -999,7 +1089,7 @@ export default function OfficeTestPage() {
     <div
       ref={containerRef}
       className="fixed inset-0 overflow-hidden select-none"
-      style={{ background: C_PAGE_BG, fontFamily: "var(--font-poppins), sans-serif" }}
+      style={{ background: C_PAGE_BG, fontFamily: "var(--font-poppins), sans-serif", touchAction: "none" }}
     >
       <style>{`
         @keyframes norman-bob {
@@ -1199,8 +1289,18 @@ export default function OfficeTestPage() {
         </g>
       </svg>
 
+      {/* Fixed overlay: exit button */}
+      <Link
+        href="/dashboard"
+        aria-label="Close and return to dashboard"
+        className="fixed left-6 top-6 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-white transition-colors hover:bg-[#FEF2F2]"
+        style={{ boxShadow: "0 2px 10px rgba(53,50,46,0.14)" }}
+      >
+        <X className="h-6 w-6" strokeWidth={3} style={{ color: C_RED }} />
+      </Link>
+
       {/* Fixed overlay: identity + legend */}
-      <div className="pointer-events-none fixed left-6 top-6 z-10">
+      <div className="pointer-events-none fixed left-6 top-20 z-10">
         <div className="text-[22px] font-bold leading-none tracking-tight" style={{ color: C_INK }}>
           WHITE RED
         </div>
