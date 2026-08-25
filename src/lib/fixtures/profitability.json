@@ -1,0 +1,308 @@
+[
+  {
+    "Code": "5470",
+    "Title": "Film House",
+    "TotalFee": 1472004.0,
+    "TotalInvoiced": 1461065.0,
+    "TimeCost": 898229.644999996,
+    "ProfitVsFee": 573774.355000004,
+    "MarginPct": 39.0
+  },
+  {
+    "Code": "5539",
+    "Title": "127 Wardour St Strip Out",
+    "TotalFee": 1420417.0,
+    "TotalInvoiced": 3700.0,
+    "TimeCost": 41710.75,
+    "ProfitVsFee": 1378706.25,
+    "MarginPct": 97.1
+  },
+  {
+    "Code": "5540",
+    "Title": "Double Wardour",
+    "TotalFee": 1335267.0,
+    "TotalInvoiced": 327952.0,
+    "TimeCost": 224169.27500000002,
+    "ProfitVsFee": 1111097.725,
+    "MarginPct": 83.2
+  },
+  {
+    "Code": "5537",
+    "Title": "Lincoln's Inn Fields [LIF]",
+    "TotalFee": 779150.0,
+    "TotalInvoiced": 279675.0,
+    "TimeCost": 241175.85750000004,
+    "ProfitVsFee": 537974.1425,
+    "MarginPct": 69.0
+  },
+  {
+    "Code": "5527",
+    "Title": "2 Moorgate",
+    "TotalFee": 769550.0,
+    "TotalInvoiced": 203024.87,
+    "TimeCost": 172390.4900000001,
+    "ProfitVsFee": 597159.5099999999,
+    "MarginPct": 77.6
+  },
+  {
+    "Code": "5514",
+    "Title": "Harbour Yard",
+    "TotalFee": 663678.0,
+    "TotalInvoiced": 149166.0,
+    "TimeCost": 88630.68999999999,
+    "ProfitVsFee": 575047.31,
+    "MarginPct": 86.6
+  },
+  {
+    "Code": "5524",
+    "Title": "150 Cheapside",
+    "TotalFee": 658624.0,
+    "TotalInvoiced": 198225.0,
+    "TimeCost": 255847.43750000035,
+    "ProfitVsFee": 402776.56249999965,
+    "MarginPct": 61.2
+  },
+  {
+    "Code": "5531",
+    "Title": "Screen House",
+    "TotalFee": 634560.0,
+    "TotalInvoiced": 83560.0,
+    "TimeCost": 75594.80999999997,
+    "ProfitVsFee": 558965.1900000001,
+    "MarginPct": 88.1
+  },
+  {
+    "Code": "5512",
+    "Title": "15 Golden Square",
+    "TotalFee": 523188.75,
+    "TotalInvoiced": 228759.75,
+    "TimeCost": 159678.2450000001,
+    "ProfitVsFee": 363510.5049999999,
+    "MarginPct": 69.5
+  },
+  {
+    "Code": "5546",
+    "Title": "QBE HQ",
+    "TotalFee": 509399.0,
+    "TotalInvoiced": 59298.0,
+    "TimeCost": 47582.5,
+    "ProfitVsFee": 461816.5,
+    "MarginPct": 90.7
+  },
+  {
+    "Code": "5469",
+    "Title": "10 Brick Street",
+    "TotalFee": 500182.0,
+    "TotalInvoiced": 447088.0,
+    "TimeCost": 610227.6899999994,
+    "ProfitVsFee": -110045.68999999936,
+    "MarginPct": -22.0
+  },
+  {
+    "Code": "5491",
+    "Title": "14 Bedford Row",
+    "TotalFee": 398042.0,
+    "TotalInvoiced": 374132.0,
+    "TimeCost": 326601.87249999953,
+    "ProfitVsFee": 71440.12750000047,
+    "MarginPct": 17.9
+  },
+  {
+    "Code": "5528",
+    "Title": "10 Chiswell Street - NZC",
+    "TotalFee": 378790.0,
+    "TotalInvoiced": 42790.0,
+    "TimeCost": 33469.9025,
+    "ProfitVsFee": 345320.09750000003,
+    "MarginPct": 91.2
+  },
+  {
+    "Code": "5474",
+    "Title": "6 Cavendish Place",
+    "TotalFee": 291418.45,
+    "TotalInvoiced": 128768.45,
+    "TimeCost": 128080.79000000023,
+    "ProfitVsFee": 163337.6599999998,
+    "MarginPct": 56.0
+  },
+  {
+    "Code": "5532",
+    "Title": "48 Charles Street",
+    "TotalFee": 284550.0,
+    "TotalInvoiced": 114987.94,
+    "TimeCost": 114535.47250000003,
+    "ProfitVsFee": 170014.52749999997,
+    "MarginPct": 59.7
+  },
+  {
+    "Code": "5361",
+    "Title": "Belgrave Square",
+    "TotalFee": 182400.0,
+    "TotalInvoiced": 163600.0,
+    "TimeCost": 72726.32500000008,
+    "ProfitVsFee": 109673.67499999992,
+    "MarginPct": 60.1
+  },
+  {
+    "Code": "5549",
+    "Title": "280 High Holborn",
+    "TotalFee": 161305.327,
+    "TotalInvoiced": 0.0,
+    "TimeCost": 157.5,
+    "ProfitVsFee": 161147.827,
+    "MarginPct": 99.9
+  },
+  {
+    "Code": "5536",
+    "Title": "10 Brook Street",
+    "TotalFee": 106510.22,
+    "TotalInvoiced": 102746.0,
+    "TimeCost": 54936.73,
+    "ProfitVsFee": 51573.49,
+    "MarginPct": 48.4
+  },
+  {
+    "Code": "5487",
+    "Title": "24 Chiswell Street - 5th Floor",
+    "TotalFee": 79885.0,
+    "TotalInvoiced": 79885.0,
+    "TimeCost": 72641.77750000003,
+    "ProfitVsFee": 7243.222499999974,
+    "MarginPct": 9.1
+  },
+  {
+    "Code": "5541",
+    "Title": "50 Farringdon Road - Rooftop",
+    "TotalFee": 59200.0,
+    "TotalInvoiced": 59200.0,
+    "TimeCost": 50676.5,
+    "ProfitVsFee": 8523.5,
+    "MarginPct": 14.4
+  },
+  {
+    "Code": "5432/1",
+    "Title": "1 Gloucester Place",
+    "TotalFee": 53710.0,
+    "TotalInvoiced": 36810.0,
+    "TimeCost": 23203.929999999993,
+    "ProfitVsFee": 30506.070000000007,
+    "MarginPct": 56.8
+  },
+  {
+    "Code": "5519",
+    "Title": "14 Bedford Row - CMT",
+    "TotalFee": 50730.0,
+    "TotalInvoiced": 47520.0,
+    "TimeCost": 32099.550000000003,
+    "ProfitVsFee": 18630.449999999997,
+    "MarginPct": 36.7
+  },
+  {
+    "Code": "5522",
+    "Title": "125 London Wall",
+    "TotalFee": 48550.0,
+    "TotalInvoiced": 42400.0,
+    "TimeCost": 17723.727500000005,
+    "ProfitVsFee": 30826.272499999995,
+    "MarginPct": 63.5
+  },
+  {
+    "Code": "5524/1",
+    "Title": "150 Cheapside",
+    "TotalFee": 47025.0,
+    "TotalInvoiced": 33400.0,
+    "TimeCost": 17791.375,
+    "ProfitVsFee": 29233.625,
+    "MarginPct": 62.2
+  },
+  {
+    "Code": "5542",
+    "Title": "1 Victoria",
+    "TotalFee": 38795.0,
+    "TotalInvoiced": 35495.0,
+    "TimeCost": 41481.5625,
+    "ProfitVsFee": -2686.5625,
+    "MarginPct": -6.9
+  },
+  {
+    "Code": "5545",
+    "Title": "2-8 Eastcheap",
+    "TotalFee": 36750.0,
+    "TotalInvoiced": 32000.0,
+    "TimeCost": 25816.4375,
+    "ProfitVsFee": 10933.5625,
+    "MarginPct": 29.8
+  },
+  {
+    "Code": "5544",
+    "Title": "Sackville_House",
+    "TotalFee": 19880.0,
+    "TotalInvoiced": 0.0,
+    "TimeCost": 3495.625,
+    "ProfitVsFee": 16384.375,
+    "MarginPct": 82.4
+  },
+  {
+    "Code": "5513",
+    "Title": "1 Kingsway",
+    "TotalFee": 13550.0,
+    "TotalInvoiced": 13550.0,
+    "TimeCost": 8073.603000000001,
+    "ProfitVsFee": 5476.396999999999,
+    "MarginPct": 40.4
+  },
+  {
+    "Code": "5516",
+    "Title": "Sceptre Court",
+    "TotalFee": 13280.0,
+    "TotalInvoiced": 13280.0,
+    "TimeCost": 9169.300000000001,
+    "ProfitVsFee": 4110.699999999999,
+    "MarginPct": 31.0
+  },
+  {
+    "Code": "5548",
+    "Title": "10 Bloomsbury Way",
+    "TotalFee": 11100.0,
+    "TotalInvoiced": 1900.0,
+    "TimeCost": 1623.125,
+    "ProfitVsFee": 9476.875,
+    "MarginPct": 85.4
+  },
+  {
+    "Code": "5547",
+    "Title": "The Jellicoe",
+    "TotalFee": 11000.0,
+    "TotalInvoiced": 11000.0,
+    "TimeCost": 7271.25,
+    "ProfitVsFee": 3728.75,
+    "MarginPct": 33.9
+  },
+  {
+    "Code": "5543",
+    "Title": "63 Frith Street",
+    "TotalFee": 8139.0,
+    "TotalInvoiced": 5049.87,
+    "TimeCost": 2629.375,
+    "ProfitVsFee": 5509.625,
+    "MarginPct": 67.7
+  },
+  {
+    "Code": "5550",
+    "Title": "FORA Green Park House",
+    "TotalFee": 4850.0,
+    "TotalInvoiced": 0.0,
+    "TimeCost": 339.0625,
+    "ProfitVsFee": 4510.9375,
+    "MarginPct": 93.0
+  },
+  {
+    "Code": "5538",
+    "Title": "131 Finsbury Pavement",
+    "TotalFee": 2750.0,
+    "TotalInvoiced": 2750.0,
+    "TimeCost": 920.0,
+    "ProfitVsFee": 1830.0,
+    "MarginPct": 66.5
+  }
+]

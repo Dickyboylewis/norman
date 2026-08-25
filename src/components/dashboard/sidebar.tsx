@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
+  PencilRuler,
   FolderKanban,
   PoundSterling,
   TrendingUp,
@@ -41,6 +42,11 @@ const navItems = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Studio",
+    href: "/office-test",
+    icon: PencilRuler,
   },
   {
     label: "Projects",
