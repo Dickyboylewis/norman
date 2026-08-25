@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TopBar } from "@/components/dashboard/topbar";
 import { ProjectImagePicker } from "@/components/dashboard/widgets/project-image-picker";
-import profitability from "@/lib/fixtures/profitability.json";
+import fixture from "@/lib/fixtures/profitability.json";
 
 interface ProfitabilityRow {
   Code: string;
@@ -16,9 +16,7 @@ interface ProfitabilityRow {
   MarginPct: number;
 }
 
-const PROJECTS: ProfitabilityRow[] = [...(profitability as ProfitabilityRow[])].sort(
-  (a, b) => b.TotalFee - a.TotalFee
-);
+const FIXTURE_ROWS = fixture as ProfitabilityRow[];
 
 function formatGBP(n: number): string {
   return "£" + Math.round(n).toLocaleString("en-GB");
@@ -142,6 +140,19 @@ function ProfitabilityCard({ row, imageUrl }: { row: ProfitabilityRow; imageUrl:
 }
 
 export default function ProjectsPage() {
+  const { data } = useQuery<ProfitabilityRow[]>({
+    queryKey: ["profitability"],
+    queryFn: async () => {
+      const res = await fetch("/api/profitability");
+      if (!res.ok) throw new Error("Failed to load profitability data");
+      return res.json();
+    },
+    initialData: FIXTURE_ROWS,
+    initialDataUpdatedAt: 0,
+    staleTime: 4 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: images } = useQuery<Record<string, string>>({
     queryKey: ["project-images"],
     queryFn: async () => {
@@ -150,6 +161,8 @@ export default function ProjectsPage() {
       return res.json();
     },
   });
+
+  const projects = [...(data ?? [])].sort((a, b) => b.TotalFee - a.TotalFee);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -164,12 +177,12 @@ export default function ProjectsPage() {
             Click any project to see the full breakdown
           </p>
           <p className="text-xs text-gray-400 mt-2" style={{ fontFamily: "Roboto, sans-serif" }}>
-            Showing {PROJECTS.length} live projects · CMap DRS snapshot
+            Live from CMap DRS · refreshed every 5 min
           </p>
         </div>
 
         <div className="space-y-3 md:space-y-4">
-          {PROJECTS.map(row => (
+          {projects.map(row => (
             <ProfitabilityCard key={row.Code} row={row} imageUrl={images?.[row.Code] ?? null} />
           ))}
         </div>
