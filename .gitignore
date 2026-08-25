@@ -48,3 +48,8 @@ subscriptions.json
 *.tsbuildinfo
 next-env.d.ts
 src/data/prospecting-history.json
+
+# shared project images
+/data/project-images.json
+/public/uploads/projects/*
+!/public/uploads/projects/.gitkeep
