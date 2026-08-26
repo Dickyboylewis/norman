@@ -30,6 +30,10 @@ export interface Person {
   deskId: string;
   status: PersonStatus;
   photo: string | null;
+  /** Absolute URL to a headshot on an external site. */
+  photoUrl?: string;
+  /** CSS object-position for the headshot crop, e.g. "center top" or "50% 30%". */
+  photoFocus?: string;
 }
 
 /*

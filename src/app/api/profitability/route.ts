@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { ConnectionPool } from "mssql";
 import fixture from "@/lib/fixtures/profitability.json";
+import stagesFixture from "@/lib/fixtures/profitability-stages.json";
 
 export const dynamic = "force-dynamic";
 
-const QUERY = `
+const PROJECT_QUERY = `
 SELECT
   p.Code,
   p.Title,
@@ -39,6 +40,46 @@ WHERE p.StatusID = 'Project'
 ORDER BY fee.TotalFee DESC;
 `;
 
+const STAGE_QUERY = `
+WITH StageFee AS (
+  SELECT t.ProjectID, t.BudgetStageID,
+         SUM(t.OurFee) AS Fee,
+         MAX(t.PercentageComplete) AS Pct,
+         SUM(t.OurFee * t.PercentageComplete / 100.0) AS EarnedFee
+  FROM CMAP_BudgetTasks t
+  GROUP BY t.ProjectID, t.BudgetStageID
+),
+StageCost AS (
+  SELECT te.ProjectID, bt.BudgetStageID,
+         SUM(te.Hours * COALESCE(te.ActualRate, te.RoleRate, 0)) AS Cost,
+         MAX(te.Date) AS LastWorked
+  FROM CMAP_TimesheetEntries te
+  JOIN CMAP_BudgetTasks bt ON bt.BudgetTaskID = te.BudgetTaskID
+  GROUP BY te.ProjectID, bt.BudgetStageID
+)
+SELECT p.Code,
+       p.Title,
+       s.Name AS StageName,
+       s.StatusID AS StageStatus,
+       ISNULL(f.Fee, 0) AS Fee,
+       ISNULL(f.Pct, 0) AS Pct,
+       ISNULL(f.EarnedFee, 0) AS EarnedFee,
+       ISNULL(c.Cost, 0) AS Cost,
+       c.LastWorked,
+       CASE WHEN s.StatusID = 'Won'
+            THEN ISNULL(f.EarnedFee, 0) - ISNULL(c.Cost, 0)
+            ELSE -ISNULL(c.Cost, 0)
+       END AS StageProfit
+FROM CMAP_Projects p
+JOIN CMAP_BudgetStages s ON s.ProjectID = p.ProjectID
+LEFT JOIN StageFee f ON f.BudgetStageID = s.BudgetStageID
+LEFT JOIN StageCost c ON c.ProjectID = p.ProjectID AND c.BudgetStageID = s.BudgetStageID
+WHERE p.StatusID = 'Project'
+  AND p.Code LIKE '[0-9]%'
+  AND (s.StatusID = 'Won' OR ISNULL(c.Cost, 0) > 0)
+ORDER BY p.Code, s.Name;
+`;
+
 let poolPromise: Promise<ConnectionPool> | null = null;
 
 function getPool(): Promise<ConnectionPool> {
@@ -62,14 +103,19 @@ function getPool(): Promise<ConnectionPool> {
 export async function GET() {
   try {
     const pool = await getPool();
-    const result = await pool.request().query(QUERY);
-    return NextResponse.json(result.recordset, {
-      headers: { "X-Data-Source": "live" },
-    });
+    const [projects, stages] = await Promise.all([
+      pool.request().query(PROJECT_QUERY),
+      pool.request().query(STAGE_QUERY),
+    ]);
+    return NextResponse.json(
+      { projects: projects.recordset, stages: stages.recordset },
+      { headers: { "X-Data-Source": "live" } },
+    );
   } catch (error) {
     console.error("CMap DRS profitability error:", error);
-    return NextResponse.json(fixture, {
-      headers: { "X-Data-Source": "fixture" },
-    });
+    return NextResponse.json(
+      { projects: fixture, stages: stagesFixture },
+      { headers: { "X-Data-Source": "fixture" } },
+    );
   }
 }

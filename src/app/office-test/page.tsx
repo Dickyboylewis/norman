@@ -524,6 +524,8 @@ function DeskBlock({ desk, index }: { desk: Desk; index: number }) {
  * changes where the group stands on the floor, never how it is built.
  */
 function Figure({ desk, person }: { desk: Desk; person: Person }) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const remoteUrl = photoFailed ? null : person.photoUrl ?? null;
   const seat = seatOf(desk);
   const p = iso(seat.x, seat.y, 0);
   const body = ACCENT_PEOPLE.has(person.id) ? C_BODY_ACCENT : C_BODY;
@@ -543,7 +545,34 @@ function Figure({ desk, person }: { desk: Desk; person: Person }) {
       <path d={bodyPath} fill={body} />
 
       {/* head */}
-      {person.photo ? (
+      {remoteUrl ? (
+        <>
+          <foreignObject
+            x={-FIG_HEAD_R}
+            y={FIG_HEAD_CY - FIG_HEAD_R}
+            width={FIG_HEAD_R * 2}
+            height={FIG_HEAD_R * 2}
+          >
+            <img
+              src={remoteUrl}
+              alt={person.fullName}
+              loading="lazy"
+              draggable={false}
+              onError={() => setPhotoFailed(true)}
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "block",
+                borderRadius: 9999,
+                overflow: "hidden",
+                objectFit: "cover",
+                objectPosition: person.photoFocus ?? "center 25%",
+              }}
+            />
+          </foreignObject>
+          <circle cx={0} cy={FIG_HEAD_CY} r={FIG_HEAD_R} fill="none" stroke={C_WHITE} strokeWidth={1.6} />
+        </>
+      ) : person.photo ? (
         <>
           <clipPath id={`head-clip-${person.id}`}>
             <circle cx={0} cy={FIG_HEAD_CY} r={FIG_HEAD_R} />
