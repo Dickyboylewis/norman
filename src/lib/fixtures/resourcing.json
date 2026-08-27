@@ -1,0 +1,5023 @@
+{
+  "generatedAt": "2026-08-27T06:10:01.845Z",
+  "weekStarts": [
+    "2026-08-24",
+    "2026-08-31",
+    "2026-09-07",
+    "2026-09-14",
+    "2026-09-21",
+    "2026-09-28",
+    "2026-10-05",
+    "2026-10-12",
+    "2026-10-19",
+    "2026-10-26",
+    "2026-11-02",
+    "2026-11-09",
+    "2026-11-16",
+    "2026-11-23",
+    "2026-11-30",
+    "2026-12-07"
+  ],
+  "people": [
+    {
+      "userId": "217134",
+      "name": "Alex Yuen",
+      "jobTitle": "Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 3
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "188551",
+      "name": "Alice Holmes",
+      "jobTitle": "Architectural Assistant",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 80
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "213215",
+      "name": "Anneke Levin",
+      "jobTitle": "Office Assistant",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "184052",
+      "name": "Dani Reed",
+      "jobTitle": "Senior Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Compassionate Leave",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 4
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 145
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 61
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 61
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 61
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 61
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 61
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 61
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "191545",
+      "name": "Dilan Savage",
+      "jobTitle": "Architectural Assistant PT II",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 4
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "137201",
+      "name": "Euan Christie",
+      "jobTitle": "Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5524/1",
+              "projectTitle": "150 Cheapside",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5524/1",
+              "projectTitle": "150 Cheapside",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5524/1",
+              "projectTitle": "150 Cheapside",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 110
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 120
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 110
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "160375",
+      "name": "Francesc Montosa",
+      "jobTitle": "Senior Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 76.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "199036",
+      "name": "Hope Glover",
+      "jobTitle": "Architectural Assistant",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 80
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 55
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 200
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "177775",
+      "name": "James Bubaris",
+      "jobTitle": "Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 75
+            },
+            {
+              "projectCode": "5528",
+              "projectTitle": "10 Chiswell Street - NZC",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "201392",
+      "name": "Jasmine Hounslow",
+      "jobTitle": "Architectural Assistant PT II",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5548",
+              "projectTitle": "10 Bloomsbury Way",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5548",
+              "projectTitle": "10 Bloomsbury Way",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 50
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "214846",
+      "name": "Jess Watling",
+      "jobTitle": "Architectural Assistant",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "188552",
+      "name": "Jonathan Spratt",
+      "jobTitle": "Associate",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5522",
+              "projectTitle": "125 London Wall",
+              "percentage": 9
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5524/1",
+              "projectTitle": "150 Cheapside",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 2.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5524/1",
+              "projectTitle": "150 Cheapside",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 3
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 45
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 4
+            },
+            {
+              "projectCode": "5522",
+              "projectTitle": "125 London Wall",
+              "percentage": 2
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 15
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 15
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5544",
+              "projectTitle": "Sackville_House",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 15
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1.5
+            },
+            {
+              "label": "Unpaid Leave",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 15
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 15
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 15
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 12
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 22
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 22
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "192479",
+      "name": "Joshua Hunt",
+      "jobTitle": "Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 3
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "userId": "178655",
+      "name": "Jules Byers",
+      "jobTitle": "Architectural Assistant",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 90
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 80
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "188550",
+      "name": "Katy Binks",
+      "jobTitle": "Studio Manager",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 4
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "154425",
+      "name": "Kit Gunaratne",
+      "jobTitle": "Associate",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 32
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 72
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 12.4
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5469",
+              "projectTitle": "10 Brick Street",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 120
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 40
+            },
+            {
+              "projectCode": "5514",
+              "projectTitle": "Harbour Yard",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "138969",
+      "name": "Lizi Cushen",
+      "jobTitle": "Associate Director",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5548",
+              "projectTitle": "10 Bloomsbury Way",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5548",
+              "projectTitle": "10 Bloomsbury Way",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5548",
+              "projectTitle": "10 Bloomsbury Way",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5548",
+              "projectTitle": "10 Bloomsbury Way",
+              "percentage": 6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            },
+            {
+              "projectCode": "5537/1",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 9.2
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Unpaid Leave",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5540",
+              "projectTitle": "Double Wardour",
+              "percentage": 1
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "197274",
+      "name": "Michael Bridgeman",
+      "jobTitle": null,
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 5
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 3
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5536",
+              "projectTitle": "10 Brook Street",
+              "percentage": 5
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 60
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 50
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 40
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 70
+            },
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 5
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5546",
+              "projectTitle": "QBE HQ",
+              "percentage": 30
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 5
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "177714",
+      "name": "Miles Reay-Palmer",
+      "jobTitle": "Architectural Assistant PT II",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 20
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "137206",
+      "name": "Paloma Quintana",
+      "jobTitle": "Architect",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 80
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 60
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 160
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "181832",
+      "name": "Riley Adams-Winch",
+      "jobTitle": "Architectural Assistant PT II",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5522",
+              "projectTitle": "125 London Wall",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 2
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 2
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5522",
+              "projectTitle": "125 London Wall",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 5
+            },
+            {
+              "projectCode": "5550",
+              "projectTitle": "FORA Green Park House",
+              "percentage": 2
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Study Leave",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 80
+            },
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 20
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 5
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            },
+            {
+              "projectCode": "5545",
+              "projectTitle": "2-8 Eastcheap",
+              "percentage": 15
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Study Leave",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Study Leave",
+              "days": 1.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Study Leave",
+              "days": 2
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Study Leave",
+              "days": 3
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Study Leave",
+              "days": 1
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5532",
+              "projectTitle": "48 Charles Street",
+              "percentage": 100
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [],
+          "timeOffDays": []
+        }
+      ]
+    },
+    {
+      "userId": "165761",
+      "name": "Tino Baranda",
+      "jobTitle": "Associate",
+      "weeks": [
+        {
+          "weekStart": "2026-08-24",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 31
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 8.3
+            },
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 4
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Maternity/Paternity Leave",
+              "days": 0.5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-08-31",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 22.2
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 10
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 8.3
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-07",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 18.2
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-09-14",
+          "projects": [
+            {
+              "projectCode": "5524",
+              "projectTitle": "150 Cheapside",
+              "percentage": 18.2
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 10
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-21",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": [
+            {
+              "label": "Time off",
+              "days": 5
+            }
+          ]
+        },
+        {
+          "weekStart": "2026-09-28",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 130
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-05",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-12",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-19",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 27
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-10-26",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 107
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-02",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 42
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-09",
+          "projects": [
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 42
+            },
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-16",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5512",
+              "projectTitle": "15 Golden Square",
+              "percentage": 16.6
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 15
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-23",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 15
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-11-30",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 15
+            }
+          ],
+          "timeOffDays": []
+        },
+        {
+          "weekStart": "2026-12-07",
+          "projects": [
+            {
+              "projectCode": "5527",
+              "projectTitle": "2 Moorgate",
+              "percentage": 22
+            },
+            {
+              "projectCode": "5537",
+              "projectTitle": "Lincoln's Inn Fields [LIF]",
+              "percentage": 15
+            }
+          ],
+          "timeOffDays": []
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { QuickAddLeadModal } from "./quick-add-lead-modal";
 
 const BRAND_RED = "#DA2C26";
 const DONE_GREEN = "#16A34A";
@@ -9,10 +10,11 @@ const FOCUS_MINUTES = 30;
 const CANCEL_PROMPT = "Cancel this timer?";
 const CHIME_FREQS: [number, number] = [880, 1320];
 
+// Labels must exactly match the lead_status column on Monday Leads board 1461714586.
 export const BD_STATUSES = [
   { label: "New Lead", color: "#FDAB3D" },
-  { label: "Attempted to Contact", color: "#FF9EB3" },
-  { label: "Needs Follow-up", color: "#FF642E" },
+  { label: "Attempted to contact", color: "#FF9EB3" },
+  { label: "Needs followup", color: "#FF642E" },
   { label: "Appointments", color: "#9CD326" },
 ] as const;
 
@@ -103,20 +105,23 @@ function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: st
   const audioRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return;
-      const finish = parseInt(raw, 10);
-      if (Number.isFinite(finish) && finish > Date.now()) {
-        finishRef.current = finish;
-        setRemainingMs(finish - Date.now());
-        setPhase("running");
-      } else {
-        localStorage.removeItem(storageKey);
+    const restore = window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        const finish = parseInt(raw, 10);
+        if (Number.isFinite(finish) && finish > Date.now()) {
+          finishRef.current = finish;
+          setRemainingMs(finish - Date.now());
+          setPhase("running");
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      } catch {
+        /* storage unavailable */
       }
-    } catch {
-      /* storage unavailable */
-    }
+    }, 0);
+    return () => window.clearTimeout(restore);
   }, [storageKey]);
 
   useEffect(() => {
@@ -224,7 +229,12 @@ function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: st
   );
 }
 
-function StatusButtonRow() {
+interface StatusPick {
+  label: string;
+  color: string;
+}
+
+function StatusButtonRow({ onPick }: { onPick: (pick: StatusPick) => void }) {
   return (
     <div className="flex justify-center gap-3">
       {BD_STATUSES.map((status) => (
@@ -232,7 +242,8 @@ function StatusButtonRow() {
           key={status.label}
           type="button"
           title={status.label}
-          aria-label={status.label}
+          aria-label={`Add ${status.label} lead`}
+          onClick={() => onPick({ label: status.label, color: status.color })}
           className="w-11 h-11 rounded-lg shadow-sm transition-transform hover:scale-105"
           style={{ backgroundColor: status.color }}
         />
@@ -302,11 +313,23 @@ function BDCard({ card, footer }: { card: CardCopy; footer: React.ReactNode }) {
 }
 
 export function BDActivityCards() {
+  const [pick, setPick] = useState<StatusPick | null>(null);
+
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <BDCard card={CARDS[0]} footer={<StatusButtonRow />} />
-      <BDCard card={CARDS[1]} footer={<StatusButtonRow />} />
-      <BDCard card={CARDS[2]} footer={<ContactsListButton />} />
-    </div>
+    <>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <BDCard card={CARDS[0]} footer={<StatusButtonRow onPick={setPick} />} />
+        <BDCard card={CARDS[1]} footer={<StatusButtonRow onPick={setPick} />} />
+        <BDCard card={CARDS[2]} footer={<ContactsListButton />} />
+      </div>
+      <QuickAddLeadModal
+        open={pick !== null}
+        onOpenChange={(open) => {
+          if (!open) setPick(null);
+        }}
+        status={pick?.label ?? ""}
+        statusColor={pick?.color ?? BRAND_RED}
+      />
+    </>
   );
 }
