@@ -53,3 +53,5 @@ src/data/prospecting-history.json
 /data/project-images.json
 /public/uploads/projects/*
 !/public/uploads/projects/.gitkeep
+
+data/snapshots/
