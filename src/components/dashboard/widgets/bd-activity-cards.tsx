@@ -1,8 +1,13 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 const BRAND_RED = "#DA2C26";
+const DONE_GREEN = "#16A34A";
+const FOCUS_MINUTES = 30;
+const CANCEL_PROMPT = "Cancel this timer?";
+const CHIME_FREQS: [number, number] = [880, 1320];
 
 export const BD_STATUSES = [
   { label: "New Lead", color: "#FDAB3D" },
@@ -12,6 +17,7 @@ export const BD_STATUSES = [
 ] as const;
 
 interface CardCopy {
+  id: string;
   title: string;
   intro: string;
   bullets: string[];
@@ -19,6 +25,7 @@ interface CardCopy {
 
 const CARDS: CardCopy[] = [
   {
+    id: "core",
     title: "BD Core",
     intro:
       "Keep the landlord engine warm: the right people in the ecosystem hear from us every week, with a reason.",
@@ -33,6 +40,7 @@ const CARDS: CardCopy[] = [
     ],
   },
   {
+    id: "stretch",
     title: "BD Stretch",
     intro:
       "Open the occupier market and the networks that route international — the new territory the brand grows into.",
@@ -47,6 +55,7 @@ const CARDS: CardCopy[] = [
     ],
   },
   {
+    id: "500",
     title: "BD 500",
     intro:
       "Sharpen the map, not the phone: comb and upgrade the 500 people who can commission the work we aspire to, so next week's calls come from a list, not from memory.",
@@ -58,6 +67,162 @@ const CARDS: CardCopy[] = [
     ],
   },
 ];
+
+function formatRemaining(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function playChime(ctx: AudioContext) {
+  const t0 = ctx.currentTime;
+  CHIME_FREQS.forEach((freq, i) => {
+    const offset = i * 0.3;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t0 + offset);
+    gain.gain.exponentialRampToValueAtTime(0.2, t0 + offset + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + offset + 0.28);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0 + offset);
+    osc.stop(t0 + offset + 0.3);
+  });
+}
+
+type TimerPhase = "idle" | "running" | "done";
+
+function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: string }) {
+  const storageKey = `bd-timer-${cardId}`;
+  const [phase, setPhase] = useState<TimerPhase>("idle");
+  const [remainingMs, setRemainingMs] = useState(FOCUS_MINUTES * 60 * 1000);
+  const finishRef = useRef<number | null>(null);
+  const audioRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+      const finish = parseInt(raw, 10);
+      if (Number.isFinite(finish) && finish > Date.now()) {
+        finishRef.current = finish;
+        setRemainingMs(finish - Date.now());
+        setPhase("running");
+      } else {
+        localStorage.removeItem(storageKey);
+      }
+    } catch {
+      /* storage unavailable */
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (phase !== "running") return;
+    const complete = () => {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        /* storage unavailable */
+      }
+      finishRef.current = null;
+      setPhase("done");
+      try {
+        if (!audioRef.current && typeof window !== "undefined" && window.AudioContext) {
+          audioRef.current = new window.AudioContext();
+        }
+        const ctx = audioRef.current;
+        if (ctx) {
+          if (ctx.state === "suspended") void ctx.resume();
+          playChime(ctx);
+        }
+      } catch {
+        /* audio unavailable */
+      }
+      try {
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification(`30 minutes done — ${cardTitle}`);
+        }
+      } catch {
+        /* notifications unavailable */
+      }
+    };
+    const tick = () => {
+      const rem = (finishRef.current ?? 0) - Date.now();
+      if (rem <= 0) complete();
+      else setRemainingMs(rem);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [phase, storageKey, cardTitle]);
+
+  const handleClick = () => {
+    if (phase === "running") {
+      if (window.confirm(CANCEL_PROMPT)) {
+        try {
+          localStorage.removeItem(storageKey);
+        } catch {
+          /* storage unavailable */
+        }
+        finishRef.current = null;
+        setPhase("idle");
+      }
+      return;
+    }
+    if (phase === "done") {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        /* storage unavailable */
+      }
+      setPhase("idle");
+      return;
+    }
+    try {
+      if (window.AudioContext) {
+        if (!audioRef.current) audioRef.current = new window.AudioContext();
+        if (audioRef.current.state === "suspended") void audioRef.current.resume();
+      }
+    } catch {
+      /* audio unavailable */
+    }
+    const finish = Date.now() + FOCUS_MINUTES * 60 * 1000;
+    try {
+      localStorage.setItem(storageKey, String(finish));
+    } catch {
+      /* storage unavailable */
+    }
+    finishRef.current = finish;
+    setRemainingMs(FOCUS_MINUTES * 60 * 1000);
+    setPhase("running");
+  };
+
+  const label =
+    phase === "running" ? formatRemaining(remainingMs) : phase === "done" ? "Done!" : "Let’s go!!";
+  const ariaLabel =
+    phase === "running"
+      ? "Cancel focus timer"
+      : phase === "done"
+        ? "Clear finished focus timer"
+        : "Start 30-minute focus timer";
+
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={handleClick}
+      className={`absolute right-0 top-0 flex h-14 w-14 items-center justify-center rounded-full font-bold text-white shadow-md transition-transform hover:scale-105 ${
+        phase === "running" ? "text-xs tabular-nums" : "text-[10px] leading-tight"
+      }`}
+      style={{ backgroundColor: phase === "done" ? DONE_GREEN : BRAND_RED }}
+    >
+      {label}
+    </button>
+  );
+}
 
 function StatusButtonRow() {
   return (
@@ -115,14 +280,7 @@ function BDCard({ card, footer }: { card: CardCopy; footer: React.ReactNode }) {
         >
           {card.title}
         </h3>
-        <button
-          type="button"
-          aria-label="Start 30-minute focus timer"
-          className="absolute right-0 top-0 flex h-14 w-14 items-center justify-center rounded-full text-[10px] font-bold leading-tight text-white shadow-md transition-transform hover:scale-105"
-          style={{ backgroundColor: BRAND_RED }}
-        >
-          Let&rsquo;s go!!
-        </button>
+        <FocusTimerButton cardId={card.id} cardTitle={card.title} />
       </div>
 
       <p className="mb-3 text-sm font-medium" style={{ color: BRAND_RED }}>
