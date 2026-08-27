@@ -75,32 +75,32 @@ export const DESKS: Desk[] = [
 
 export const PEOPLE: Person[] = [
   { id: "kit", name: "Kit", fullName: "Kit Gunaratne", deskId: "kit", status: "wfh", photo: null },
-  { id: "alice", name: "Alice", fullName: "Alice", deskId: "alice", status: "desk", photo: null },
-  { id: "dani", name: "Dani", fullName: "Dani", deskId: "dani", status: "desk", photo: null },
-  { id: "josh", name: "Josh", fullName: "Josh", deskId: "josh", status: "desk", photo: null },
+  { id: "alice", name: "Alice", fullName: "Alice Holmes", deskId: "alice", status: "desk", photo: null },
+  { id: "dani", name: "Dani", fullName: "Dani Reed", deskId: "dani", status: "desk", photo: null },
+  { id: "josh", name: "Josh", fullName: "Joshua Hunt", deskId: "josh", status: "desk", photo: null },
 
-  { id: "jess", name: "Jess", fullName: "Jess", deskId: "jess", status: "desk", photo: null },
-  { id: "euan", name: "Euan", fullName: "Euan", deskId: "euan", status: "desk", photo: null },
+  { id: "jess", name: "Jess", fullName: "Jess Watling", deskId: "jess", status: "desk", photo: null },
+  { id: "euan", name: "Euan", fullName: "Euan Christie", deskId: "euan", status: "desk", photo: null },
   { id: "tino", name: "Tino", fullName: "Tino Baranda", deskId: "tino", status: "desk", photo: null },
-  { id: "jasmine", name: "Jasmine", fullName: "Jasmine", deskId: "jasmine", status: "desk", photo: null },
+  { id: "jasmine", name: "Jasmine", fullName: "Jasmine Hounslow", deskId: "jasmine", status: "desk", photo: null },
 
   { id: "francesc", name: "Francesc", fullName: "Francesc Montosa", deskId: "francesc", status: "sick", photo: null },
-  { id: "jules", name: "Jules", fullName: "Jules", deskId: "jules", status: "desk", photo: null },
-  { id: "dilan", name: "Dilan", fullName: "Dilan", deskId: "dilan", status: "desk", photo: null },
-  { id: "miles", name: "Miles", fullName: "Miles", deskId: "miles", status: "desk", photo: null },
+  { id: "jules", name: "Jules", fullName: "Jules Byers", deskId: "jules", status: "desk", photo: null },
+  { id: "dilan", name: "Dilan", fullName: "Dilan Savage", deskId: "dilan", status: "desk", photo: null },
+  { id: "miles", name: "Miles", fullName: "Miles Reay-Palmer", deskId: "miles", status: "desk", photo: null },
 
-  { id: "hope", name: "Hope", fullName: "Hope", deskId: "hope", status: "desk", photo: null },
-  { id: "riley", name: "Riley", fullName: "Riley", deskId: "riley", status: "desk", photo: null },
+  { id: "hope", name: "Hope", fullName: "Hope Glover", deskId: "hope", status: "desk", photo: null },
+  { id: "riley", name: "Riley", fullName: "Riley Adams-Winch", deskId: "riley", status: "desk", photo: null },
   { id: "jonathan", name: "Jonathan", fullName: "Jonathan Spratt", deskId: "jonathan", status: "desk", photo: null },
-  { id: "michael", name: "Michael", fullName: "Michael", deskId: "michael", status: "desk", photo: null },
+  { id: "michael", name: "Michael", fullName: "Michael Bridgeman", deskId: "michael", status: "desk", photo: null },
 
   { id: "paloma", name: "Paloma", fullName: "Paloma Quintana", deskId: "paloma", status: "holiday", photo: null },
-  { id: "james", name: "James", fullName: "James", deskId: "james", status: "desk", photo: null },
+  { id: "james", name: "James", fullName: "James Bubaris", deskId: "james", status: "desk", photo: null },
   { id: "joe", name: "Joe", fullName: "Joe Haire", deskId: "joe", status: "desk", photo: "/joe.png" },
 
   { id: "artem", name: "Artem", fullName: "Artem", deskId: "artem", status: "desk", photo: null },
   { id: "josephine", name: "Josephine", fullName: "Josephine", deskId: "josephine", status: "desk", photo: null },
-  { id: "katy", name: "Katy", fullName: "Katy", deskId: "katy", status: "desk", photo: null },
+  { id: "katy", name: "Katy", fullName: "Katy Binks", deskId: "katy", status: "desk", photo: null },
 
   { id: "dicky", name: "Dicky", fullName: "Dicky Lewis", deskId: "dicky", status: "zoom", photo: "/dicky.png" },
   { id: "jesus", name: "Jesus", fullName: "Jesus Jimenez", deskId: "jesus", status: "site", photo: "/jesus.png" },

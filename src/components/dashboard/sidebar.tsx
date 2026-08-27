@@ -27,6 +27,7 @@ import {
   Briefcase,
   Monitor,
   Building2,
+  CalendarRange,
   LogOut,
   ChevronRight,
   Menu,
@@ -82,6 +83,11 @@ const navItems = [
     label: "Premises",
     href: "/dashboard/premises",
     icon: Building2,
+  },
+  {
+    label: "Resourcing",
+    href: "/dashboard/resourcing",
+    icon: CalendarRange,
   },
 ];
 

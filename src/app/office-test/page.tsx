@@ -19,6 +19,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   DESKS,
   PEOPLE,
@@ -28,6 +29,16 @@ import {
   type Person,
   type PersonStatus,
 } from "@/lib/office-data";
+import { projectColor } from "@/lib/project-colors";
+import {
+  CellInfoLines,
+  buildCellInfo,
+  offDays,
+  weekTotal,
+  type ResourcingCellInfo,
+} from "@/components/dashboard/resourcing/resourcing-tooltip";
+import resourcingFixture from "@/lib/fixtures/resourcing.json";
+import type { ResourcingData, ResourcingWeek } from "@/lib/resourcing-types";
 
 /* ------------------------------------------------------------------ */
 /* Tokens — every colour, size and spacing lives here                  */
@@ -121,6 +132,15 @@ const FIG_BODY_HW = 10.5;
 const FIG_BODY_TOP = -36;
 const FIG_HEAD_CY = -46;
 const FIG_HEAD_R = 9.5;
+
+/* Resourcing mini-bar above the head bubble */
+const RES_BAR_W = 10;
+const RES_BAR_H = 36;
+const RES_BAR_BOTTOM = -60;
+const RES_BAR_CAP_PCT = 118;
+const RES_TIP_W = 240;
+const RES_TIP_H = 170;
+const C_RES_EMPTY = "#CBD5E1";
 
 /* Status symbols — pinned just above the monitor they belong to */
 const STATUS_GAP = 12;
@@ -516,6 +536,71 @@ function DeskBlock({ desk, index }: { desk: Desk; index: number }) {
   );
 }
 
+interface ResourcingHover {
+  show: (info: ResourcingCellInfo, x: number, y: number) => void;
+  move: (x: number, y: number) => void;
+  hide: () => void;
+  toggle: (info: ResourcingCellInfo, x: number, y: number) => void;
+}
+
+/** The condensed current-week allocation bar drawn above a figure's head. */
+function ResourceBarShape({ week }: { week: ResourcingWeek }) {
+  const total = weekTotal(week);
+  const off = offDays(week);
+  const offPct = (off / 5) * 100;
+  const overall = total + offPct;
+  const scaleF = overall > RES_BAR_CAP_PCT ? RES_BAR_CAP_PCT / overall : 1;
+  const pxPerPct = (RES_BAR_H / 100) * scaleF;
+  const x0 = -RES_BAR_W / 2;
+
+  if (total === 0 && off === 0) {
+    return (
+      <rect
+        x={x0}
+        y={RES_BAR_BOTTOM - RES_BAR_H}
+        width={RES_BAR_W}
+        height={RES_BAR_H}
+        fill="none"
+        stroke={C_RES_EMPTY}
+        strokeWidth={1}
+        strokeDasharray="2,2"
+        opacity={0.8}
+      />
+    );
+  }
+
+  const segments: { key: string; y: number; h: number; fill: string }[] = [];
+  let cursor = RES_BAR_BOTTOM;
+  for (const p of week.projects) {
+    const h = p.percentage * pxPerPct;
+    cursor -= h;
+    segments.push({
+      key: `${p.projectCode}-${p.projectTitle}`,
+      y: cursor,
+      h,
+      fill: projectColor(p.projectCode),
+    });
+  }
+  let offSeg: { y: number; h: number } | null = null;
+  if (off > 0) {
+    const h = offPct * pxPerPct;
+    cursor -= h;
+    offSeg = { y: cursor, h };
+  }
+
+  return (
+    <>
+      {segments.map(s => (
+        <rect key={s.key} x={x0} y={s.y} width={RES_BAR_W} height={s.h} fill={s.fill} />
+      ))}
+      {offSeg && (
+        <rect x={x0} y={offSeg.y} width={RES_BAR_W} height={offSeg.h} fill="url(#norman-timeoff)" />
+      )}
+      {total > 100 && <rect x={x0} y={cursor - 2} width={RES_BAR_W} height={2} fill={C_RED} />}
+    </>
+  );
+}
+
 /**
  * A person on their seat.
  *
@@ -523,7 +608,17 @@ function DeskBlock({ desk, index }: { desk: Desk; index: number }) {
  * never come apart — a head is only ever drawn as part of this whole. Facing
  * changes where the group stands on the floor, never how it is built.
  */
-function Figure({ desk, person }: { desk: Desk; person: Person }) {
+function Figure({
+  desk,
+  person,
+  week,
+  resHover,
+}: {
+  desk: Desk;
+  person: Person;
+  week?: ResourcingWeek;
+  resHover?: ResourcingHover;
+}) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const remoteUrl = photoFailed ? null : person.photoUrl ?? null;
   const seat = seatOf(desk);
@@ -626,6 +721,39 @@ function Figure({ desk, person }: { desk: Desk; person: Person }) {
             strokeLinecap="round"
           />
           <circle cx={-FIG_HEAD_R + 3} cy={FIG_HEAD_CY + 9.6} r={2} fill={C_RED} />
+        </g>
+      ) : null}
+
+      {/* resourcing mini-bar + head hover zone */}
+      {week && resHover ? (
+        <g
+          onPointerDown={e => e.stopPropagation()}
+          onPointerEnter={e => {
+            e.stopPropagation();
+            resHover.show(buildCellInfo(person.fullName, week), e.clientX, e.clientY);
+          }}
+          onPointerMove={e => {
+            e.stopPropagation();
+            resHover.move(e.clientX, e.clientY);
+          }}
+          onPointerLeave={e => {
+            e.stopPropagation();
+            resHover.hide();
+          }}
+          onClick={e => {
+            e.stopPropagation();
+            resHover.toggle(buildCellInfo(person.fullName, week), e.clientX, e.clientY);
+          }}
+        >
+          <rect
+            x={-RES_BAR_W / 2 - 3}
+            y={RES_BAR_BOTTOM - RES_BAR_H - 8}
+            width={RES_BAR_W + 6}
+            height={RES_BAR_H + 12}
+            fill="transparent"
+          />
+          <ResourceBarShape week={week} />
+          <circle cx={0} cy={FIG_HEAD_CY} r={FIG_HEAD_R + 1.5} fill="transparent" />
         </g>
       ) : null}
     </g>
@@ -850,6 +978,65 @@ export default function OfficeTestPage() {
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<number | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [resTip, setResTip] = useState<{
+    info: ResourcingCellInfo;
+    x: number;
+    y: number;
+    pinned: boolean;
+  } | null>(null);
+  const [currentWeekIso, setCurrentWeekIso] = useState<string | null>(null);
+
+  const { data: resourcing } = useQuery<ResourcingData>({
+    queryKey: ["resourcing"],
+    queryFn: async () => {
+      const res = await fetch("/api/resourcing");
+      if (!res.ok) throw new Error("Failed to load resourcing data");
+      return res.json();
+    },
+    initialData: resourcingFixture as ResourcingData,
+  });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      let match: string | null = null;
+      for (const ws of resourcing.weekStarts) {
+        if (ws <= today) match = ws;
+      }
+      if (match) {
+        const end = new Date(match + "T00:00:00Z");
+        end.setUTCDate(end.getUTCDate() + 7);
+        if (today >= end.toISOString().slice(0, 10)) match = null;
+      }
+      setCurrentWeekIso(match);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [resourcing]);
+
+  const resWeekByFullName = useMemo(() => {
+    const map = new Map<string, ResourcingWeek>();
+    if (!currentWeekIso || !resourcing) return map;
+    for (const rp of resourcing.people) {
+      const week = rp.weeks.find(w => w.weekStart === currentWeekIso);
+      if (week) map.set(rp.name, week);
+    }
+    return map;
+  }, [resourcing, currentWeekIso]);
+
+  const resHover: ResourcingHover = {
+    show: (info, x, y) => {
+      setTooltip(null);
+      setResTip(prev => (prev?.pinned ? prev : { info, x, y, pinned: false }));
+    },
+    move: (x, y) => setResTip(prev => (prev && !prev.pinned ? { ...prev, x, y } : prev)),
+    hide: () => setResTip(prev => (prev?.pinned ? prev : null)),
+    toggle: (info, x, y) =>
+      setResTip(prev =>
+        prev?.pinned && prev.info.personName === info.personName
+          ? null
+          : { info, x, y, pinned: true },
+      ),
+  };
 
   const viewRef = useRef(view);
   useEffect(() => {
@@ -991,6 +1178,7 @@ export default function OfficeTestPage() {
       e.currentTarget.setPointerCapture(e.pointerId);
       touchesRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       setTooltip(null);
+      setResTip(prev => (prev?.pinned ? prev : null));
       if (touchesRef.current.size === 1) {
         panRef.current = {
           id: e.pointerId,
@@ -1025,6 +1213,7 @@ export default function OfficeTestPage() {
     panRef.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y };
     setPanning(true);
     setTooltip(null);
+    setResTip(null);
   };
 
   const onPointerMove = (e: ReactPointerEvent<SVGSVGElement>) => {
@@ -1151,6 +1340,16 @@ export default function OfficeTestPage() {
           <filter id="norman-pill-shadow" x="-40%" y="-60%" width="180%" height="240%">
             <feDropShadow dx="0" dy="2" stdDeviation="2.4" floodColor="#35322e" floodOpacity="0.18" />
           </filter>
+          <pattern
+            id="norman-timeoff"
+            patternUnits="userSpaceOnUse"
+            width={6}
+            height={6}
+            patternTransform="rotate(45)"
+          >
+            <rect width={6} height={6} fill="#E2E8F0" />
+            <rect width={3} height={6} fill="#94A3B8" />
+          </pattern>
         </defs>
 
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
@@ -1222,7 +1421,12 @@ export default function OfficeTestPage() {
               const statusAnchor = iso(mon.x, mon.y, STATUS_Z);
               const figure =
                 person && (person.status === "desk" || person.status === "zoom") ? (
-                  <Figure desk={desk} person={person} />
+                  <Figure
+                    desk={desk}
+                    person={person}
+                    week={resWeekByFullName.get(person.fullName)}
+                    resHover={resHover}
+                  />
                 ) : null;
               const marker =
                 person && person.status !== "desk" && person.status !== "zoom" ? (
@@ -1447,6 +1651,20 @@ export default function OfficeTestPage() {
           >
             Copy this desk&rsquo;s data
           </button>
+        </div>
+      ) : null}
+
+      {/* Resourcing tooltip — near the head, clamped to the viewport */}
+      {resTip ? (
+        <div
+          className="pointer-events-none fixed z-20 rounded-xl bg-white px-3 py-2"
+          style={{
+            left: Math.max(8, Math.min(resTip.x + 14, size.w - RES_TIP_W)),
+            top: Math.max(8, Math.min(resTip.y + 14, size.h - RES_TIP_H)),
+            boxShadow: "0 4px 18px rgba(53,50,46,0.18)",
+          }}
+        >
+          <CellInfoLines info={resTip.info} />
         </div>
       ) : null}
 
