@@ -1,12 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TopBar } from "@/components/dashboard/topbar";
 import { DemandCapacityChart } from "@/components/dashboard/resourcing/demand-capacity-chart";
 import { ResourcingView } from "@/components/dashboard/resourcing/resourcing-view";
 import fixture from "@/lib/fixtures/resourcing.json";
+import type { ResourcingFilterMode } from "@/lib/resourcing-math";
 import type { ResourcingData } from "@/lib/resourcing-types";
+
+const FILTER_STORAGE_KEY = "resourcing-filter-mode";
+
+function isFilterMode(v: string | null): v is ResourcingFilterMode {
+  return v === "confirmed" || v === "75plus" || v === "all";
+}
 
 const INITIAL_DATA = fixture as ResourcingData;
 
@@ -21,7 +28,29 @@ function longDate(iso: string): string {
 
 export default function ResourcingPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<ResourcingFilterMode>("75plus");
   const gridRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        const stored = localStorage.getItem(FILTER_STORAGE_KEY);
+        if (isFilterMode(stored)) setFilterMode(stored);
+      } catch {
+        /* storage unavailable */
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const changeFilterMode = (mode: ResourcingFilterMode) => {
+    setFilterMode(mode);
+    try {
+      localStorage.setItem(FILTER_STORAGE_KEY, mode);
+    } catch {
+      /* storage unavailable */
+    }
+  };
 
   const { data } = useQuery<ResourcingData>({
     queryKey: ["resourcing"],
@@ -54,6 +83,8 @@ export default function ResourcingPage() {
 
         <DemandCapacityChart
           data={data}
+          mode={filterMode}
+          onModeChange={changeFilterMode}
           onSelectPerson={userId => {
             setSelectedId(userId);
             gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -61,7 +92,12 @@ export default function ResourcingPage() {
         />
 
         <div ref={gridRef}>
-          <ResourcingView data={data} selectedId={selectedId} onSelect={setSelectedId} />
+          <ResourcingView
+            data={data}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            filterMode={filterMode}
+          />
         </div>
       </div>
     </div>

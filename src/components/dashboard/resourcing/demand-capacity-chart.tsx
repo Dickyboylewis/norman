@@ -15,16 +15,26 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { getPersonColor } from "@/lib/project-colors";
-import { buildDemandCapacityData, type DemandCapacityDatum } from "@/lib/resourcing-math";
+import {
+  buildDemandCapacityData,
+  type DemandCapacityDatum,
+  type ResourcingFilterMode,
+} from "@/lib/resourcing-math";
 import { shortDate } from "./resourcing-tooltip";
 import type { ResourcingData } from "@/lib/resourcing-types";
 
 const BRAND_RED = "#DC2626";
 const CAPACITY_BLUE = "#2563EB";
 const WON_OPACITY = 0.85;
-const POT_OPACITY = 0.3;
+const PIPE_OPACITY = 0.3;
 const DIMMED_OPACITY = 0.25;
-const DIMMED_POT_OPACITY = 0.08;
+const DIMMED_PIPE_OPACITY = 0.08;
+
+const FILTER_OPTIONS: { value: ResourcingFilterMode; label: string }[] = [
+  { value: "confirmed", label: "Confirmed" },
+  { value: "75plus", label: "75%+" },
+  { value: "all", label: "All pipeline" },
+];
 
 function formatFte(v: number): string {
   return String(Math.round(v * 100) / 100);
@@ -32,17 +42,20 @@ function formatFte(v: number): string {
 
 export function DemandCapacityChart({
   data,
+  mode,
+  onModeChange,
   onSelectPerson,
 }: {
   data: ResourcingData;
+  mode: ResourcingFilterMode;
+  onModeChange: (mode: ResourcingFilterMode) => void;
   onSelectPerson: (userId: string) => void;
 }) {
-  const [includePotential, setIncludePotential] = useState(true);
   const [showThreads, setShowThreads] = useState(true);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [currentWeek, setCurrentWeek] = useState<string | null>(null);
 
-  const chartData = useMemo(() => buildDemandCapacityData(data), [data]);
+  const chartData = useMemo(() => buildDemandCapacityData(data, mode), [data, mode]);
   const nameById = useMemo(
     () => new Map(data.people.map(p => [p.userId, p.name])),
     [data.people],
@@ -67,8 +80,8 @@ export function DemandCapacityChart({
 
   const wonOpacity = (userId: string) =>
     highlight === null ? WON_OPACITY : highlight === userId ? 1 : DIMMED_OPACITY;
-  const potOpacity = (userId: string) =>
-    highlight === null ? POT_OPACITY : highlight === userId ? 0.5 : DIMMED_POT_OPACITY;
+  const pipeOpacity = (userId: string) =>
+    highlight === null ? PIPE_OPACITY : highlight === userId ? 0.5 : DIMMED_PIPE_OPACITY;
 
   const renderTooltip = ({
     active,
@@ -85,12 +98,12 @@ export function DemandCapacityChart({
       .map(p => ({
         name: p.name,
         won: Number(datum[`won_${p.userId}`] ?? 0),
-        pot: Number(datum[`pot_${p.userId}`] ?? 0),
+        pipe: Number(datum[`pipe_${p.userId}`] ?? 0),
       }))
-      .filter(r => r.won > 0 || (includePotential && r.pot > 0))
-      .sort((a, b) => b.won + b.pot - (a.won + a.pot));
+      .filter(r => r.won > 0 || r.pipe > 0)
+      .sort((a, b) => b.won + b.pipe - (a.won + a.pipe));
 
-    const totalDemand = datum.wonDemand + (includePotential ? datum.potentialDemand : 0);
+    const totalDemand = datum.wonDemand + datum.pipelineDemand;
     const headroom = datum.capacity - totalDemand;
 
     return (
@@ -101,7 +114,7 @@ export function DemandCapacityChart({
         {rows.map(r => (
           <p key={r.name} className="text-[11px] text-gray-700 whitespace-nowrap" style={{ fontFamily: "Roboto, sans-serif" }}>
             {r.name} — {formatFte(r.won)}
-            {includePotential && r.pot > 0 ? ` (+${formatFte(r.pot)} potential)` : ""}
+            {r.pipe > 0 ? ` (+${formatFte(r.pipe)} pipeline)` : ""}
           </p>
         ))}
         <p className="mt-1 text-[11px] font-bold text-gray-900" style={{ fontFamily: "Roboto, sans-serif" }}>
@@ -133,10 +146,21 @@ export function DemandCapacityChart({
             </p>
           </div>
           <div className="flex flex-col items-start gap-2 md:items-end">
-            <label className="flex items-center gap-2 text-xs text-gray-700" style={{ fontFamily: "Roboto, sans-serif" }}>
-              <Switch checked={includePotential} onCheckedChange={setIncludePotential} />
-              Include potential projects
-            </label>
+            <div className="flex rounded-full border border-slate-300 bg-white p-0.5">
+              {FILTER_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onModeChange(option.value)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    mode === option.value ? "text-white" : "text-gray-700 hover:bg-slate-50"
+                  }`}
+                  style={mode === option.value ? { backgroundColor: BRAND_RED } : undefined}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
             <label className="flex items-center gap-2 text-xs text-gray-700" style={{ fontFamily: "Roboto, sans-serif" }}>
               <Switch checked={showThreads} onCheckedChange={setShowThreads} />
               Show individual threads
@@ -205,16 +229,16 @@ export function DemandCapacityChart({
                     activeDot={false}
                   />,
                 ]}
-            {includePotential &&
+            {mode !== "confirmed" &&
               (showThreads
                 ? data.people.map(p => (
                     <Area
-                      key={`pot_${p.userId}`}
+                      key={`pipe_${p.userId}`}
                       type="monotone"
-                      dataKey={`pot_${p.userId}`}
+                      dataKey={`pipe_${p.userId}`}
                       stackId="demand"
                       fill={getPersonColor(p.userId)}
-                      fillOpacity={potOpacity(p.userId)}
+                      fillOpacity={pipeOpacity(p.userId)}
                       stroke="none"
                       isAnimationActive={false}
                       activeDot={false}
@@ -225,9 +249,9 @@ export function DemandCapacityChart({
                   ))
                 : [
                     <Area
-                      key="potentialDemand"
+                      key="pipelineDemand"
                       type="monotone"
-                      dataKey="potentialDemand"
+                      dataKey="pipelineDemand"
                       stackId="demand"
                       fill={BRAND_RED}
                       fillOpacity={0.2}

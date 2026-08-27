@@ -6,7 +6,7 @@ import type { ResourcingWeek } from "@/lib/resourcing-types";
 export interface ResourcingCellInfo {
   personName: string;
   range: string;
-  projects: { code: string; title: string; pct: number }[];
+  projects: { code: string; title: string; pct: number; won: boolean; probability: number }[];
   timeOff: { label: string; days: number }[];
   total: number;
 }
@@ -43,7 +43,13 @@ export function buildCellInfo(personName: string, week: ResourcingWeek): Resourc
     range: weekRangeLabel(week.weekStart),
     projects: [...week.projects]
       .sort((a, b) => b.percentage - a.percentage)
-      .map(p => ({ code: p.projectCode, title: p.projectTitle, pct: p.percentage })),
+      .map(p => ({
+        code: p.projectCode,
+        title: p.projectTitle,
+        pct: p.percentage,
+        won: p.won,
+        probability: p.probability,
+      })),
     timeOff: week.timeOffDays.map(t => ({ label: t.label, days: t.days })),
     total: weekTotal(week),
   };
@@ -62,6 +68,7 @@ export function CellInfoLines({ info }: { info: ResourcingCellInfo }) {
             style={{ backgroundColor: projectColor(p.code) }}
           />
           {p.code} {p.title} — {p.pct}%
+          {!p.won ? ` (${p.probability}%)` : ""}
         </p>
       ))}
       {info.timeOff.map(t => (

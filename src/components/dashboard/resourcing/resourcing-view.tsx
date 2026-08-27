@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { projectColor } from "@/lib/project-colors";
+import { filterWeek, type ResourcingFilterMode } from "@/lib/resourcing-math";
 import {
   CellInfoLines,
   buildCellInfo,
@@ -44,13 +45,16 @@ interface HoverHandlers {
 
 function WeekCell({
   person,
-  week,
+  week: rawWeek,
   hover,
+  mode,
 }: {
   person: ResourcingPerson;
   week: ResourcingWeek;
   hover: HoverHandlers;
+  mode: ResourcingFilterMode;
 }) {
+  const week = filterWeek(rawWeek, mode);
   const total = weekTotal(week);
   const off = offDays(week);
   const info = () => cellInfo(person, week);
@@ -76,6 +80,7 @@ function WeekCell({
             style={{
               width: `${(p.percentage / scale) * 100}%`,
               backgroundColor: projectColor(p.projectCode),
+              opacity: p.won ? 1 : 0.4,
             }}
           />
         ))}
@@ -99,10 +104,12 @@ function EveryoneView({
   data,
   currentWeek,
   hover,
+  mode,
 }: {
   data: ResourcingData;
   currentWeek: string | null;
   hover: HoverHandlers;
+  mode: ResourcingFilterMode;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -136,7 +143,7 @@ function EveryoneView({
                 </p>
               </div>
               {person.weeks.map(week => (
-                <WeekCell key={week.weekStart} person={person} week={week} hover={hover} />
+                <WeekCell key={week.weekStart} person={person} week={week} hover={hover} mode={mode} />
               ))}
             </div>
           ))}
@@ -151,26 +158,28 @@ function SinglePersonView({
   weekStarts,
   currentWeek,
   hover,
+  mode,
 }: {
   person: ResourcingPerson;
   weekStarts: string[];
   currentWeek: string | null;
   hover: HoverHandlers;
+  mode: ResourcingFilterMode;
 }) {
   const weekByStart = useMemo(
-    () => new Map(person.weeks.map(w => [w.weekStart, w])),
-    [person],
+    () => new Map(person.weeks.map(w => [w.weekStart, filterWeek(w, mode)])),
+    [person, mode],
   );
 
   const legend = useMemo(() => {
     const seen = new Map<string, string>();
-    for (const week of person.weeks) {
+    for (const week of person.weeks.map(w => filterWeek(w, mode))) {
       for (const p of week.projects) {
         if (!seen.has(p.projectCode)) seen.set(p.projectCode, p.projectTitle);
       }
     }
     return [...seen.entries()];
-  }, [person]);
+  }, [person, mode]);
 
   return (
     <div>
@@ -216,6 +225,7 @@ function SinglePersonView({
                     style={{
                       height: `${(p.percentage / SINGLE_VIEW_MAX_PCT) * 100}%`,
                       backgroundColor: projectColor(p.projectCode),
+                      opacity: p.won ? 1 : 0.4,
                     }}
                   />
                 ))}
@@ -261,10 +271,12 @@ export function ResourcingView({
   data,
   selectedId,
   onSelect,
+  filterMode,
 }: {
   data: ResourcingData;
   selectedId: string | null;
   onSelect: (userId: string | null) => void;
+  filterMode: ResourcingFilterMode;
 }) {
   const [tooltip, setTooltip] = useState<{ info: ResourcingCellInfo; x: number; y: number } | null>(null);
   const [pinned, setPinned] = useState<ResourcingCellInfo | null>(null);
@@ -345,9 +357,10 @@ export function ResourcingView({
               weekStarts={data.weekStarts}
               currentWeek={currentWeek}
               hover={hover}
+              mode={filterMode}
             />
           ) : (
-            <EveryoneView data={data} currentWeek={currentWeek} hover={hover} />
+            <EveryoneView data={data} currentWeek={currentWeek} hover={hover} mode={filterMode} />
           )}
         </CardContent>
       </Card>

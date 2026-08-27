@@ -38,6 +38,7 @@ import {
   type ResourcingCellInfo,
 } from "@/components/dashboard/resourcing/resourcing-tooltip";
 import resourcingFixture from "@/lib/fixtures/resourcing.json";
+import { filterWeek } from "@/lib/resourcing-math";
 import type { ResourcingData, ResourcingWeek } from "@/lib/resourcing-types";
 
 /* ------------------------------------------------------------------ */
@@ -1018,7 +1019,7 @@ export default function OfficeTestPage() {
     if (!currentWeekIso || !resourcing) return map;
     for (const rp of resourcing.people) {
       const week = rp.weeks.find(w => w.weekStart === currentWeekIso);
-      if (week) map.set(rp.name, week);
+      if (week) map.set(rp.name, filterWeek(week, "confirmed"));
     }
     return map;
   }, [resourcing, currentWeekIso]);

@@ -2,8 +2,10 @@ export interface ResourcingProjectAllocation {
   projectCode: string;
   projectTitle: string;
   percentage: number;
-  /** Speculative work; absent means confirmed/won. */
-  potential?: boolean;
+  /** Confirmed work. Won entries always carry probability 100. */
+  won: boolean;
+  /** Win probability: 10, 25, 50, 75 or 100. */
+  probability: number;
 }
 
 export interface ResourcingTimeOff {
