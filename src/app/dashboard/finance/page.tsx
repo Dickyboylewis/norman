@@ -19,6 +19,7 @@ import { FinanceIncomePlannerChart } from "@/components/dashboard/charts/finance
 import { ExpenseBreakdownChart } from "@/components/dashboard/charts/expense-breakdown-chart";
 import { CashflowTrendChart } from "@/components/dashboard/charts/cashflow-trend-chart";
 import { ProfitAndLossChart } from "@/components/dashboard/charts/profit-and-loss-chart";
+import StagesWatchlist from "@/components/dashboard/widgets/stages-watchlist";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -153,6 +154,11 @@ export default function FinancePage() {
         {/* ── Chart Grid ── */}
         {/* To toggle a chart off, wrap it in a comment: {/* <ChartName /> */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Stages Heading for Trouble — early-warning overspend watchlist */}
+          <div className="md:col-span-2">
+            <StagesWatchlist />
+          </div>
+
           {/* NEW: Income vs Expenses grouped bar chart */}
           <IncomeExpensesChart />
 
