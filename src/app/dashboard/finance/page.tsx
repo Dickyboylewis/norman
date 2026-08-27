@@ -20,6 +20,7 @@ import { ExpenseBreakdownChart } from "@/components/dashboard/charts/expense-bre
 import { CashflowTrendChart } from "@/components/dashboard/charts/cashflow-trend-chart";
 import { ProfitAndLossChart } from "@/components/dashboard/charts/profit-and-loss-chart";
 import StagesWatchlist from "@/components/dashboard/widgets/stages-watchlist";
+import FyMonthlyReport from "@/components/dashboard/widgets/fy-monthly-report";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -157,6 +158,11 @@ export default function FinancePage() {
           {/* Stages Heading for Trouble — early-warning overspend watchlist */}
           <div className="md:col-span-2">
             <StagesWatchlist />
+          </div>
+
+          {/* FY Project Report — month-by-month invoiced/cost/net */}
+          <div className="md:col-span-2">
+            <FyMonthlyReport />
           </div>
 
           {/* NEW: Income vs Expenses grouped bar chart */}
