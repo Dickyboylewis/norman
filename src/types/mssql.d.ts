@@ -19,6 +19,7 @@ declare module "mssql" {
   }
 
   export class Request {
+    input(name: string, value: unknown): Request;
     query<T = Record<string, unknown>>(command: string): Promise<QueryResult<T>>;
   }
 
