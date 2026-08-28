@@ -14,12 +14,13 @@ import {
   useMemo,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DESKS,
   PEOPLE,
@@ -39,6 +40,7 @@ import {
 } from "@/components/dashboard/resourcing/resourcing-tooltip";
 import resourcingFixture from "@/lib/fixtures/resourcing.json";
 import { filterWeek } from "@/lib/resourcing-math";
+import { buildSeedLayout, type OfficeLayout } from "@/lib/office-layout";
 import type { ResourcingData, ResourcingWeek } from "@/lib/resourcing-types";
 
 /* ------------------------------------------------------------------ */
@@ -228,6 +230,7 @@ const LABEL_MODE_NEXT: Record<LabelMode, LabelMode> = {
 /* Desk context menu */
 const MENU_W = 178;
 const MENU_H = 104;
+const PERSON_MENU_H = 68;
 const MENU_EDGE_PAD = 8;
 const COPY_FEEDBACK_MS = 1600;
 
@@ -285,8 +288,10 @@ function serialiseDesk(desk: Desk, rotation: DeskRotation): string {
   return `{ id: "${desk.id}", x: ${desk.x}, y: ${desk.y}, zone: "${desk.zone}", facing: "${desk.facing}"${rot} },`;
 }
 
-function serialiseDesks(rotations: Record<string, DeskRotation>): string {
-  const body = DESKS.map((desk) => `  ${serialiseDesk(desk, rotations[desk.id] ?? 0)}`).join("\n");
+function serialiseDesks(desks: Desk[], rotations: Record<string, DeskRotation>): string {
+  const body = desks
+    .map((desk) => `  ${serialiseDesk(desk, rotations[desk.id] ?? desk.rotation ?? 0)}`)
+    .join("\n");
   return `export const DESKS: Desk[] = [\n${body}\n];\n`;
 }
 
@@ -365,7 +370,9 @@ const ISLAND_BOUNDS = {
   maxY: (PLATE_X1 + PLATE_Y1) * ISO_Y + PLATE_THICK + PLATE_SHADOW_DROP,
 };
 
-const PERSON_BY_DESK = new Map<string, Person>(PEOPLE.map((p) => [p.deskId, p]));
+const PERSON_BY_ID = new Map<string, Person>(PEOPLE.map((p) => [p.id, p]));
+
+const SEED_LAYOUT = buildSeedLayout();
 
 const PLANTS: { x: number; y: number; tint: number }[] = [
   { x: PLATE_X0 + PLANT_INSET, y: PLATE_Y1 - PLANT_INSET, tint: 0 },
@@ -614,11 +621,17 @@ function Figure({
   person,
   week,
   resHover,
+  onPersonContextMenu,
+  swapActive,
+  onSwapPick,
 }: {
   desk: Desk;
   person: Person;
   week?: ResourcingWeek;
   resHover?: ResourcingHover;
+  onPersonContextMenu?: (e: ReactMouseEvent<SVGGElement>) => void;
+  swapActive?: boolean;
+  onSwapPick?: () => void;
 }) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const remoteUrl = photoFailed ? null : person.photoUrl ?? null;
@@ -631,7 +644,19 @@ function Figure({
     ` C ${FIG_BODY_HW - 3.5} ${FIG_BODY_TOP} ${FIG_BODY_HW} ${FIG_BODY_TOP + 8} ${FIG_BODY_HW} ${FIG_SEAT_Y + 1} Z`;
 
   return (
-    <g transform={`translate(${p.sx.toFixed(2)},${p.sy.toFixed(2)})`}>
+    <g
+      transform={`translate(${p.sx.toFixed(2)},${p.sy.toFixed(2)})`}
+      onContextMenu={onPersonContextMenu}
+      onClick={
+        swapActive && onSwapPick
+          ? e => {
+              e.stopPropagation();
+              onSwapPick();
+            }
+          : undefined
+      }
+      style={swapActive ? { cursor: "pointer" } : undefined}
+    >
       {/* stool */}
       <rect x={-1.6} y={FIG_SEAT_Y} width={3.2} height={-FIG_SEAT_Y} fill={C_STOOL} />
       <ellipse cx={0} cy={0} rx={FIG_STOOL_RX * 0.55} ry={FIG_STOOL_RY * 0.45} fill={C_STOOL} />
@@ -742,6 +767,7 @@ function Figure({
             resHover.hide();
           }}
           onClick={e => {
+            if (swapActive) return;
             e.stopPropagation();
             resHover.toggle(buildCellInfo(person.fullName, week), e.clientX, e.clientY);
           }}
@@ -939,12 +965,6 @@ interface DeskMenu {
   clientY: number;
 }
 
-function initialRotations(): Record<string, DeskRotation> {
-  const out: Record<string, DeskRotation> = {};
-  for (const desk of DESKS) out[desk.id] = desk.rotation ?? 0;
-  return out;
-}
-
 function fitView(w: number, h: number): View {
   const bw = ISLAND_BOUNDS.maxX - ISLAND_BOUNDS.minX;
   const bh = ISLAND_BOUNDS.maxY - ISLAND_BOUNDS.minY;
@@ -974,7 +994,7 @@ export default function OfficeTestPage() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const [labelMode, setLabelMode] = useState<LabelMode>("auto");
-  const [rotations, setRotations] = useState<Record<string, DeskRotation>>(initialRotations);
+  const [rotations, setRotations] = useState<Record<string, DeskRotation>>({});
   const [menu, setMenu] = useState<DeskMenu | null>(null);
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<number | null>(null);
@@ -986,6 +1006,64 @@ export default function OfficeTestPage() {
     pinned: boolean;
   } | null>(null);
   const [currentWeekIso, setCurrentWeekIso] = useState<string | null>(null);
+  const [personMenu, setPersonMenu] = useState<{
+    deskId: string;
+    personId: string;
+    personName: string;
+    clientX: number;
+    clientY: number;
+  } | null>(null);
+  const personMenuRef = useRef<HTMLDivElement | null>(null);
+  const [swapSource, setSwapSource] = useState<{ deskId: string; personId: string; name: string } | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: layout } = useQuery<OfficeLayout>({
+    queryKey: ["office-layout"],
+    queryFn: async () => {
+      const res = await fetch("/api/office-layout");
+      if (!res.ok) throw new Error("Failed to load office layout");
+      return res.json();
+    },
+    initialData: SEED_LAYOUT,
+    initialDataUpdatedAt: 0,
+  });
+
+  const desks = useMemo<Desk[]>(
+    () =>
+      layout.desks.map(d => ({
+        id: d.id,
+        x: d.x,
+        y: d.y,
+        zone: d.zone,
+        facing: d.facing,
+        rotation: d.rotation,
+      })),
+    [layout],
+  );
+
+  const personByDesk = useMemo(() => {
+    const map = new Map<string, Person>();
+    for (const d of layout.desks) {
+      if (!d.personId) continue;
+      const base = PERSON_BY_ID.get(d.personId);
+      if (base) {
+        map.set(d.id, { ...base, deskId: d.id });
+      } else {
+        const lp = layout.people.find(p => p.id === d.personId);
+        if (lp) {
+          map.set(d.id, {
+            id: lp.id,
+            name: lp.name,
+            fullName: lp.name,
+            deskId: d.id,
+            status: "desk",
+            photo: null,
+          });
+        }
+      }
+    }
+    return map;
+  }, [layout]);
 
   const { data: resourcing } = useQuery<ResourcingData>({
     queryKey: ["resourcing"],
@@ -1106,6 +1184,32 @@ export default function OfficeTestPage() {
     };
   }, [menu]);
 
+  useEffect(() => {
+    if (!personMenu) return;
+    const dismiss = (e: PointerEvent) => {
+      if (personMenuRef.current && e.target instanceof Node && personMenuRef.current.contains(e.target)) return;
+      setPersonMenu(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPersonMenu(null);
+    };
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", dismiss);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [personMenu]);
+
+  useEffect(() => {
+    if (!swapSource) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSwapSource(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [swapSource]);
+
   const copyText = useCallback((text: string) => {
     if (!navigator.clipboard) return;
     navigator.clipboard.writeText(text).then(
@@ -1118,9 +1222,44 @@ export default function OfficeTestPage() {
     );
   }, []);
 
-  const rotateDesk = useCallback((deskId: string, quarters: number) => {
-    setRotations((prev) => ({ ...prev, [deskId]: turnBy(prev[deskId] ?? 0, quarters) }));
-  }, []);
+  const handleSwapPick = (targetDeskId: string, targetPersonId: string) => {
+    const source = swapSource;
+    setSwapSource(null);
+    if (!source || source.deskId === targetDeskId) return;
+    const newLayout: OfficeLayout = {
+      ...layout,
+      desks: layout.desks.map(d =>
+        d.id === source.deskId
+          ? { ...d, personId: targetPersonId }
+          : d.id === targetDeskId
+            ? { ...d, personId: source.personId }
+            : d,
+      ),
+    };
+    queryClient.setQueryData(["office-layout"], newLayout);
+    void (async () => {
+      try {
+        const res = await fetch("/api/office-layout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newLayout),
+        });
+        if (!res.ok) console.error("Seat swap save failed:", res.status);
+      } catch (error) {
+        console.error("Seat swap save failed:", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: ["office-layout"] });
+      }
+    })();
+  };
+
+  const rotateDesk = useCallback(
+    (deskId: string, quarters: number) => {
+      const base = layout.desks.find(d => d.id === deskId)?.rotation ?? 0;
+      setRotations(prev => ({ ...prev, [deskId]: turnBy(prev[deskId] ?? base, quarters) }));
+    },
+    [layout],
+  );
 
   /* Wheel / trackpad zoom towards the cursor — non-passive so the page never scrolls */
   useEffect(() => {
@@ -1274,8 +1413,8 @@ export default function OfficeTestPage() {
 
   /* Painter's order — nearer desks (greater scene depth) draw last */
   const ordered = useMemo(
-    () => [...DESKS].sort((a, b) => depthOf(a.x, a.y) - depthOf(b.x, b.y)),
-    [],
+    () => [...desks].sort((a, b) => depthOf(a.x, a.y) - depthOf(b.x, b.y)),
+    [desks],
   );
 
   /* Level of detail, overridable from the Labels button */
@@ -1284,7 +1423,7 @@ export default function OfficeTestPage() {
 
   const showTooltip = (desk: Desk, e: ReactPointerEvent) => {
     if (panRef.current || menu) return;
-    const person = PERSON_BY_DESK.get(desk.id);
+    const person = personByDesk.get(desk.id);
     if (person) {
       setTooltip({
         clientX: e.clientX,
@@ -1412,8 +1551,8 @@ export default function OfficeTestPage() {
             });
 
             ordered.forEach((baseDesk, i) => {
-              const desk = rotatedDesk(baseDesk, rotations[baseDesk.id] ?? 0);
-              const person = PERSON_BY_DESK.get(desk.id);
+              const desk = rotatedDesk(baseDesk, rotations[baseDesk.id] ?? baseDesk.rotation ?? 0);
+              const person = personByDesk.get(desk.id);
               const isHovered = hovered === desk.id;
               const anchor = iso(desk.x, desk.y, 0);
               const seat = seatOf(desk);
@@ -1427,6 +1566,21 @@ export default function OfficeTestPage() {
                     person={person}
                     week={resWeekByFullName.get(person.fullName)}
                     resHover={resHover}
+                    swapActive={swapSource !== null}
+                    onSwapPick={() => handleSwapPick(desk.id, person.id)}
+                    onPersonContextMenu={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setTooltip(null);
+                      setMenu(null);
+                      setPersonMenu({
+                        deskId: desk.id,
+                        personId: person.id,
+                        personName: person.fullName,
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                      });
+                    }}
                   />
                 ) : null;
               const marker =
@@ -1600,7 +1754,7 @@ export default function OfficeTestPage() {
         </button>
         <button
           type="button"
-          onClick={() => copyText(serialiseDesks(rotations))}
+          onClick={() => copyText(serialiseDesks(desks, rotations))}
           className="flex h-9 items-center justify-center rounded-xl bg-white px-3.5 text-[10px] font-semibold tracking-[0.14em] transition hover:bg-neutral-100"
           style={{ color: copied ? C_RED : C_INK, boxShadow: "0 2px 10px rgba(53,50,46,0.14)" }}
         >
@@ -1645,13 +1799,55 @@ export default function OfficeTestPage() {
             type="button"
             className="norman-menu-item block w-full px-3 py-1.5 text-left text-[11px]"
             onClick={() => {
-              const target = DESKS.find((d) => d.id === menu.deskId);
-              if (target) copyText(serialiseDesk(target, rotations[target.id] ?? 0));
+              const target = desks.find((d) => d.id === menu.deskId);
+              if (target) copyText(serialiseDesk(target, rotations[target.id] ?? target.rotation ?? 0));
               setMenu(null);
             }}
           >
             Copy this desk&rsquo;s data
           </button>
+        </div>
+      ) : null}
+
+      {personMenu ? (
+        <div
+          ref={personMenuRef}
+          className="fixed z-30 overflow-hidden rounded-xl bg-white py-1"
+          style={{
+            left: Math.max(MENU_EDGE_PAD, Math.min(personMenu.clientX, size.w - MENU_W - MENU_EDGE_PAD)),
+            top: Math.max(MENU_EDGE_PAD, Math.min(personMenu.clientY, size.h - PERSON_MENU_H - MENU_EDGE_PAD)),
+            width: MENU_W,
+            boxShadow: "0 6px 24px rgba(53,50,46,0.18)",
+            fontFamily: "var(--font-roboto), sans-serif",
+          }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <p className="px-3 pb-0.5 pt-1 text-[10px] uppercase tracking-wide text-gray-400">
+            {personMenu.personName}
+          </p>
+          <button
+            type="button"
+            className="norman-menu-item block w-full px-3 py-1.5 text-left text-[11px]"
+            onClick={() => {
+              setSwapSource({
+                deskId: personMenu.deskId,
+                personId: personMenu.personId,
+                name: personMenu.personName,
+              });
+              setPersonMenu(null);
+            }}
+          >
+            Swap seat&hellip;
+          </button>
+        </div>
+      ) : null}
+
+      {swapSource ? (
+        <div
+          className="pointer-events-none fixed left-1/2 top-6 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-4 py-2 text-xs font-semibold"
+          style={{ color: C_INK, boxShadow: "0 4px 18px rgba(53,50,46,0.18)" }}
+        >
+          Click the person to swap with (Esc to cancel)
         </div>
       ) : null}
 
