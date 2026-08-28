@@ -86,7 +86,7 @@ function dayAt(base: Date, hour: number): Date {
  * name — a first name shared by several people only matches when the segment
  * also carries a disambiguating surname or initials; otherwise it is skipped.
  */
-function matchPeople(segment: string, roster: RosterEntry[]): RosterEntry[] {
+export function matchPeople(segment: string, roster: RosterEntry[]): RosterEntry[] {
   const lower = segment.toLowerCase();
   const tokens = words(lower);
   const tokenSet = new Set(tokens);
@@ -206,8 +206,18 @@ export function resolveStatuses(
 ): ResolvedStatus[] {
   const active = new Map<string, OfficeStatus>();
 
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+
   for (const event of events) {
-    for (const parsed of parseEvent(event.title, event.isAllDay, event.start, event.end, roster)) {
+    // Google all-day events carry an EXCLUSIVE end date, and a multi-day
+    // event that started before today must still cover today — so re-anchor
+    // its working-day windows to now's day whenever the span includes now.
+    const anchored =
+      event.isAllDay && event.start <= now && now < event.end
+        ? { ...event, start: dayStart }
+        : event;
+    for (const parsed of parseEvent(anchored.title, anchored.isAllDay, anchored.start, anchored.end, roster)) {
       if (now < parsed.windowStart || now >= parsed.windowEnd) continue;
       const current = active.get(parsed.personId);
       if (
