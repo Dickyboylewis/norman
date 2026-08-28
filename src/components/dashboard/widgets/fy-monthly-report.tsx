@@ -5,6 +5,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CalendarRange } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import FyReconciliationStrip from "@/components/dashboard/widgets/fy-reconciliation-strip";
 
 type Metric = "invoiced" | "cost" | "net";
 
@@ -108,11 +109,129 @@ function PillGroup<T extends string>({
   );
 }
 
+interface RatesRow {
+  person?: string;
+  rate: number;
+  hours: number;
+  entries: number;
+  costAtRate: number;
+}
+
+interface RatesResponse {
+  success: boolean;
+  fy: string;
+  groupedBy: "person" | "rate";
+  rows: RatesRow[];
+  summary: { totalHours: number; totalCost: number; weightedAvgRate: number };
+}
+
+function fmtShortMoney(v: number): string {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}£${(abs / 1_000_000).toFixed(1)}m`;
+  if (abs >= 1_000) return `${sign}£${Math.round(abs / 1_000)}k`;
+  return `${sign}£${Math.round(abs)}`;
+}
+
+function RatesInspector({ fy }: { fy: string }) {
+  const { data, isPending, isError, error } = useQuery<RatesResponse>({
+    queryKey: ["fy-rates", fy],
+    queryFn: async () => {
+      const res = await fetch(`/api/profitability/rates?fy=${encodeURIComponent(fy)}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? `Request failed (${res.status})`);
+      }
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isPending) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-96" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-2/3" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-lg bg-red-50 px-4 py-3">
+        <p className="text-sm font-medium text-red-700" style={{ fontFamily: "Roboto, sans-serif" }}>
+          Could not load rates data
+        </p>
+        <p className="mt-0.5 text-xs text-red-500" style={{ fontFamily: "Roboto, sans-serif" }}>
+          {error instanceof Error ? error.message : "Unknown error"}
+        </p>
+      </div>
+    );
+  }
+
+  const { summary } = data;
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-900" style={{ fontFamily: "Roboto, sans-serif" }}>
+        Effective hourly rates used in cost calculations · FY {data.fy}
+        <span className="ml-2 font-bold">
+          {summary.totalHours.toLocaleString("en-GB", { maximumFractionDigits: 0 })} hrs ·{" "}
+          {fmtShortMoney(summary.totalCost)} · avg £{summary.weightedAvgRate.toFixed(2)}/hr
+        </span>
+      </p>
+      <p className="mt-0.5 text-xs text-gray-500" style={{ fontFamily: "Roboto, sans-serif" }}>
+        If these look like charge-out rates rather than salary costs, the cost model is
+        overstating cost — worth checking against payroll.
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-sm" style={{ fontFamily: "Roboto, sans-serif" }}>
+          <thead>
+            <tr className="border-b border-gray-200 text-xs text-gray-500">
+              {data.groupedBy === "person" && (
+                <th className="py-2 pr-3 text-left font-medium">Person</th>
+              )}
+              <th className="py-2 pr-3 text-left font-medium">Rate</th>
+              <th className="py-2 pr-3 text-right font-medium">Hours</th>
+              <th className="py-2 pr-3 text-right font-medium">Entries</th>
+              <th className="py-2 pr-1 text-right font-medium">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((row, i) => (
+              <tr key={`${row.person ?? ""}-${row.rate}-${i}`} className="border-b border-gray-100 last:border-b-0">
+                {data.groupedBy === "person" && (
+                  <td className="py-2 pr-3 text-gray-900">{row.person}</td>
+                )}
+                <td className="py-2 pr-3 font-semibold tabular-nums text-gray-900">
+                  £{row.rate.toFixed(2)}/hr
+                </td>
+                <td className="py-2 pr-3 text-right tabular-nums text-gray-700">
+                  {row.hours.toLocaleString("en-GB", { maximumFractionDigits: 1 })}
+                </td>
+                <td className="py-2 pr-3 text-right tabular-nums text-gray-700">
+                  {row.entries.toLocaleString("en-GB")}
+                </td>
+                <td className="py-2 pr-1 text-right tabular-nums text-gray-900">
+                  £{Math.round(row.costAtRate).toLocaleString("en-GB")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function FyMonthlyReport() {
   const [fy, setFy] = useState<string>(() =>
     FY_TABS.includes(currentFy()) ? currentFy() : FY_TABS[FY_TABS.length - 1],
   );
   const [metric, setMetric] = useState<Metric>("net");
+  const [ratesView, setRatesView] = useState(false);
 
   const { data, isPending, isError, error } = useQuery<FyMonthlyResponse>({
     queryKey: ["fy-monthly", fy],
@@ -174,12 +293,34 @@ export default function FyMonthlyReport() {
               value={fy}
               onChange={setFy}
             />
-            <PillGroup options={METRIC_OPTIONS} value={metric} onChange={setMetric} />
+            <div className="flex items-center gap-3">
+              <PillGroup
+                options={METRIC_OPTIONS}
+                value={metric}
+                onChange={m => {
+                  setMetric(m);
+                  setRatesView(false);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setRatesView(v => !v)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  ratesView
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Rates
+              </button>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {isPending ? (
+        {ratesView ? (
+          <RatesInspector fy={fy} />
+        ) : isPending ? (
           <div className="space-y-2">
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
@@ -196,6 +337,7 @@ export default function FyMonthlyReport() {
             </p>
           </div>
         ) : data ? (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-sm" style={{ fontFamily: "Roboto, sans-serif" }}>
               <thead>
@@ -276,6 +418,10 @@ export default function FyMonthlyReport() {
               </tbody>
             </table>
           </div>
+          <div className="mt-4">
+            <FyReconciliationStrip fy={fy} months={data.months} />
+          </div>
+          </>
         ) : null}
       </CardContent>
     </Card>
