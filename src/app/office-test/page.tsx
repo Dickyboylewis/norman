@@ -19,7 +19,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DESKS,
@@ -42,6 +42,7 @@ import resourcingFixture from "@/lib/fixtures/resourcing.json";
 import { filterWeek } from "@/lib/resourcing-math";
 import { buildSeedLayout, type OfficeLayout } from "@/lib/office-layout";
 import { HeadshotDialog } from "@/components/office/headshot-dialog";
+import type { OfficeStatus } from "@/lib/office-status/parser";
 import type { ResourcingData, ResourcingWeek } from "@/lib/resourcing-types";
 
 /* ------------------------------------------------------------------ */
@@ -146,10 +147,8 @@ const RES_TIP_W = 240;
 const RES_TIP_H = 170;
 const C_RES_EMPTY = "#CBD5E1";
 
-/* Status symbols — pinned just above the monitor they belong to */
-const STATUS_GAP = 12;
-const STATUS_Z = MON_TOP_Z + STATUS_GAP;
-const STATUS_SCALE = 1;
+/* Live status icon above each head */
+const HEAD_ICON_Y = -114;
 const BOB_SECONDS = 3;
 const BOB_TRAVEL = 3;
 
@@ -189,7 +188,6 @@ const HIT_DESK_RY = 32;
 const HIT_DESK_DY = -13;
 const HIT_FIGURE_R = 16;
 const HIT_FIGURE_DY = -28;
-const HIT_STATUS_R = 18;
 
 /* Board */
 const GRID_SPACING = 24;
@@ -201,6 +199,15 @@ const PLANT_INSET = 0.9;
 
 /* Tooltip copy */
 const NEXT_UP_PLACEHOLDER = "Next: Planning review 14:00";
+
+const OFFICE_STATUS_LABEL: Record<OfficeStatus | "none", string> = {
+  holiday: "On holiday",
+  sick: "Off sick",
+  home: "Working from home",
+  site: "On site",
+  meeting: "In a meeting",
+  none: "At desk",
+};
 
 const STATUS_LABEL: Record<PersonStatus, string> = {
   desk: "At desk",
@@ -361,15 +368,50 @@ const PLATE_X1 = DESK_MAX_X + PLATE_MARGIN;
 const PLATE_Y0 = DESK_MIN_Y - PLATE_MARGIN;
 const PLATE_Y1 = DESK_MAX_Y + PLATE_MARGIN;
 
-/** Screen-space bounds of the whole island, with room for figures and symbols. */
-const ISLAND_BOUNDS = {
-  minX: (PLATE_X0 - PLATE_Y1) * ISO_X - 40,
-  maxX: (PLATE_X1 - PLATE_Y0) * ISO_X + 40,
-  // Status symbols now sit on their monitors rather than floating high above,
-  // so the headroom above the plate's far corner can be modest.
-  minY: (PLATE_X0 + PLATE_Y0) * ISO_Y - 40,
-  maxY: (PLATE_X1 + PLATE_Y1) * ISO_Y + PLATE_THICK + PLATE_SHADOW_DROP,
-};
+const PLAN_CX = (PLATE_X0 + PLATE_X1) / 2;
+const PLAN_CY = (PLATE_Y0 + PLATE_Y1) / 2;
+const PLATE_HW0 = (PLATE_X1 - PLATE_X0) / 2;
+const PLATE_HD0 = (PLATE_Y1 - PLATE_Y0) / 2;
+const WORLD_PIVOT = { sx: (PLAN_CX - PLAN_CY) * ISO_X, sy: (PLAN_CX + PLAN_CY) * ISO_Y };
+const ORIENT_VECS = [
+  { x: -1, y: 0 },
+  { x: 0, y: -1 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 },
+];
+const ROTATE_STEP_PX = 80;
+
+/** Rotate a plan point k quarter-turns about the island centre (view only). */
+function orientPoint(x: number, y: number, k: number): { x: number; y: number } {
+  let dx = x - PLAN_CX;
+  let dy = y - PLAN_CY;
+  for (let i = 0; i < ((k % 4) + 4) % 4; i++) {
+    const t = dx;
+    dx = -dy;
+    dy = t;
+  }
+  return { x: PLAN_CX + dx, y: PLAN_CY + dy };
+}
+
+function orientFacing(f: Facing, k: number): Facing {
+  return FACING_ORDER[(FACING_ORDER.indexOf(f) + ((k % 4) + 4) % 4) % 4];
+}
+
+/** Screen-space bounds of the island for a given view orientation. */
+function islandBounds(k: number) {
+  const hw = k % 2 ? PLATE_HD0 : PLATE_HW0;
+  const hd = k % 2 ? PLATE_HW0 : PLATE_HD0;
+  const x0 = PLAN_CX - hw;
+  const x1 = PLAN_CX + hw;
+  const y0 = PLAN_CY - hd;
+  const y1 = PLAN_CY + hd;
+  return {
+    minX: (x0 - y1) * ISO_X - 40,
+    maxX: (x1 - y0) * ISO_X + 40,
+    minY: (x0 + y0) * ISO_Y - 40,
+    maxY: (x1 + y1) * ISO_Y + PLATE_THICK + PLATE_SHADOW_DROP,
+  };
+}
 
 const PERSON_BY_ID = new Map<string, Person>(PEOPLE.map((p) => [p.id, p]));
 
@@ -473,6 +515,7 @@ function Mug({ desk }: { desk: Desk }) {
   const p = iso(m.x, m.y, DESK_TOP_Z);
   return (
     <g transform={`translate(${p.sx.toFixed(2)},${p.sy.toFixed(2)})`}>
+      <g className="norman-bill">
       <path
         d="M4.4,-5.4 a2.6,2.6 0 0 1 0,3.4"
         fill="none"
@@ -482,6 +525,7 @@ function Mug({ desk }: { desk: Desk }) {
       />
       <path d="M-4.4,-6 L-4.4,-1.4 A4.4,2.3 0 0 0 4.4,-1.4 L4.4,-6 Z" fill={C_RED} />
       <ellipse cx={0} cy={-6} rx={4.4} ry={2.3} fill={C_RED_LIGHT} />
+      </g>
     </g>
   );
 }
@@ -626,6 +670,7 @@ function Figure({
   swapActive,
   onSwapPick,
   headshotVersion,
+  feedStatus,
 }: {
   desk: Desk;
   person: Person;
@@ -635,13 +680,19 @@ function Figure({
   swapActive?: boolean;
   onSwapPick?: () => void;
   headshotVersion?: number;
+  feedStatus?: OfficeStatus | "none";
 }) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const [failedHeadshotVersion, setFailedHeadshotVersion] = useState<number | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setHydrated(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   const remoteUrl = photoFailed ? null : person.photoUrl ?? null;
   const hv = headshotVersion ?? 0;
   const headshotUrl =
-    failedHeadshotVersion === hv
+    !hydrated || failedHeadshotVersion === hv
       ? null
       : `/headshots/${person.id}.png${hv ? `?v=${hv}` : ""}`;
   const seat = seatOf(desk);
@@ -666,6 +717,7 @@ function Figure({
       }
       style={swapActive ? { cursor: "pointer" } : undefined}
     >
+      <g className="norman-bill">
       {/* stool */}
       <rect x={-1.6} y={FIG_SEAT_Y} width={3.2} height={-FIG_SEAT_Y} fill={C_STOOL} />
       <ellipse cx={0} cy={0} rx={FIG_STOOL_RX * 0.55} ry={FIG_STOOL_RY * 0.45} fill={C_STOOL} />
@@ -818,6 +870,13 @@ function Figure({
           <circle cx={0} cy={FIG_HEAD_CY} r={FIG_HEAD_R + 1.5} fill="transparent" />
         </g>
       ) : null}
+
+      {feedStatus && feedStatus !== "none" ? (
+        <g transform={`translate(0, ${HEAD_ICON_Y})`}>
+          <HeadStatusIcon status={feedStatus} />
+        </g>
+      ) : null}
+      </g>
     </g>
   );
 }
@@ -886,23 +945,42 @@ function StatusGlyph({ status }: { status: PersonStatus }) {
   }
 }
 
-/**
- * A bobbing status marker sitting directly over its own desk's monitor, at a
- * fixed world height and roughly monitor size, so it always reads as belonging
- * to that desk rather than floating loose above the island.
- */
-function FloatingStatus({ desk, status }: { desk: Desk; status: PersonStatus }) {
-  const anchor = monitorOf(desk);
-  const p = iso(anchor.x, anchor.y, STATUS_Z);
-  // Three levels on purpose: the CSS animation owns `transform` on the middle
-  // group, so the placement and scale transforms must live on their own nodes.
+/** Beach ball for holiday — pure SVG, no emoji fonts. */
+function BeachBall() {
   return (
-    <g transform={`translate(${p.sx.toFixed(2)},${p.sy.toFixed(2)})`}>
-      <g className="norman-bob">
-        <g transform={`scale(${STATUS_SCALE}) translate(-12,-12)`}>
-          <StatusGlyph status={status} />
-        </g>
+    <g>
+      <circle cx={0} cy={0} r={9} fill={C_WHITE} stroke="#d4d0c9" strokeWidth={0.8} />
+      <path d="M0,0 L0,-9 A9,9 0 0 1 7.79,-4.5 Z" fill={C_RED} />
+      <path d="M0,0 L7.79,4.5 A9,9 0 0 1 0,9 Z" fill={C_SUN} />
+      <path d="M0,0 L-7.79,-4.5 A9,9 0 0 1 0,-9 Z" fill="#2563EB" />
+      <circle cx={0} cy={0} r={1.6} fill={C_WHITE} stroke="#d4d0c9" strokeWidth={0.6} />
+    </g>
+  );
+}
+
+/** The status icon floating above a person's head, from the live feed. */
+function HeadStatusIcon({ status }: { status: OfficeStatus }) {
+  if (status === "holiday") return <BeachBall />;
+  if (status === "meeting") {
+    return (
+      <g>
+        <circle cx={0} cy={0} r={9} fill={C_RED} />
+        <path
+          d="M-4.5,1 a4.5,4.5 0 0 1 9,0"
+          fill="none"
+          stroke={C_WHITE}
+          strokeWidth={1.8}
+          strokeLinecap="round"
+        />
+        <rect x={-5.7} y={0.2} width={2.4} height={3.6} rx={1.1} fill={C_WHITE} />
+        <rect x={3.3} y={0.2} width={2.4} height={3.6} rx={1.1} fill={C_WHITE} />
       </g>
+    );
+  }
+  const glyph: PersonStatus = status === "sick" ? "sick" : status === "home" ? "wfh" : "site";
+  return (
+    <g transform="scale(0.85) translate(-12,-12)">
+      <StatusGlyph status={glyph} />
     </g>
   );
 }
@@ -914,12 +992,14 @@ function Plant({ x, y, tint }: { x: number; y: number; tint: number }) {
   const leafAlt = tint === 0 ? C_LEAF_LIGHT : C_LEAF;
   return (
     <g transform={`translate(${p.sx.toFixed(2)},${p.sy.toFixed(2)})`}>
+      <g className="norman-bill">
       <ellipse cx={0} cy={0} rx={12} ry={5.5} fill="rgba(53,50,46,0.10)" />
       <ellipse cx={-7} cy={-22} rx={5} ry={9.5} fill={leafAlt} transform="rotate(-28 -7 -22)" />
       <ellipse cx={7} cy={-21} rx={5} ry={9} fill={leafAlt} transform="rotate(28 7 -21)" />
       <ellipse cx={0} cy={-26} rx={5.6} ry={11} fill={leaf} />
       <path d="M-8,-13 L8,-13 L6,0 L-6,0 Z" fill={C_POT} />
       <rect x={-9} y={-15.5} width={18} height={4} rx={1.6} fill={C_POT_RIM} />
+      </g>
     </g>
   );
 }
@@ -958,6 +1038,7 @@ function NamePill({
         transition: `opacity ${LABEL_FADE_MS}ms ease`,
       }}
     >
+      <g className="norman-bill">
       <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={h / 2} fill={C_WHITE} />
       <text
         x={0}
@@ -972,6 +1053,7 @@ function NamePill({
       >
         {label.toUpperCase()}
       </text>
+      </g>
     </g>
   );
 }
@@ -1000,9 +1082,10 @@ interface DeskMenu {
   clientY: number;
 }
 
-function fitView(w: number, h: number): View {
-  const bw = ISLAND_BOUNDS.maxX - ISLAND_BOUNDS.minX;
-  const bh = ISLAND_BOUNDS.maxY - ISLAND_BOUNDS.minY;
+function fitView(w: number, h: number, orientation: number): View {
+  const bounds = islandBounds(orientation);
+  const bw = bounds.maxX - bounds.minX;
+  const bh = bounds.maxY - bounds.minY;
   const k = clamp(
     Math.min((w - FIT_PADDING * 2) / bw, (h - FIT_PADDING * 2) / bh),
     ZOOM_MIN,
@@ -1010,8 +1093,8 @@ function fitView(w: number, h: number): View {
   );
   return {
     k,
-    x: w / 2 - k * ((ISLAND_BOUNDS.minX + ISLAND_BOUNDS.maxX) / 2),
-    y: h / 2 - k * ((ISLAND_BOUNDS.minY + ISLAND_BOUNDS.maxY) / 2),
+    x: w / 2 - k * ((bounds.minX + bounds.maxX) / 2),
+    y: h / 2 - k * ((bounds.minY + bounds.maxY) / 2),
   };
 }
 
@@ -1052,6 +1135,33 @@ export default function OfficeTestPage() {
   const [swapSource, setSwapSource] = useState<{ deskId: string; personId: string; name: string } | null>(null);
   const [photoTarget, setPhotoTarget] = useState<{ personId: string; name: string } | null>(null);
   const [headshotVersions, setHeadshotVersions] = useState<Record<string, number>>({});
+  const [orientation, setOrientation] = useState(0);
+  const [orientAnim, setOrientAnim] = useState<{ dir: 1 | -1; phase: "init" | "run" } | null>(null);
+  const [rotateCue, setRotateCue] = useState<{ x: number; y: number } | null>(null);
+  const rotateDragRef = useRef<{ id: number; startX: number; applied: number } | null>(null);
+
+  const stepOrientation = useCallback((dir: 1 | -1) => {
+    setOrientation(o => (o + dir + 4) % 4);
+    setOrientAnim({ dir, phase: "init" });
+  }, []);
+
+  useEffect(() => {
+    if (!orientAnim) return;
+    if (orientAnim.phase === "init") {
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          setOrientAnim(a => (a && a.phase === "init" ? { ...a, phase: "run" } : a));
+        });
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }
+    const timer = window.setTimeout(() => setOrientAnim(null), 420);
+    return () => window.clearTimeout(timer);
+  }, [orientAnim]);
   const queryClient = useQueryClient();
 
   const { data: layout } = useQuery<OfficeLayout>({
@@ -1064,6 +1174,24 @@ export default function OfficeTestPage() {
     initialData: SEED_LAYOUT,
     initialDataUpdatedAt: 0,
   });
+
+  const { data: officeStatusData } = useQuery<{
+    source: "live" | "placeholder";
+    statuses: { personId: string; status: OfficeStatus | "none" }[];
+  }>({
+    queryKey: ["office-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/office-status");
+      if (!res.ok) throw new Error("Failed to load office status");
+      return res.json();
+    },
+    refetchInterval: 300_000,
+  });
+
+  const statusMap = useMemo(
+    () => new Map((officeStatusData?.statuses ?? []).map(s => [s.personId, s.status])),
+    [officeStatusData],
+  );
 
   const desks = useMemo<Desk[]>(
     () =>
@@ -1176,8 +1304,8 @@ export default function OfficeTestPage() {
   useEffect(() => {
     if (didFit.current || size.w === 0 || size.h === 0) return;
     didFit.current = true;
-    setView(fitView(size.w, size.h));
-  }, [size]);
+    setView(fitView(size.w, size.h, orientation));
+  }, [size, orientation]);
 
   const animateTo = useCallback((target: View) => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -1384,6 +1512,16 @@ export default function OfficeTestPage() {
       }
       return;
     }
+    if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+      e.preventDefault();
+      stopAnim();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      rotateDragRef.current = { id: e.pointerId, startX: e.clientX, applied: 0 };
+      setRotateCue({ x: e.clientX, y: e.clientY });
+      setTooltip(null);
+      setResTip(prev => (prev?.pinned ? prev : null));
+      return;
+    }
     if (e.button !== 0) return;
     stopAnim();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -1409,6 +1547,20 @@ export default function OfficeTestPage() {
         setView({ k, x: mx - pinch.wx * k, y: my - pinch.wy * k });
         return;
       }
+    }
+    const rot = rotateDragRef.current;
+    if (rot && rot.id === e.pointerId) {
+      const steps = Math.trunc((e.clientX - rot.startX) / ROTATE_STEP_PX);
+      while (steps > rot.applied) {
+        rot.applied++;
+        stepOrientation(1);
+      }
+      while (steps < rot.applied) {
+        rot.applied--;
+        stepOrientation(-1);
+      }
+      setRotateCue({ x: e.clientX, y: e.clientY });
+      return;
     }
     const pan = panRef.current;
     if (!pan || pan.id !== e.pointerId) return;
@@ -1441,6 +1593,12 @@ export default function OfficeTestPage() {
       }
       return;
     }
+    if (rotateDragRef.current?.id === e.pointerId) {
+      rotateDragRef.current = null;
+      setRotateCue(null);
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      return;
+    }
     const pan = panRef.current;
     if (!pan || pan.id !== e.pointerId) return;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
@@ -1450,8 +1608,14 @@ export default function OfficeTestPage() {
 
   /* Painter's order — nearer desks (greater scene depth) draw last */
   const ordered = useMemo(
-    () => [...desks].sort((a, b) => depthOf(a.x, a.y) - depthOf(b.x, b.y)),
-    [desks],
+    () =>
+      desks
+        .map(d => {
+          const p = orientPoint(d.x, d.y, orientation);
+          return { ...d, x: p.x, y: p.y };
+        })
+        .sort((a, b) => depthOf(a.x, a.y) - depthOf(b.x, b.y)),
+    [desks, orientation],
   );
 
   /* Level of detail, overridable from the Labels button */
@@ -1466,7 +1630,7 @@ export default function OfficeTestPage() {
         clientX: e.clientX,
         clientY: e.clientY,
         title: person.fullName,
-        status: STATUS_LABEL[person.status],
+        status: OFFICE_STATUS_LABEL[statusMap.get(person.id) ?? "none"],
         next: NEXT_UP_PLACEHOLDER,
       });
     } else {
@@ -1479,6 +1643,36 @@ export default function OfficeTestPage() {
       });
     }
   };
+
+  const oPlateHW = orientation % 2 ? PLATE_HD0 : PLATE_HW0;
+  const oPlateHD = orientation % 2 ? PLATE_HW0 : PLATE_HD0;
+  const trimVec = ORIENT_VECS[orientation];
+  const trimCx = PLAN_CX + trimVec.x * (oPlateHW - TRIM_DEPTH);
+  const trimCy = PLAN_CY + trimVec.y * (oPlateHD - TRIM_DEPTH);
+  const trimHw = trimVec.x !== 0 ? TRIM_DEPTH : oPlateHW;
+  const trimHd = trimVec.y !== 0 ? TRIM_DEPTH : oPlateHD;
+
+  const pivot = `translate(${WORLD_PIVOT.sx}px, ${WORLD_PIVOT.sy}px)`;
+  const unpivot = `translate(${-WORLD_PIVOT.sx}px, ${-WORLD_PIVOT.sy}px)`;
+  let worldTransform = "none";
+  let worldTransition = "transform 200ms ease";
+  if (orientAnim) {
+    if (orientAnim.phase === "init") {
+      const deg = orientAnim.dir === 1 ? -90 : 90;
+      worldTransform = `${pivot} rotate(${deg}deg) scale(0.5, 2) ${unpivot}`;
+      worldTransition = "none";
+    } else {
+      worldTransform = "none";
+      worldTransition = "transform 400ms ease-in-out";
+    }
+  } else if (rotateCue) {
+    worldTransform = `${pivot} scale(0.96) ${unpivot}`;
+  }
+  const billStyle = orientAnim
+    ? orientAnim.phase === "init"
+      ? `transform: scale(2, 0.5) rotate(${orientAnim.dir === 1 ? 90 : -90}deg); transition: none;`
+      : "transform: none; transition: transform 400ms ease-in-out;"
+    : "transform: none; transition: none;";
 
   return (
     <div
@@ -1493,6 +1687,7 @@ export default function OfficeTestPage() {
         }
         .norman-bob { animation: norman-bob ${BOB_SECONDS}s ease-in-out infinite; }
         .norman-menu-item { color: ${C_INK}; transition: color 120ms ease, background 120ms ease; }
+        .norman-bill { ${billStyle} }
         .norman-menu-item:hover { color: ${C_RED}; background: rgba(220,38,38,0.07); }
       `}</style>
 
@@ -1506,6 +1701,12 @@ export default function OfficeTestPage() {
         onPointerMove={onPointerMove}
         onPointerUp={endPan}
         onPointerCancel={endPan}
+        onMouseDown={e => {
+          if (e.button === 1) e.preventDefault();
+        }}
+        onContextMenu={e => {
+          if (rotateDragRef.current) e.preventDefault();
+        }}
       >
         <defs>
           <pattern id="norman-dots" width={GRID_SPACING} height={GRID_SPACING} patternUnits="userSpaceOnUse">
@@ -1539,6 +1740,8 @@ export default function OfficeTestPage() {
             fill="url(#norman-dots)"
           />
 
+          <g style={{ transform: worldTransform, transition: worldTransition }}>
+
           {/* Soft shadow so the island floats */}
           <ellipse
             cx={((PLATE_X0 + PLATE_X1) / 2 - (PLATE_Y0 + PLATE_Y1) / 2) * ISO_X}
@@ -1551,10 +1754,10 @@ export default function OfficeTestPage() {
 
           {/* Floor plate */}
           <IsoBox
-            cx={(PLATE_X0 + PLATE_X1) / 2}
-            cy={(PLATE_Y0 + PLATE_Y1) / 2}
-            hw={(PLATE_X1 - PLATE_X0) / 2}
-            hd={(PLATE_Y1 - PLATE_Y0) / 2}
+            cx={PLAN_CX}
+            cy={PLAN_CY}
+            hw={oPlateHW}
+            hd={oPlateHD}
             z={-PLATE_THICK}
             h={PLATE_THICK}
             top={C_PLATE_TOP}
@@ -1562,12 +1765,12 @@ export default function OfficeTestPage() {
             right={C_PLATE_RIGHT}
           />
 
-          {/* Red steel trim along the far-left edge, behind every desk */}
+          {/* Red steel trim on the brick-wall edge, tracking the view orientation */}
           <IsoBox
-            cx={PLATE_X0 + TRIM_DEPTH}
-            cy={(PLATE_Y0 + PLATE_Y1) / 2}
-            hw={TRIM_DEPTH}
-            hd={(PLATE_Y1 - PLATE_Y0) / 2}
+            cx={trimCx}
+            cy={trimCy}
+            hw={trimHw}
+            hd={trimHd}
             z={0}
             h={TRIM_HEIGHT}
             top={C_RED_LIGHT}
@@ -1580,35 +1783,38 @@ export default function OfficeTestPage() {
             const items: { key: string; sort: number; node: ReactNode }[] = [];
 
             PLANTS.forEach((plant, i) => {
+              const pos = orientPoint(plant.x, plant.y, orientation);
               items.push({
                 key: `plant-${i}`,
-                sort: depthOf(plant.x, plant.y),
-                node: <Plant x={plant.x} y={plant.y} tint={plant.tint} />,
+                sort: depthOf(pos.x, pos.y),
+                node: <Plant x={pos.x} y={pos.y} tint={plant.tint} />,
               });
             });
 
             ordered.forEach((baseDesk, i) => {
-              const desk = rotatedDesk(baseDesk, rotations[baseDesk.id] ?? baseDesk.rotation ?? 0);
+              const rotated = rotatedDesk(baseDesk, rotations[baseDesk.id] ?? baseDesk.rotation ?? 0);
+              const desk =
+                orientation === 0 ? rotated : { ...rotated, facing: orientFacing(rotated.facing, orientation) };
               const person = personByDesk.get(desk.id);
               const isHovered = hovered === desk.id;
               const anchor = iso(desk.x, desk.y, 0);
               const seat = seatOf(desk);
               const seatAnchor = iso(seat.x, seat.y, 0);
-              const mon = monitorOf(desk);
-              const statusAnchor = iso(mon.x, mon.y, STATUS_Z);
               const figure =
-                person && (person.status === "desk" || person.status === "zoom") ? (
+                person ? (
                   <Figure
                     desk={desk}
                     person={person}
                     week={resWeekByFullName.get(person.fullName)}
                     resHover={resHover}
                     headshotVersion={headshotVersions[person.id]}
+                    feedStatus={statusMap.get(person.id) ?? "none"}
                     swapActive={swapSource !== null}
                     onSwapPick={() => handleSwapPick(desk.id, person.id)}
                     onPersonContextMenu={e => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (rotateDragRef.current) return;
                       setTooltip(null);
                       setMenu(null);
                       setPersonMenu({
@@ -1620,10 +1826,6 @@ export default function OfficeTestPage() {
                       });
                     }}
                   />
-                ) : null;
-              const marker =
-                person && person.status !== "desk" && person.status !== "zoom" ? (
-                  <FloatingStatus desk={desk} status={person.status} />
                 ) : null;
               const behind = seatIsBehindDesk(desk.facing);
 
@@ -1648,6 +1850,7 @@ export default function OfficeTestPage() {
                     onContextMenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      if (rotateDragRef.current) return;
                       setTooltip(null);
                       setMenu({ deskId: desk.id, clientX: e.clientX, clientY: e.clientY });
                     }}
@@ -1668,14 +1871,9 @@ export default function OfficeTestPage() {
                         fill="transparent"
                       />
                     ) : null}
-                    {marker ? (
-                      <circle cx={statusAnchor.sx} cy={statusAnchor.sy} r={HIT_STATUS_R} fill="transparent" />
-                    ) : null}
-
                     {behind ? figure : null}
                     <DeskBlock desk={desk} index={i} />
                     {behind ? null : figure}
-                    {marker}
                     {person ? (
                       <NamePill
                         x={desk.x}
@@ -1698,19 +1896,21 @@ export default function OfficeTestPage() {
           {/* Zone signs stay legible at every zoom level */}
           <g pointerEvents="none">
             <NamePill
-              x={DIRECTORS_SIGN.x}
-              y={DIRECTORS_SIGN.y}
+              x={orientPoint(DIRECTORS_SIGN.x, DIRECTORS_SIGN.y, orientation).x}
+              y={orientPoint(DIRECTORS_SIGN.x, DIRECTORS_SIGN.y, orientation).y}
               lift={DIRECTORS_SIGN.lift}
               label="Directors"
               large
             />
             <NamePill
-              x={HOTDESK_SIGN.x}
-              y={HOTDESK_SIGN.y}
+              x={orientPoint(HOTDESK_SIGN.x, HOTDESK_SIGN.y, orientation).x}
+              y={orientPoint(HOTDESK_SIGN.x, HOTDESK_SIGN.y, orientation).y}
               lift={HOTDESK_SIGN.lift}
               label="Hot desk"
               large
             />
+          </g>
+
           </g>
         </g>
       </svg>
@@ -1753,6 +1953,12 @@ export default function OfficeTestPage() {
         </div>
       </div>
 
+      {officeStatusData?.source === "placeholder" ? (
+        <div className="pointer-events-none fixed bottom-6 left-6 z-10 rounded-full bg-gray-200/90 px-3 py-1 text-[10px] font-medium tracking-wide text-gray-600">
+          Status: sample data
+        </div>
+      ) : null}
+
       {/* Fixed overlay: zoom controls */}
       <div className="fixed bottom-6 right-6 z-10 flex items-center gap-1.5">
         <button
@@ -1775,7 +1981,7 @@ export default function OfficeTestPage() {
         </button>
         <button
           type="button"
-          onClick={() => animateTo(fitView(size.w, size.h))}
+          onClick={() => animateTo(fitView(size.w, size.h, orientation))}
           className="flex h-9 items-center justify-center rounded-xl bg-white px-3.5 text-[10px] font-semibold tracking-[0.14em] transition hover:bg-neutral-100"
           style={{ color: C_INK, boxShadow: "0 2px 10px rgba(53,50,46,0.14)" }}
         >
@@ -1923,6 +2129,20 @@ export default function OfficeTestPage() {
           }}
         >
           <CellInfoLines info={resTip.info} />
+        </div>
+      ) : null}
+
+      {/* Rotate-mode cursor cue */}
+      {rotateCue ? (
+        <div
+          className="pointer-events-none fixed z-30 flex h-8 w-8 items-center justify-center rounded-full bg-white"
+          style={{
+            left: rotateCue.x + 14,
+            top: rotateCue.y + 14,
+            boxShadow: "0 2px 10px rgba(53,50,46,0.2)",
+          }}
+        >
+          <RefreshCw className="h-4 w-4" style={{ color: C_RED }} />
         </div>
       ) : null}
 
