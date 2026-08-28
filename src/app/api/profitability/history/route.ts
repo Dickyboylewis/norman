@@ -29,16 +29,21 @@ interface SnapshotFile {
   stages: SnapshotStageRow[];
 }
 
-interface HistoryCell {
+interface CumulativeCell {
   earnedFee: number;
   cost: number;
-  profit: number;
+}
+
+interface HistoryEntry {
+  cumulative: { earnedFee: number; cost: number; profit: number };
+  delta: number | null;
+  isBaseline: boolean;
 }
 
 interface HistoryProject {
   code: string;
   title: string;
-  monthly: Record<string, HistoryCell>;
+  monthly: Record<string, HistoryEntry>;
 }
 
 function round2(v: number): number {
@@ -68,6 +73,12 @@ function fyMonths(startYear: number): string[] {
   return months;
 }
 
+function prevCalendarMonth(month: string): string {
+  const year = parseInt(month.slice(0, 4), 10);
+  const m = parseInt(month.slice(5, 7), 10);
+  return m === 1 ? `${year - 1}-12` : `${year}-${String(m - 1).padStart(2, "0")}`;
+}
+
 function stageEarnedFee(stage: SnapshotStageRow): number {
   if (typeof stage.EarnedFee === "number") return stage.EarnedFee;
   return ((stage.Fee ?? 0) * (stage.Pct ?? 0)) / 100;
@@ -81,7 +92,6 @@ export async function GET(request: Request) {
   }
   const { fy, startYear } = resolved;
   const months = fyMonths(startYear);
-  const monthSet = new Set(months);
 
   const dir = path.join(process.cwd(), "data", "snapshots");
 
@@ -92,14 +102,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, fy, months, snapshotMonths: [], projects: [] });
   }
 
-  const byCode = new Map<string, HistoryProject>();
-  const snapshotMonths: string[] = [];
+  // Cumulative life-to-date position per snapshot month, across ALL snapshots
+  // on disk — the delta for the first FY month needs the prior FY's last one.
+  const cumByMonth = new Map<string, Map<string, CumulativeCell>>();
+  const titles = new Map<string, string>();
 
   for (const filename of filenames) {
     const match = filename.match(/^profitability-(\d{4}-\d{2})\.json$/);
     if (!match) continue;
     const month = match[1];
-    if (!monthSet.has(month)) continue;
 
     let snapshot: SnapshotFile;
     try {
@@ -108,45 +119,72 @@ export async function GET(request: Request) {
     } catch {
       continue;
     }
-    snapshotMonths.push(month);
 
-    const titleByCode = new Map<string, string>();
     for (const project of snapshot.projects ?? []) {
-      if (project?.Code) titleByCode.set(project.Code, project.Title);
+      if (project?.Code && !titles.has(project.Code)) titles.set(project.Code, project.Title);
     }
 
-    const monthTotals = new Map<string, HistoryCell>();
+    const monthMap = new Map<string, CumulativeCell>();
     for (const stage of snapshot.stages) {
       if (!stage?.Code) continue;
-      let cell = monthTotals.get(stage.Code);
+      if (!titles.has(stage.Code) && stage.Title) titles.set(stage.Code, stage.Title);
+      let cell = monthMap.get(stage.Code);
       if (!cell) {
-        cell = { earnedFee: 0, cost: 0, profit: 0 };
-        monthTotals.set(stage.Code, cell);
+        cell = { earnedFee: 0, cost: 0 };
+        monthMap.set(stage.Code, cell);
       }
       if (stage.StageStatus === "Won") cell.earnedFee += stageEarnedFee(stage);
       cell.cost += stage.Cost ?? 0;
     }
+    cumByMonth.set(month, monthMap);
+  }
 
-    for (const [code, cell] of monthTotals) {
+  const snapshotSet = new Set(cumByMonth.keys());
+  const fySnapshotMonths = months.filter(m => snapshotSet.has(m));
+
+  const byCode = new Map<string, HistoryProject>();
+
+  for (const month of fySnapshotMonths) {
+    const monthMap = cumByMonth.get(month);
+    if (!monthMap) continue;
+    const prev = prevCalendarMonth(month);
+    const prevMap = snapshotSet.has(prev) ? cumByMonth.get(prev) : undefined;
+
+    for (const [code, cell] of monthMap) {
+      const profit = cell.earnedFee - cell.cost;
+      const prevCell = prevMap?.get(code);
+
+      let delta: number | null = null;
+      let isBaseline = true;
+      if (prevMap && prevCell) {
+        delta = round2(profit - (prevCell.earnedFee - prevCell.cost));
+        isBaseline = false;
+      }
+
       let entry = byCode.get(code);
       if (!entry) {
-        entry = {
-          code,
-          title: titleByCode.get(code) ?? snapshot.stages.find(s => s.Code === code)?.Title ?? code,
-          monthly: {},
-        };
+        entry = { code, title: titles.get(code) ?? code, monthly: {} };
         byCode.set(code, entry);
       }
       entry.monthly[month] = {
-        earnedFee: round2(cell.earnedFee),
-        cost: round2(cell.cost),
-        profit: round2(cell.earnedFee - cell.cost),
+        cumulative: {
+          earnedFee: round2(cell.earnedFee),
+          cost: round2(cell.cost),
+          profit: round2(profit),
+        },
+        delta,
+        isBaseline,
       };
     }
   }
 
   const projects = [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
-  snapshotMonths.sort();
 
-  return NextResponse.json({ success: true, fy, months, snapshotMonths, projects });
+  return NextResponse.json({
+    success: true,
+    fy,
+    months,
+    snapshotMonths: fySnapshotMonths,
+    projects,
+  });
 }

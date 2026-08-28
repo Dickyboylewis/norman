@@ -233,10 +233,16 @@ interface HistoryCell {
   profit: number;
 }
 
+interface HistoryEntry {
+  cumulative: HistoryCell;
+  delta: number | null;
+  isBaseline: boolean;
+}
+
 interface HistoryProject {
   code: string;
   title: string;
-  monthly: Record<string, HistoryCell>;
+  monthly: Record<string, HistoryEntry>;
 }
 
 interface FyHistoryResponse {
@@ -247,8 +253,17 @@ interface FyHistoryResponse {
   projects: HistoryProject[];
 }
 
-function historyTotal(project: HistoryProject): number {
-  return Object.values(project.monthly).reduce((sum, cell) => sum + cell.profit, 0);
+function sumDeltas(project: HistoryProject): number {
+  return Object.values(project.monthly).reduce((sum, entry) => sum + (entry.delta ?? 0), 0);
+}
+
+function hasDeltas(project: HistoryProject): boolean {
+  return Object.values(project.monthly).some(entry => entry.delta !== null);
+}
+
+function baselineCumulative(project: HistoryProject): number {
+  const first = Object.keys(project.monthly).sort()[0];
+  return first ? project.monthly[first].cumulative.profit : 0;
 }
 
 function profitClass(v: number): string {
@@ -294,16 +309,36 @@ function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
   }
 
   const snapshotSet = new Set(data.snapshotMonths);
-  const projects = [...data.projects].sort((a, b) => historyTotal(b) - historyTotal(a));
+  const projects = [...data.projects].sort((a, b) => {
+    const aHas = hasDeltas(a);
+    const bHas = hasDeltas(b);
+    if (aHas && bHas) return sumDeltas(b) - sumDeltas(a);
+    if (aHas) return -1;
+    if (bHas) return 1;
+    return baselineCumulative(b) - baselineCumulative(a);
+  });
 
-  const columnTotals = new Map<string, number>();
-  for (const month of data.snapshotMonths) columnTotals.set(month, 0);
+  const columnDeltaTotals = new Map<string, number>();
+  const monthHasDeltas = new Map<string, boolean>();
+  const monthAllBaseline = new Map<string, boolean>();
   let grandTotal = 0;
-  for (const project of projects) {
-    for (const [month, cell] of Object.entries(project.monthly)) {
-      columnTotals.set(month, (columnTotals.get(month) ?? 0) + cell.profit);
-      grandTotal += cell.profit;
+  for (const month of data.snapshotMonths) {
+    columnDeltaTotals.set(month, 0);
+    monthHasDeltas.set(month, false);
+    let entries = 0;
+    let baselines = 0;
+    for (const project of projects) {
+      const entry = project.monthly[month];
+      if (!entry) continue;
+      entries++;
+      if (entry.isBaseline) baselines++;
+      if (entry.delta !== null) {
+        columnDeltaTotals.set(month, (columnDeltaTotals.get(month) ?? 0) + entry.delta);
+        monthHasDeltas.set(month, true);
+        grandTotal += entry.delta;
+      }
     }
+    monthAllBaseline.set(month, entries > 0 && baselines === entries);
   }
 
   const dimCell = (key: string, withTitle: boolean) => (
@@ -333,6 +368,9 @@ function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
                   {snapshotSet.has(month) && (
                     <span className="ml-1 inline-block h-1 w-1 rounded-full bg-red-400 align-middle" />
                   )}
+                  {monthAllBaseline.get(month) && (
+                    <div className="text-[10px] font-normal text-gray-400">baseline</div>
+                  )}
                 </th>
               ))}
               <th className="px-2 py-2 text-right font-bold text-gray-700">Total</th>
@@ -340,7 +378,8 @@ function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
           </thead>
           <tbody>
             {projects.map(project => {
-              const total = historyTotal(project);
+              const deltas = hasDeltas(project);
+              const total = sumDeltas(project);
               return (
                 <tr key={project.code} className="border-b border-gray-100">
                   <td className="sticky left-0 z-10 max-w-[240px] bg-white py-2 pr-3">
@@ -349,22 +388,40 @@ function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
                   </td>
                   {months.map(month => {
                     if (!snapshotSet.has(month)) return dimCell(month, true);
-                    const cell = project.monthly[month];
-                    if (!cell) return dimCell(month, false);
+                    const entry = project.monthly[month];
+                    if (!entry) return dimCell(month, false);
+                    if (entry.isBaseline || entry.delta === null) {
+                      return (
+                        <td
+                          key={month}
+                          className="whitespace-nowrap px-2 py-2 text-right tabular-nums text-gray-500"
+                          title="Baseline: life-to-date position, not monthly movement"
+                        >
+                          {fmtMoney(entry.cumulative.profit)}
+                        </td>
+                      );
+                    }
+                    const rounded = Math.round(entry.delta);
                     return (
                       <td
                         key={month}
-                        className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${profitClass(cell.profit)}`}
+                        className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${
+                          rounded === 0 ? "text-gray-400" : profitClass(entry.delta)
+                        }`}
                       >
-                        {fmtMoney(cell.profit)}
+                        {rounded === 0 ? "£0" : fmtMoney(entry.delta)}
                       </td>
                     );
                   })}
-                  <td
-                    className={`whitespace-nowrap px-2 py-2 text-right font-bold tabular-nums ${profitClass(total)}`}
-                  >
-                    {fmtMoney(total)}
-                  </td>
+                  {deltas ? (
+                    <td
+                      className={`whitespace-nowrap px-2 py-2 text-right font-bold tabular-nums ${profitClass(total)}`}
+                    >
+                      {fmtMoney(total)}
+                    </td>
+                  ) : (
+                    <td className="px-2 py-2 text-right text-gray-300">–</td>
+                  )}
                 </tr>
               );
             })}
@@ -372,7 +429,14 @@ function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
               <td className="sticky left-0 z-10 bg-white py-2 pr-3 text-gray-900">All projects</td>
               {months.map(month => {
                 if (!snapshotSet.has(month)) return dimCell(month, true);
-                const v = columnTotals.get(month) ?? 0;
+                if (!monthHasDeltas.get(month)) {
+                  return (
+                    <td key={month} className="px-2 py-2 text-right font-normal text-gray-300">
+                      –
+                    </td>
+                  );
+                }
+                const v = columnDeltaTotals.get(month) ?? 0;
                 return (
                   <td
                     key={month}
@@ -392,8 +456,8 @@ function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
         </table>
       </div>
       <p className="mt-2 text-xs text-gray-400" style={{ fontFamily: "Roboto, sans-serif" }}>
-        Profit history is built from monthly snapshots, captured on the 1st of each month.
-        History begins August 2026 and grows automatically.
+        Monthly profit = movement between consecutive snapshots. The first snapshot month shows
+        the life-to-date baseline in gray. History begins August 2026 and grows automatically.
       </p>
     </>
   );
