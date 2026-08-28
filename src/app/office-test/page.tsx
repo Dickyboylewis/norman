@@ -41,6 +41,7 @@ import {
 import resourcingFixture from "@/lib/fixtures/resourcing.json";
 import { filterWeek } from "@/lib/resourcing-math";
 import { buildSeedLayout, type OfficeLayout } from "@/lib/office-layout";
+import { HeadshotDialog } from "@/components/office/headshot-dialog";
 import type { ResourcingData, ResourcingWeek } from "@/lib/resourcing-types";
 
 /* ------------------------------------------------------------------ */
@@ -230,7 +231,7 @@ const LABEL_MODE_NEXT: Record<LabelMode, LabelMode> = {
 /* Desk context menu */
 const MENU_W = 178;
 const MENU_H = 104;
-const PERSON_MENU_H = 68;
+const PERSON_MENU_H = 96;
 const MENU_EDGE_PAD = 8;
 const COPY_FEEDBACK_MS = 1600;
 
@@ -624,6 +625,7 @@ function Figure({
   onPersonContextMenu,
   swapActive,
   onSwapPick,
+  headshotVersion,
 }: {
   desk: Desk;
   person: Person;
@@ -632,9 +634,16 @@ function Figure({
   onPersonContextMenu?: (e: ReactMouseEvent<SVGGElement>) => void;
   swapActive?: boolean;
   onSwapPick?: () => void;
+  headshotVersion?: number;
 }) {
   const [photoFailed, setPhotoFailed] = useState(false);
+  const [failedHeadshotVersion, setFailedHeadshotVersion] = useState<number | null>(null);
   const remoteUrl = photoFailed ? null : person.photoUrl ?? null;
+  const hv = headshotVersion ?? 0;
+  const headshotUrl =
+    failedHeadshotVersion === hv
+      ? null
+      : `/headshots/${person.id}.png${hv ? `?v=${hv}` : ""}`;
   const seat = seatOf(desk);
   const p = iso(seat.x, seat.y, 0);
   const body = ACCENT_PEOPLE.has(person.id) ? C_BODY_ACCENT : C_BODY;
@@ -666,7 +675,33 @@ function Figure({
       <path d={bodyPath} fill={body} />
 
       {/* head */}
-      {remoteUrl ? (
+      {headshotUrl ? (
+        <>
+          <foreignObject
+            x={-FIG_HEAD_R}
+            y={FIG_HEAD_CY - FIG_HEAD_R}
+            width={FIG_HEAD_R * 2}
+            height={FIG_HEAD_R * 2}
+          >
+            <img
+              src={headshotUrl}
+              alt={person.fullName}
+              loading="lazy"
+              draggable={false}
+              onError={() => setFailedHeadshotVersion(hv)}
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "block",
+                borderRadius: 9999,
+                overflow: "hidden",
+                objectFit: "cover",
+              }}
+            />
+          </foreignObject>
+          <circle cx={0} cy={FIG_HEAD_CY} r={FIG_HEAD_R} fill="none" stroke={C_WHITE} strokeWidth={1.6} />
+        </>
+      ) : remoteUrl ? (
         <>
           <foreignObject
             x={-FIG_HEAD_R}
@@ -1015,6 +1050,8 @@ export default function OfficeTestPage() {
   } | null>(null);
   const personMenuRef = useRef<HTMLDivElement | null>(null);
   const [swapSource, setSwapSource] = useState<{ deskId: string; personId: string; name: string } | null>(null);
+  const [photoTarget, setPhotoTarget] = useState<{ personId: string; name: string } | null>(null);
+  const [headshotVersions, setHeadshotVersions] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
 
   const { data: layout } = useQuery<OfficeLayout>({
@@ -1566,6 +1603,7 @@ export default function OfficeTestPage() {
                     person={person}
                     week={resWeekByFullName.get(person.fullName)}
                     resHover={resHover}
+                    headshotVersion={headshotVersions[person.id]}
                     swapActive={swapSource !== null}
                     onSwapPick={() => handleSwapPick(desk.id, person.id)}
                     onPersonContextMenu={e => {
@@ -1839,8 +1877,31 @@ export default function OfficeTestPage() {
           >
             Swap seat&hellip;
           </button>
+          <button
+            type="button"
+            className="norman-menu-item block w-full px-3 py-1.5 text-left text-[11px]"
+            onClick={() => {
+              setPhotoTarget({ personId: personMenu.personId, name: personMenu.personName });
+              setPersonMenu(null);
+            }}
+          >
+            Add photo&hellip;
+          </button>
         </div>
       ) : null}
+
+      <HeadshotDialog
+        open={photoTarget !== null}
+        onOpenChange={open => {
+          if (!open) setPhotoTarget(null);
+        }}
+        personId={photoTarget?.personId ?? ""}
+        personName={photoTarget?.name ?? ""}
+        onUploaded={() => {
+          const id = photoTarget?.personId;
+          if (id) setHeadshotVersions(prev => ({ ...prev, [id]: Date.now() }));
+        }}
+      />
 
       {swapSource ? (
         <div

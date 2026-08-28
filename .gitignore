@@ -55,3 +55,6 @@ src/data/prospecting-history.json
 !/public/uploads/projects/.gitkeep
 
 data/snapshots/
+
+# uploaded headshots (machine-local, like other uploads)
+public/headshots/*.png
