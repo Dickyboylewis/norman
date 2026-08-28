@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import FyReconciliationStrip from "@/components/dashboard/widgets/fy-reconciliation-strip";
 
-type Metric = "invoiced" | "cost" | "net";
+type Metric = "invoiced" | "cost" | "net" | "profit";
 
 interface MonthCell {
   cost: number;
@@ -40,6 +40,7 @@ const METRIC_OPTIONS: { value: Metric; label: string }[] = [
   { value: "invoiced", label: "Invoiced" },
   { value: "cost", label: "Cost" },
   { value: "net", label: "Net" },
+  { value: "profit", label: "Profit" },
 ];
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -226,6 +227,178 @@ function RatesInspector({ fy }: { fy: string }) {
   );
 }
 
+interface HistoryCell {
+  earnedFee: number;
+  cost: number;
+  profit: number;
+}
+
+interface HistoryProject {
+  code: string;
+  title: string;
+  monthly: Record<string, HistoryCell>;
+}
+
+interface FyHistoryResponse {
+  success: boolean;
+  fy: string;
+  months: string[];
+  snapshotMonths: string[];
+  projects: HistoryProject[];
+}
+
+function historyTotal(project: HistoryProject): number {
+  return Object.values(project.monthly).reduce((sum, cell) => sum + cell.profit, 0);
+}
+
+function profitClass(v: number): string {
+  return Math.round(v) < 0 ? "text-red-600" : "text-green-700";
+}
+
+function ProfitHistoryView({ fy, months }: { fy: string; months: string[] }) {
+  const { data, isPending, isError, error } = useQuery<FyHistoryResponse>({
+    queryKey: ["fy-history", fy],
+    queryFn: async () => {
+      const res = await fetch(`/api/profitability/history?fy=${encodeURIComponent(fy)}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? `Request failed (${res.status})`);
+      }
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+
+  if (isPending) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-2/3" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-lg bg-red-50 px-4 py-3">
+        <p className="text-sm font-medium text-red-700" style={{ fontFamily: "Roboto, sans-serif" }}>
+          Could not load profit history
+        </p>
+        <p className="mt-0.5 text-xs text-red-500" style={{ fontFamily: "Roboto, sans-serif" }}>
+          {error instanceof Error ? error.message : "Unknown error"}
+        </p>
+      </div>
+    );
+  }
+
+  const snapshotSet = new Set(data.snapshotMonths);
+  const projects = [...data.projects].sort((a, b) => historyTotal(b) - historyTotal(a));
+
+  const columnTotals = new Map<string, number>();
+  for (const month of data.snapshotMonths) columnTotals.set(month, 0);
+  let grandTotal = 0;
+  for (const project of projects) {
+    for (const [month, cell] of Object.entries(project.monthly)) {
+      columnTotals.set(month, (columnTotals.get(month) ?? 0) + cell.profit);
+      grandTotal += cell.profit;
+    }
+  }
+
+  const dimCell = (key: string, withTitle: boolean) => (
+    <td
+      key={key}
+      className="px-2 py-2 text-right text-gray-300"
+      title={withTitle ? "No snapshot for this month" : undefined}
+    >
+      –
+    </td>
+  );
+
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ fontFamily: "Roboto, sans-serif" }}>
+          <thead>
+            <tr className="border-b border-gray-200 text-xs text-gray-500">
+              <th className="sticky left-0 z-10 bg-white py-2 pr-3 text-left font-medium">
+                Project
+              </th>
+              {months.map(month => (
+                <th key={month} className="whitespace-nowrap px-2 py-2 text-right font-medium">
+                  <span className={snapshotSet.has(month) ? "border-b border-red-300" : undefined}>
+                    {monthHeader(month)}
+                  </span>
+                  {snapshotSet.has(month) && (
+                    <span className="ml-1 inline-block h-1 w-1 rounded-full bg-red-400 align-middle" />
+                  )}
+                </th>
+              ))}
+              <th className="px-2 py-2 text-right font-bold text-gray-700">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map(project => {
+              const total = historyTotal(project);
+              return (
+                <tr key={project.code} className="border-b border-gray-100">
+                  <td className="sticky left-0 z-10 max-w-[240px] bg-white py-2 pr-3">
+                    <span className="font-semibold text-gray-900">{project.code}</span>{" "}
+                    <span className="text-gray-600">{project.title}</span>
+                  </td>
+                  {months.map(month => {
+                    if (!snapshotSet.has(month)) return dimCell(month, true);
+                    const cell = project.monthly[month];
+                    if (!cell) return dimCell(month, false);
+                    return (
+                      <td
+                        key={month}
+                        className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${profitClass(cell.profit)}`}
+                      >
+                        {fmtMoney(cell.profit)}
+                      </td>
+                    );
+                  })}
+                  <td
+                    className={`whitespace-nowrap px-2 py-2 text-right font-bold tabular-nums ${profitClass(total)}`}
+                  >
+                    {fmtMoney(total)}
+                  </td>
+                </tr>
+              );
+            })}
+            <tr className="border-t-2 border-gray-300 font-bold">
+              <td className="sticky left-0 z-10 bg-white py-2 pr-3 text-gray-900">All projects</td>
+              {months.map(month => {
+                if (!snapshotSet.has(month)) return dimCell(month, true);
+                const v = columnTotals.get(month) ?? 0;
+                return (
+                  <td
+                    key={month}
+                    className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${profitClass(v)}`}
+                  >
+                    {fmtMoney(v)}
+                  </td>
+                );
+              })}
+              <td
+                className={`whitespace-nowrap px-2 py-2 text-right tabular-nums ${profitClass(grandTotal)}`}
+              >
+                {fmtMoney(grandTotal)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-xs text-gray-400" style={{ fontFamily: "Roboto, sans-serif" }}>
+        Profit history is built from monthly snapshots, captured on the 1st of each month.
+        History begins August 2026 and grows automatically.
+      </p>
+    </>
+  );
+}
+
 export default function FyMonthlyReport() {
   const [fy, setFy] = useState<string>(() =>
     FY_TABS.includes(currentFy()) ? currentFy() : FY_TABS[FY_TABS.length - 1],
@@ -338,6 +511,9 @@ export default function FyMonthlyReport() {
           </div>
         ) : data ? (
           <>
+          {metric === "profit" ? (
+            <ProfitHistoryView fy={fy} months={data.months} />
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm" style={{ fontFamily: "Roboto, sans-serif" }}>
               <thead>
@@ -418,6 +594,7 @@ export default function FyMonthlyReport() {
               </tbody>
             </table>
           </div>
+          )}
           <div className="mt-4">
             <FyReconciliationStrip fy={fy} months={data.months} />
           </div>
