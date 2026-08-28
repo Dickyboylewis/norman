@@ -1,0 +1,351 @@
+{
+  "desks": [
+    {
+      "id": "kit",
+      "x": 0,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 270,
+      "personId": "kit"
+    },
+    {
+      "id": "alice",
+      "x": 1,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 90,
+      "personId": "alice"
+    },
+    {
+      "id": "dani",
+      "x": 0,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 90,
+      "personId": "dani"
+    },
+    {
+      "id": "josh",
+      "x": 1,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 270,
+      "personId": "josh"
+    },
+    {
+      "id": "jess",
+      "x": 3.4,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 270,
+      "personId": "jess"
+    },
+    {
+      "id": "euan",
+      "x": 4.4,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 90,
+      "personId": "euan"
+    },
+    {
+      "id": "tino",
+      "x": 3.4,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 90,
+      "personId": "tino"
+    },
+    {
+      "id": "jasmine",
+      "x": 4.4,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 270,
+      "personId": "jasmine"
+    },
+    {
+      "id": "francesc",
+      "x": 6.8,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 270,
+      "personId": "francesc"
+    },
+    {
+      "id": "jules",
+      "x": 7.8,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 90,
+      "personId": "jules"
+    },
+    {
+      "id": "dilan",
+      "x": 6.8,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 90,
+      "personId": "dilan"
+    },
+    {
+      "id": "miles",
+      "x": 7.8,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 270,
+      "personId": "miles"
+    },
+    {
+      "id": "hope",
+      "x": 10.2,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 270,
+      "personId": "hope"
+    },
+    {
+      "id": "riley",
+      "x": 11.2,
+      "y": 0,
+      "zone": "studio",
+      "facing": "s",
+      "rotation": 90,
+      "personId": "riley"
+    },
+    {
+      "id": "jonathan",
+      "x": 10.2,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 90,
+      "personId": "jonathan"
+    },
+    {
+      "id": "michael",
+      "x": 11.2,
+      "y": 0.7,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 270,
+      "personId": "michael"
+    },
+    {
+      "id": "paloma",
+      "x": 13.6,
+      "y": 0,
+      "zone": "studio",
+      "facing": "e",
+      "rotation": 0,
+      "personId": "paloma"
+    },
+    {
+      "id": "james",
+      "x": 13.6,
+      "y": 1.5,
+      "zone": "studio",
+      "facing": "e",
+      "rotation": 0,
+      "personId": "james"
+    },
+    {
+      "id": "joe",
+      "x": 13.6,
+      "y": 3,
+      "zone": "studio",
+      "facing": "e",
+      "rotation": 0,
+      "personId": "joe"
+    },
+    {
+      "id": "artem",
+      "x": 0,
+      "y": 4.6,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 180,
+      "personId": "artem"
+    },
+    {
+      "id": "josephine",
+      "x": 1,
+      "y": 4.6,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 180,
+      "personId": "josephine"
+    },
+    {
+      "id": "katy",
+      "x": 2,
+      "y": 4.6,
+      "zone": "studio",
+      "facing": "n",
+      "rotation": 180,
+      "personId": "katy"
+    },
+    {
+      "id": "dicky",
+      "x": 6.2,
+      "y": 5.6,
+      "zone": "directors",
+      "facing": "n",
+      "rotation": 90,
+      "personId": "dicky"
+    },
+    {
+      "id": "jesus",
+      "x": 7.2,
+      "y": 5.6,
+      "zone": "directors",
+      "facing": "n",
+      "rotation": 270,
+      "personId": "jesus"
+    },
+    {
+      "id": "hotdesk",
+      "x": 10.2,
+      "y": 5.2,
+      "zone": "hotdesk",
+      "facing": "w",
+      "rotation": 270,
+      "personId": null
+    }
+  ],
+  "people": [
+    {
+      "id": "kit",
+      "name": "Kit",
+      "label": "KG"
+    },
+    {
+      "id": "alice",
+      "name": "Alice",
+      "label": "AH"
+    },
+    {
+      "id": "dani",
+      "name": "Dani",
+      "label": "DR"
+    },
+    {
+      "id": "josh",
+      "name": "Josh",
+      "label": "JH"
+    },
+    {
+      "id": "jess",
+      "name": "Jess",
+      "label": "JW"
+    },
+    {
+      "id": "euan",
+      "name": "Euan",
+      "label": "EC"
+    },
+    {
+      "id": "tino",
+      "name": "Tino",
+      "label": "TB"
+    },
+    {
+      "id": "jasmine",
+      "name": "Jasmine",
+      "label": "JH"
+    },
+    {
+      "id": "francesc",
+      "name": "Francesc",
+      "label": "FM"
+    },
+    {
+      "id": "jules",
+      "name": "Jules",
+      "label": "JB"
+    },
+    {
+      "id": "dilan",
+      "name": "Dilan",
+      "label": "DS"
+    },
+    {
+      "id": "miles",
+      "name": "Miles",
+      "label": "MR"
+    },
+    {
+      "id": "hope",
+      "name": "Hope",
+      "label": "HG"
+    },
+    {
+      "id": "riley",
+      "name": "Riley",
+      "label": "RA"
+    },
+    {
+      "id": "jonathan",
+      "name": "Jonathan",
+      "label": "JS"
+    },
+    {
+      "id": "michael",
+      "name": "Michael",
+      "label": "MB"
+    },
+    {
+      "id": "paloma",
+      "name": "Paloma",
+      "label": "PQ"
+    },
+    {
+      "id": "james",
+      "name": "James",
+      "label": "JB"
+    },
+    {
+      "id": "joe",
+      "name": "Joe",
+      "label": "JH"
+    },
+    {
+      "id": "artem",
+      "name": "Artem",
+      "label": "A"
+    },
+    {
+      "id": "josephine",
+      "name": "Josephine",
+      "label": "J"
+    },
+    {
+      "id": "katy",
+      "name": "Katy",
+      "label": "KB"
+    },
+    {
+      "id": "dicky",
+      "name": "Dicky",
+      "label": "DL"
+    },
+    {
+      "id": "jesus",
+      "name": "Jesus",
+      "label": "JJ"
+    }
+  ]
+}
