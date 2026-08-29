@@ -59,9 +59,9 @@ export interface CalendarEventInput {
   end: Date;
 }
 
-const WORK_START_HOUR = 8;
+const DAY_START_HOUR = 6;
 const MIDDAY_HOUR = 13;
-const WORK_END_HOUR = 18;
+const DAY_END_HOUR = 22;
 
 const STATUS_PRIORITY: OfficeStatus[] = ["sick", "holiday", "site", "home", "meeting"];
 
@@ -74,10 +74,28 @@ function words(text: string): string[] {
   return text.split(/[^a-zA-Z0-9']+/).filter(Boolean);
 }
 
-function dayAt(base: Date, hour: number): Date {
-  const d = new Date(base);
-  d.setHours(hour, 0, 0, 0);
-  return d;
+/**
+ * The instant of `hour`:00 Europe/London on the London calendar day of `base`,
+ * DST-aware and independent of the server's own timezone.
+ */
+function londonDayAt(base: Date, hour: number): Date {
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(base);
+  const probe = new Date(`${day}T12:00:00Z`);
+  const londonNoonHour = parseInt(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "2-digit",
+      hour12: false,
+    }).format(probe),
+    10,
+  );
+  const offsetHours = londonNoonHour - 12;
+  return new Date(Date.parse(`${day}T00:00:00Z`) + (hour - offsetHours) * 3_600_000);
 }
 
 /**
@@ -139,12 +157,12 @@ function statusKeyword(segment: string): OfficeStatus | null {
 function halfDayWindow(segment: string, day: Date): { start: Date; end: Date } {
   const tokens = new Set(words(segment.toLowerCase()));
   if (tokens.has("am") && !tokens.has("pm")) {
-    return { start: dayAt(day, WORK_START_HOUR), end: dayAt(day, MIDDAY_HOUR) };
+    return { start: londonDayAt(day, DAY_START_HOUR), end: londonDayAt(day, MIDDAY_HOUR) };
   }
   if (tokens.has("pm") && !tokens.has("am")) {
-    return { start: dayAt(day, MIDDAY_HOUR), end: dayAt(day, WORK_END_HOUR) };
+    return { start: londonDayAt(day, MIDDAY_HOUR), end: londonDayAt(day, DAY_END_HOUR) };
   }
-  return { start: dayAt(day, WORK_START_HOUR), end: dayAt(day, WORK_END_HOUR) };
+  return { start: londonDayAt(day, DAY_START_HOUR), end: londonDayAt(day, DAY_END_HOUR) };
 }
 
 export function parseEvent(

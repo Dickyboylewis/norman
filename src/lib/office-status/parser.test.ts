@@ -6,14 +6,18 @@ import {
   type CalendarEventInput,
 } from "./parser";
 
-const DAY = new Date(2026, 8, 1, 0, 0, 0, 0); // 1 Sep 2026, local
+// 1 Sep 2026 is BST (UTC+1). Fixtures are anchored to UK wall-clock time so
+// the suite passes regardless of the machine's timezone.
+const BST_OFFSET_HOURS = 1;
+const DAY = new Date(Date.UTC(2026, 8, 1)); // all-day events arrive as UTC-midnight dates
 
+/** `hour`:`minute` UK wall-clock time on 1 Sep 2026. */
 function at(hour: number, minute = 0): Date {
-  return new Date(2026, 8, 1, hour, minute, 0, 0);
+  return new Date(Date.UTC(2026, 8, 1, hour - BST_OFFSET_HOURS, minute));
 }
 
 function allDay(title: string): CalendarEventInput {
-  return { title, isAllDay: true, start: DAY, end: new Date(2026, 8, 2) };
+  return { title, isAllDay: true, start: DAY, end: new Date(Date.UTC(2026, 8, 2)) };
 }
 
 function timed(title: string, startHour: number, endHour: number): CalendarEventInput {
@@ -120,13 +124,40 @@ describe("parseEvent — real calendar formats", () => {
     expect(statusOf(events, at(10), "katy")).toBe("sick");
   });
 
+  it("multi-day all-day holiday spanning today → holiday at 10:00 UK", () => {
+    const event: CalendarEventInput = {
+      title: "Joe - Holiday",
+      isAllDay: true,
+      start: new Date(Date.UTC(2026, 7, 29)), // three days before "today" (1 Sep)
+      end: new Date(Date.UTC(2026, 8, 2)), // exclusive end: tomorrow
+    };
+    expect(statusOf([event], at(10), "joe")).toBe("holiday");
+  });
+
+  it("widened day window: 06:30 and 21:30 UK → holiday, 05:30 → none", () => {
+    const events = [allDay("Dani Hol")];
+    expect(statusOf(events, at(6, 30), "dani")).toBe("holiday");
+    expect(statusOf(events, at(21, 30), "dani")).toBe("holiday");
+    expect(statusOf(events, at(5, 30), "dani")).toBe("none");
+  });
+
+  it("DST-aware half-day boundary: Tino Hol PM at 12:30 UK → none, 13:30 UK → holiday", () => {
+    const events = [allDay("Tino Hol PM")];
+    expect(statusOf(events, at(12, 30), "tino")).toBe("none");
+    expect(statusOf(events, at(13, 30), "tino")).toBe("holiday");
+    const parsed = parseEvent("Tino Hol PM", true, DAY, new Date(2026, 8, 2), ROSTER);
+    // 13:00 Europe/London on 1 Sep 2026 (BST) is 12:00 UTC
+    expect(parsed[0].windowStart.toISOString()).toBe("2026-09-01T12:00:00.000Z");
+    expect(parsed[0].windowEnd.toISOString()).toBe("2026-09-01T21:00:00.000Z");
+  });
+
   it("duplicate first names require disambiguation", () => {
     const roster = [
       ...ROSTER,
       { personId: "dicky2", fullName: "Dicky Jones", firstName: "Dicky", initials: "DJ" },
     ];
     expect(parseEvent("Dicky Hol", true, DAY, new Date(2026, 8, 2), roster)).toHaveLength(0);
-    const withSurname = parseEvent("Dicky Lewis Hol", true, DAY, new Date(2026, 8, 2), roster);
+    const withSurname = parseEvent("Dicky Lewis Hol", true, DAY, new Date(Date.UTC(2026, 8, 2)), roster);
     expect(withSurname).toHaveLength(1);
     expect(withSurname[0].personId).toBe("dicky");
   });
