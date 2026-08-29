@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { RefreshCw, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import {
   DESKS,
   PEOPLE,
@@ -238,9 +239,15 @@ const LABEL_MODE_NEXT: Record<LabelMode, LabelMode> = {
 /* Desk context menu */
 const MENU_W = 178;
 const MENU_H = 104;
-const PERSON_MENU_H = 96;
+const PERSON_MENU_H = 123;
 const MENU_EDGE_PAD = 8;
 const COPY_FEEDBACK_MS = 1600;
+
+/* Slack deep link */
+const SLACK_APP_WAIT_MS = 1500;
+const TOAST_MS = 3600;
+/** A click that travelled further than this is a pan, not a click. */
+const CLICK_SLOP_PX = 4;
 
 /* ------------------------------------------------------------------ */
 /* Projection — the single place plan coordinates become screen ones   */
@@ -667,6 +674,7 @@ function Figure({
   week,
   resHover,
   onPersonContextMenu,
+  onPersonClick,
   swapActive,
   onSwapPick,
   headshotVersion,
@@ -677,6 +685,7 @@ function Figure({
   week?: ResourcingWeek;
   resHover?: ResourcingHover;
   onPersonContextMenu?: (e: ReactMouseEvent<SVGGElement>) => void;
+  onPersonClick?: () => void;
   swapActive?: boolean;
   onSwapPick?: () => void;
   headshotVersion?: number;
@@ -707,15 +716,20 @@ function Figure({
     <g
       transform={`translate(${p.sx.toFixed(2)},${p.sy.toFixed(2)})`}
       onContextMenu={onPersonContextMenu}
-      onClick={
-        swapActive && onSwapPick
-          ? e => {
-              e.stopPropagation();
-              onSwapPick();
-            }
-          : undefined
-      }
-      style={swapActive ? { cursor: "pointer" } : undefined}
+      onClick={e => {
+        if (swapActive) {
+          if (onSwapPick) {
+            e.stopPropagation();
+            onSwapPick();
+          }
+          return;
+        }
+        if (onPersonClick) {
+          e.stopPropagation();
+          onPersonClick();
+        }
+      }}
+      style={swapActive || onPersonClick ? { cursor: "pointer" } : undefined}
     >
       <g className="norman-bill">
       {/* stool */}
@@ -1140,6 +1154,20 @@ export default function OfficeTestPage() {
   const [rotateCue, setRotateCue] = useState<{ x: number; y: number } | null>(null);
   const rotateDragRef = useRef<{ id: number; startX: number; applied: number } | null>(null);
 
+  const { data: session } = useSession();
+  const signedIn = Boolean(session?.user);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const [syncingSlack, setSyncingSlack] = useState(false);
+  /** True once the current pointer gesture has travelled far enough to count as a drag. */
+  const clickMovedRef = useRef(false);
+
+  const showToast = useCallback((text: string) => {
+    setToast(text);
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), TOAST_MS);
+  }, []);
+
   const stepOrientation = useCallback((dir: 1 | -1) => {
     setOrientation(o => (o + dir + 4) % 4);
     setOrientAnim({ dir, phase: "init" });
@@ -1329,6 +1357,7 @@ export default function OfficeTestPage() {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (copyTimer.current !== null) window.clearTimeout(copyTimer.current);
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     };
   }, []);
 
@@ -1386,6 +1415,83 @@ export default function OfficeTestPage() {
       () => setCopied(false),
     );
   }, []);
+
+  /**
+   * Try the slack:// deep link through a hidden iframe; if the window is still
+   * focused and visible after SLACK_APP_WAIT_MS the app didn't take it, so the
+   * web client opens in a new tab instead.
+   */
+  const openSlackDm = useCallback(
+    async (personId: string, personName: string) => {
+      const slackId = layout.people.find(p => p.id === personId)?.slackId;
+      let teamId: string | null = null;
+      try {
+        const res = await fetch("/api/slack-team-id");
+        if (res.ok) {
+          const data: { configured?: boolean; teamId?: string } = await res.json();
+          if (data.configured && data.teamId) teamId = data.teamId;
+        }
+      } catch {
+        // treated the same as "not configured" below
+      }
+      if (!teamId || !slackId) {
+        showToast(`Slack isn't set up for ${personName} yet`);
+        return;
+      }
+
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      let settled = false;
+      const cleanup = () => {
+        settled = true;
+        document.removeEventListener("visibilitychange", onHide);
+        window.removeEventListener("blur", onBlur);
+        iframe.remove();
+      };
+      const onHide = () => {
+        if (document.hidden) cleanup();
+      };
+      const onBlur = () => cleanup();
+      document.addEventListener("visibilitychange", onHide);
+      window.addEventListener("blur", onBlur);
+      iframe.src = `slack://user?team=${encodeURIComponent(teamId)}&id=${encodeURIComponent(slackId)}`;
+      document.body.appendChild(iframe);
+      window.setTimeout(() => {
+        if (settled) return;
+        cleanup();
+        window.open(
+          `https://app.slack.com/client/${encodeURIComponent(teamId)}/${encodeURIComponent(slackId)}`,
+          "_blank",
+          "noopener",
+        );
+      }, SLACK_APP_WAIT_MS);
+    },
+    [layout, showToast],
+  );
+
+  const syncSlackIds = useCallback(async () => {
+    setSyncingSlack(true);
+    try {
+      const res = await fetch("/api/slack-ids", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        showToast(data?.error ?? "Slack sync failed");
+        return;
+      }
+      if (data?.configured === false) {
+        showToast(data.message ?? "Slack is not configured");
+        return;
+      }
+      showToast(
+        `Slack sync: ${data.found.length} found, ${data.notFound.length} not found, ${data.skipped.length} skipped`,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["office-layout"] });
+    } catch {
+      showToast("Slack sync failed");
+    } finally {
+      setSyncingSlack(false);
+    }
+  }, [queryClient, showToast]);
 
   const handleSwapPick = (targetDeskId: string, targetPersonId: string) => {
     const source = swapSource;
@@ -1478,6 +1584,7 @@ export default function OfficeTestPage() {
   };
 
   const onPointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
+    clickMovedRef.current = false;
     if (e.pointerType === "touch") {
       stopAnim();
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -1517,6 +1624,7 @@ export default function OfficeTestPage() {
       stopAnim();
       e.currentTarget.setPointerCapture(e.pointerId);
       rotateDragRef.current = { id: e.pointerId, startX: e.clientX, applied: 0 };
+      clickMovedRef.current = true;
       setRotateCue({ x: e.clientX, y: e.clientY });
       setTooltip(null);
       setResTip(prev => (prev?.pinned ? prev : null));
@@ -1544,6 +1652,7 @@ export default function OfficeTestPage() {
         const mx = (a.x + b.x) / 2 - rect.left;
         const my = (a.y + b.y) / 2 - rect.top;
         const k = clamp(pinch.k0 * (d / pinch.d0), ZOOM_MIN, ZOOM_MAX);
+        clickMovedRef.current = true;
         setView({ k, x: mx - pinch.wx * k, y: my - pinch.wy * k });
         return;
       }
@@ -1564,6 +1673,9 @@ export default function OfficeTestPage() {
     }
     const pan = panRef.current;
     if (!pan || pan.id !== e.pointerId) return;
+    if (Math.hypot(e.clientX - pan.sx, e.clientY - pan.sy) > CLICK_SLOP_PX) {
+      clickMovedRef.current = true;
+    }
     setView((v) => ({ ...v, x: pan.vx + (e.clientX - pan.sx), y: pan.vy + (e.clientY - pan.sy) }));
   };
 
@@ -1811,6 +1923,10 @@ export default function OfficeTestPage() {
                     feedStatus={statusMap.get(person.id) ?? "none"}
                     swapActive={swapSource !== null}
                     onSwapPick={() => handleSwapPick(desk.id, person.id)}
+                    onPersonClick={() => {
+                      if (clickMovedRef.current || rotateDragRef.current) return;
+                      void openSlackDm(person.id, person.fullName);
+                    }}
                     onPersonContextMenu={e => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -2004,6 +2120,17 @@ export default function OfficeTestPage() {
         >
           {copied ? "COPIED" : "COPY LAYOUT"}
         </button>
+        {signedIn ? (
+          <button
+            type="button"
+            onClick={() => void syncSlackIds()}
+            disabled={syncingSlack}
+            className="flex h-9 items-center justify-center rounded-xl bg-white px-3.5 text-[10px] font-semibold tracking-[0.14em] transition hover:bg-neutral-100 disabled:opacity-60"
+            style={{ color: C_INK, boxShadow: "0 2px 10px rgba(53,50,46,0.14)" }}
+          >
+            {syncingSlack ? "SYNCING…" : "SYNC SLACK IDS"}
+          </button>
+        ) : null}
       </div>
 
       {menu ? (
@@ -2072,6 +2199,18 @@ export default function OfficeTestPage() {
           <button
             type="button"
             className="norman-menu-item block w-full px-3 py-1.5 text-left text-[11px]"
+            onClick={e => {
+              e.stopPropagation();
+              const { personId, personName } = personMenu;
+              setPersonMenu(null);
+              void openSlackDm(personId, personName);
+            }}
+          >
+            Message on Slack
+          </button>
+          <button
+            type="button"
+            className="norman-menu-item block w-full px-3 py-1.5 text-left text-[11px]"
             onClick={() => {
               setSwapSource({
                 deskId: personMenu.deskId,
@@ -2129,6 +2268,17 @@ export default function OfficeTestPage() {
           }}
         >
           <CellInfoLines info={resTip.info} />
+        </div>
+      ) : null}
+
+      {/* Toast — small transient notice, bottom centre */}
+      {toast ? (
+        <div
+          className="pointer-events-none fixed bottom-6 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-4 py-2 text-xs font-semibold"
+          style={{ color: C_INK, boxShadow: "0 4px 18px rgba(53,50,46,0.18)" }}
+          role="status"
+        >
+          {toast}
         </div>
       ) : null}
 

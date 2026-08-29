@@ -320,7 +320,8 @@
     {
       "id": "joe",
       "name": "Joe",
-      "label": "JH"
+      "label": "JH",
+      "email": "joe.haire@white-red.co.uk"
     },
     {
       "id": "artem",
@@ -340,12 +341,14 @@
     {
       "id": "dicky",
       "name": "Dicky",
-      "label": "DL"
+      "label": "DL",
+      "email": "dicky.lewis@white-red.co.uk"
     },
     {
       "id": "jesus",
       "name": "Jesus",
-      "label": "JJ"
+      "label": "JJ",
+      "email": "jesus.jimenez@white-red.co.uk"
     }
   ]
 }

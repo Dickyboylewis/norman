@@ -14,6 +14,8 @@ export interface LayoutPerson {
   id: string;
   name: string;
   label: string;
+  email?: string;
+  slackId?: string;
 }
 
 export interface OfficeLayout {
@@ -32,6 +34,13 @@ function initialsOf(fullName: string): string {
   return first + second;
 }
 
+/** Emails derivable from the repo (the Monday email-to-director map). */
+const KNOWN_EMAILS: Record<string, string> = {
+  dicky: "dicky.lewis@white-red.co.uk",
+  jesus: "jesus.jimenez@white-red.co.uk",
+  joe: "joe.haire@white-red.co.uk",
+};
+
 /** The layout currently hard-coded in office-data.ts, as seed/fallback data. */
 export function buildSeedLayout(): OfficeLayout {
   return {
@@ -48,6 +57,7 @@ export function buildSeedLayout(): OfficeLayout {
       id: person.id,
       name: person.name,
       label: initialsOf(person.fullName),
+      ...(KNOWN_EMAILS[person.id] ? { email: KNOWN_EMAILS[person.id] } : {}),
     })),
   };
 }
@@ -63,6 +73,8 @@ export function validateOfficeLayout(input: unknown): input is OfficeLayout {
     const p = person as Record<string, unknown>;
     if (typeof p.id !== "string" || !p.id) return false;
     if (typeof p.name !== "string" || typeof p.label !== "string") return false;
+    if (p.email !== undefined && typeof p.email !== "string") return false;
+    if (p.slackId !== undefined && typeof p.slackId !== "string") return false;
     if (personIds.has(p.id)) return false;
     personIds.add(p.id);
   }
