@@ -51,7 +51,7 @@ import {
   LabelList,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatBdSessionLine, type BdSessionSummaryInput } from "@/lib/bd-sessions-format";
+import { formatBdSessionLines, type BdSessionSummaryInput } from "@/lib/bd-sessions-format";
 
 // ── Avatar map ─────────────────────────────────────────────────────────────
 // Maps the full name (as returned by the API) to the public image path and
@@ -117,11 +117,11 @@ interface CustomTickProps {
   y?: number | string;
   payload?: { value: string };
   isMobile?: boolean;
-  bdLine?: string;
+  bdLines?: string[];
   [key: string]: any;
 }
 
-function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false, bdLine }: CustomTickProps) {
+function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false, bdLines }: CustomTickProps) {
   const numX = typeof x === "string" ? parseFloat(x) : (x ?? 0);
   const numY = typeof y === "string" ? parseFloat(y) : (y ?? 0);
   const name = payload?.value ?? "";
@@ -176,13 +176,13 @@ function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false, bdLine }: Cu
         </text>
       )}
 
-      {/* BD session summary — wraps to two lines inside a foreignObject */}
-      {bdLine !== undefined && (
+      {/* BD session summary — vertical stack of lines inside a foreignObject */}
+      {bdLines !== undefined && (
         <foreignObject
-          x={isMobile ? -60 : -95}
+          x={isMobile ? -55 : -80}
           y={AVATAR_R * 2 + (isMobile ? 4 : 22)}
-          width={isMobile ? 120 : 190}
-          height={isMobile ? 26 : 30}
+          width={isMobile ? 110 : 160}
+          height={bdLines.length * (isMobile ? 12 : 13) + 2}
         >
           <div
             style={{
@@ -191,10 +191,13 @@ function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false, bdLine }: Cu
               fontFamily: "var(--font-poppins), Poppins, sans-serif",
               textAlign: "center",
               lineHeight: 1.3,
-              overflow: "hidden",
             }}
           >
-            {bdLine}
+            {bdLines.map((line, i) => (
+              <div key={i} style={{ whiteSpace: "nowrap" }}>
+                {line}
+              </div>
+            ))}
           </div>
         </foreignObject>
       )}
@@ -362,12 +365,17 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
   // Chart height adapts to screen size
   const chartHeight = isMobile ? 220 : 300;
 
-  // Extra bottom margin so the avatar, name and BD session line don't get clipped
-  const bottomMargin = isMobile ? 78 : 106;
-
   // BD session summary per director, rendered under each x-axis name
-  const bdLineFor = (name: string): string | undefined =>
-    bdSessions === null ? undefined : formatBdSessionLine(bdSessions[name] ?? []);
+  const bdLinesFor = (name: string): string[] | undefined =>
+    bdSessions === null ? undefined : formatBdSessionLines(bdSessions[name] ?? []);
+
+  // Extra bottom margin so the avatar, name and BD session lines don't get
+  // clipped — grows with the tallest stack of lines across the directors
+  const maxBdLines =
+    bdSessions === null
+      ? 1
+      : Math.max(1, ...Object.keys(PERSON_META).map((n) => bdLinesFor(n)?.length ?? 1));
+  const bottomMargin = isMobile ? 54 + maxBdLines * 12 : 80 + maxBdLines * 13;
 
   return (
     <Card className="w-full flex flex-col font-roboto shadow-sm border-gray-200">
@@ -416,7 +424,7 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
                 <CustomXAxisTick
                   {...props}
                   isMobile={isMobile}
-                  bdLine={bdLineFor(props?.payload?.value ?? "")}
+                  bdLines={bdLinesFor(props?.payload?.value ?? "")}
                 />
               )}
             />
@@ -491,7 +499,7 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
                   <CustomXAxisTick
                   {...props}
                   isMobile={isMobile}
-                  bdLine={bdLineFor(props?.payload?.value ?? "")}
+                  bdLines={bdLinesFor(props?.payload?.value ?? "")}
                 />
                 )}
               />

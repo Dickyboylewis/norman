@@ -23,51 +23,59 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  }
-
-  const name = bdNameForEmail(email);
-  if (!name) {
-    return NextResponse.json(
-      { error: `No director is mapped for ${email}` },
-      { status: 403 },
-    );
-  }
+  let name = "unresolved";
+  let action = "unknown";
+  const respond = (status: number, payload: Record<string, unknown>) => {
+    const outcome = status < 300 ? "ok" : `${status} ${payload.error ?? ""}`.trim();
+    console.log(`bd-sessions POST: name=${name} action=${action} outcome=${outcome}`);
+    return NextResponse.json(payload, { status });
+  };
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return respond(400, { error: "Missing or malformed JSON body" });
   }
+  if (typeof body !== "object" || body === null) {
+    return respond(400, { error: "Missing or malformed JSON body" });
+  }
+  const b = body as Record<string, unknown>;
+  if (typeof b.action === "string") action = b.action;
 
-  const b = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+  const session = await auth();
+  const email = session?.user?.email;
+  if (!email) {
+    return respond(401, { error: "Not signed in" });
+  }
+  const director = bdNameForEmail(email);
+  if (!director) {
+    return respond(401, { error: `No director is mapped for ${email}` });
+  }
+  name = director;
 
   if (b.action === "start") {
     if (typeof b.type !== "string" || !BD_SESSION_TYPES.includes(b.type as BdSessionType)) {
-      return NextResponse.json({ error: "Invalid session type" }, { status: 400 });
+      return respond(400, { error: "Invalid session type" });
     }
     const durationMinutes = Number(b.durationMinutes);
     if (!Number.isFinite(durationMinutes) || durationMinutes <= 0 || durationMinutes > 1440) {
-      return NextResponse.json({ error: "Invalid durationMinutes" }, { status: 400 });
+      return respond(400, { error: "Invalid durationMinutes" });
     }
-    const record = startSession(name, b.type as BdSessionType, durationMinutes);
-    return NextResponse.json({ session: record });
+    const record = startSession(director, b.type as BdSessionType, durationMinutes);
+    return respond(200, { session: record });
   }
 
   if (b.action === "complete") {
     if (typeof b.id !== "string" || !b.id) {
-      return NextResponse.json({ error: "Invalid session id" }, { status: 400 });
+      return respond(400, { error: "Invalid session id" });
     }
     const record = completeSession(b.id);
     if (!record) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+      return respond(404, { error: "Session not found" });
     }
-    return NextResponse.json({ session: record });
+    return respond(200, { session: record });
   }
 
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  return respond(400, { error: "Unknown action" });
 }

@@ -21,7 +21,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatBdSessionLine, type BdSessionSummaryInput } from "@/lib/bd-sessions-format";
+import { formatBdSessionLines, type BdSessionSummaryInput } from "@/lib/bd-sessions-format";
 
 // ── Avatar map ─────────────────────────────────────────────────────────────
 const PERSON_META: Record<string, { avatar: string; firstName: string }> = {
@@ -322,12 +322,12 @@ export function ProspectingChartStatic() {
                       {meta.firstName}
                     </div>
 
-                    {/* BD session summary */}
+                    {/* BD session summary — one line per session */}
                     {bdSessions !== null && (
                       <div
                         data-testid="bd-session-line"
                         style={{
-                          width: "220px",
+                          width: "180px",
                           fontSize: "11px",
                           color: "#9CA3AF",
                           fontFamily: "var(--font-poppins), Poppins, sans-serif",
@@ -335,7 +335,11 @@ export function ProspectingChartStatic() {
                           lineHeight: "1.4",
                         }}
                       >
-                        {formatBdSessionLine(bdSessions[name] ?? [])}
+                        {formatBdSessionLines(bdSessions[name] ?? []).map((line, i) => (
+                          <div key={i} style={{ whiteSpace: "nowrap" }}>
+                            {line}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

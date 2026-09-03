@@ -145,6 +145,7 @@ function FocusTimerButton({ type, cardTitle }: { type: BdSessionType; cardTitle:
   const { data: sessionsData } = useBdSessions();
   const [phase, setPhase] = useState<TimerPhase>("idle");
   const [remainingMs, setRemainingMs] = useState(FOCUS_MINUTES * 60 * 1000);
+  const [saveError, setSaveError] = useState(false);
   const activeRef = useRef<{ id: string; endsAt: number } | null>(null);
   const completedPostedRef = useRef<string | null>(null);
   const resumedRef = useRef(false);
@@ -179,7 +180,10 @@ function FocusTimerButton({ type, cardTitle }: { type: BdSessionType; cardTitle:
           .then((res) => {
             if (!res.ok) throw new Error(`Complete failed: ${res.status}`);
           })
-          .catch((error) => console.error("BD session complete failed:", error))
+          .catch((error) => {
+            console.error("BD session complete failed:", error);
+            setSaveError(true);
+          })
           .finally(() => void queryClient.invalidateQueries({ queryKey: ["bd-sessions"] }));
       }
       activeRef.current = null;
@@ -239,6 +243,7 @@ function FocusTimerButton({ type, cardTitle }: { type: BdSessionType; cardTitle:
     }
     startingRef.current = true;
     resumedRef.current = true;
+    setSaveError(false);
     void (async () => {
       try {
         const res = await fetch("/api/bd-sessions", {
@@ -247,15 +252,18 @@ function FocusTimerButton({ type, cardTitle }: { type: BdSessionType; cardTitle:
           body: JSON.stringify({ action: "start", type, durationMinutes: FOCUS_MINUTES }),
         });
         if (!res.ok) throw new Error(`Start failed: ${res.status}`);
-        const body: { session: BdSessionRecord } = await res.json();
-        const endsAt = Date.parse(body.session.endsAt);
+        const body: { session?: Partial<BdSessionRecord> } = await res.json();
+        const endsAt = Date.parse(body.session?.endsAt ?? "");
+        if (typeof body.session?.id !== "string" || !Number.isFinite(endsAt)) {
+          throw new Error("Start returned no session record");
+        }
         activeRef.current = { id: body.session.id, endsAt };
         setRemainingMs(endsAt - Date.now());
         setPhase("running");
         void queryClient.invalidateQueries({ queryKey: ["bd-sessions"] });
       } catch (error) {
         console.error("BD session start failed:", error);
-        window.alert("Could not start the timer. Sign in as a director and try again.");
+        setSaveError(true);
       } finally {
         startingRef.current = false;
       }
@@ -276,17 +284,28 @@ function FocusTimerButton({ type, cardTitle }: { type: BdSessionType; cardTitle:
         : "Start 30-minute focus timer";
 
   return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={handleClick}
-      className={`absolute right-0 top-0 flex h-14 w-14 items-center justify-center rounded-full font-bold text-white shadow-md transition-transform hover:scale-105 ${
-        phase === "running" ? "text-xs tabular-nums" : "text-[10px] leading-tight"
-      }`}
-      style={{ backgroundColor: phase === "done" ? DONE_GREEN : BRAND_RED }}
-    >
-      {label}
-    </button>
+    <>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        onClick={handleClick}
+        className={`absolute right-0 top-0 flex h-14 w-14 items-center justify-center rounded-full font-bold text-white shadow-md transition-transform hover:scale-105 ${
+          phase === "running" ? "text-xs tabular-nums" : "text-[10px] leading-tight"
+        }`}
+        style={{ backgroundColor: phase === "done" ? DONE_GREEN : BRAND_RED }}
+      >
+        {label}
+      </button>
+      {saveError ? (
+        <span
+          role="alert"
+          className="absolute right-0 top-[60px] whitespace-nowrap text-[10px] font-semibold"
+          style={{ color: BRAND_RED }}
+        >
+          Could not save session
+        </span>
+      ) : null}
+    </>
   );
 }
 

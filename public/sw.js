@@ -135,6 +135,9 @@ self.addEventListener('notificationclick', function (event) {
 
 // Fetch event - simplified pass-through to prevent redirect crashes
 self.addEventListener('fetch', function (event) {
+  // Never intercept requests with bodies: re-dispatching a POST through the
+  // worker can drop the body (Safari/iOS PWA) and answer with an empty 200.
+  if (event.request.method !== 'GET') return;
   // Simple pass-through: let the browser handle all requests normally
   // This prevents ERR_FAILED crashes on redirects
   event.respondWith(fetch(event.request));
