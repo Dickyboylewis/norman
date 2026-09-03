@@ -19,6 +19,7 @@ import { FinanceIncomePlannerChart } from "@/components/dashboard/charts/finance
 import { ExpenseBreakdownChart } from "@/components/dashboard/charts/expense-breakdown-chart";
 import { CashflowTrendChart } from "@/components/dashboard/charts/cashflow-trend-chart";
 import { ProfitAndLossChart } from "@/components/dashboard/charts/profit-and-loss-chart";
+import { InvoiceForecastChart } from "@/components/dashboard/charts/invoice-forecast-chart";
 import StagesWatchlist from "@/components/dashboard/widgets/stages-watchlist";
 import FyMonthlyReport from "@/components/dashboard/widgets/fy-monthly-report";
 
@@ -179,6 +180,11 @@ export default function FinancePage() {
 
           {/* Profit & Loss — Revenue vs Costs bar chart */}
           <ProfitAndLossChart />
+
+          {/* Invoice Forecast — stacked fees by month and probability, full width */}
+          <div className="md:col-span-2">
+            <InvoiceForecastChart />
+          </div>
         </div>
       </div>
     </div>
