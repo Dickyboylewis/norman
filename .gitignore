@@ -56,5 +56,8 @@ src/data/prospecting-history.json
 
 data/snapshots/
 
+# BD session log (machine-local)
+data/bd-sessions.json
+
 # uploaded headshots (machine-local, like other uploads)
 public/headshots/*.png
