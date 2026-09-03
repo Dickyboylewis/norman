@@ -6,7 +6,7 @@ export interface ResourcingProjectAllocation {
   won: boolean;
   /** Win probability: 10, 25, 50, 75 or 100. */
   probability: number;
-  /** Project colour attached by the API; absent only in raw fixtures. */
+  /** Project colour keyed by projectCode; baked into the fixture and re-attached by the API. */
   color?: string;
 }
 

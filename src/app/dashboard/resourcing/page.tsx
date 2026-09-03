@@ -60,6 +60,7 @@ export default function ResourcingPage() {
       return res.json();
     },
     initialData: INITIAL_DATA,
+    initialDataUpdatedAt: 0,
   });
 
   const firstWeek = data.weekStarts[0];

@@ -1266,6 +1266,7 @@ export default function OfficeTestPage() {
       return res.json();
     },
     initialData: resourcingFixture as ResourcingData,
+    initialDataUpdatedAt: 0,
   });
 
   useEffect(() => {

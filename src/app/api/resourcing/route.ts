@@ -5,7 +5,9 @@ import type { ResourcingData } from "@/lib/resourcing-types";
 
 export const dynamic = "force-dynamic";
 
-// Stub: returns the static fixture. The live CMap DRS query replaces this later.
+// Stub: returns the static fixture. The live CMap DRS query replaces this
+// later; it must keep carrying the project code (CMAP_ProjectResources joins
+// CMAP_Projects for Code) so the colour lookup below stays keyed by code.
 export async function GET() {
   const data = fixture as ResourcingData;
   const codes: string[] = [];

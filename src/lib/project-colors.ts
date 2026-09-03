@@ -6,36 +6,30 @@
  * attached to API responses as a `color` field. Components read that field;
  * fallbackProjectColor() covers rows a colour has not been supplied for.
  *
- * The palette holds 24 hues 15 degrees apart at medium saturation and mid
- * lightness. The array is ordered with a stride of seven positions (105
- * degree hue jumps), and hue-neighbours alternate lightness, so the first N
- * assigned colours are always maximally distinct from each other.
+ * The palette is a hand-picked set of 20 colours chosen for maximum mutual
+ * distinctness, in assignment order.
  */
 export const PROJECT_PALETTE = [
-  "#AB2121",
-  "#62C940",
-  "#2875C3",
-  "#C658AA",
-  "#979717",
-  "#40C9A7",
-  "#7528C3",
-  "#C96240",
-  "#21AB21",
-  "#5A77CE",
-  "#B52C70",
-  "#9ABE2D",
-  "#21ABAB",
-  "#AA58C6",
-  "#AB6621",
-  "#40C962",
-  "#2828C3",
-  "#C94062",
-  "#579717",
-  "#5AB1CE",
-  "#B52CB5",
-  "#BE9A2D",
-  "#21AB66",
-  "#775ACE",
+  "#E6194B",
+  "#3CB44B",
+  "#4363D8",
+  "#F58231",
+  "#911EB4",
+  "#42D4F4",
+  "#F032E6",
+  "#BFEF45",
+  "#FABED4",
+  "#469990",
+  "#DCBEFF",
+  "#9A6324",
+  "#FFFAC8",
+  "#800000",
+  "#AAFFC3",
+  "#808000",
+  "#FFD8B1",
+  "#000075",
+  "#A9A9A9",
+  "#FFE119",
 ];
 
 const FALLBACK_GREY = "#9CA3AF";

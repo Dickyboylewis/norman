@@ -14,7 +14,13 @@ import { PROJECT_PALETTE } from "./project-colors";
 const DATA_DIR = path.join(process.cwd(), "data");
 const COLORS_FILE = path.join(DATA_DIR, "project-colors.json");
 
-/** Overflow palettes lighten by this per pass once all 24 base colours are used. */
+/**
+ * Bumped whenever the palette is replaced. A stored file with a missing or
+ * lower version discards its assignments and starts fresh on the new palette.
+ */
+const PALETTE_VERSION = 2;
+
+/** Overflow palettes lighten by this per pass once all base colours are used. */
 const OVERFLOW_LIGHTEN_STEP = 0.15;
 const MAX_OVERFLOW_LEVELS = 5;
 
@@ -29,9 +35,18 @@ function lighten(hex: string, amount: number): string {
 function readColorFile(): Record<string, string> {
   try {
     const parsed = JSON.parse(fs.readFileSync(COLORS_FILE, "utf8"));
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("not an object");
+    }
+    const file = parsed as { paletteVersion?: unknown; assignments?: unknown };
+    if (typeof file.paletteVersion !== "number" || file.paletteVersion < PALETTE_VERSION) {
+      throw new Error("stale palette version");
+    }
+    if (typeof file.assignments !== "object" || file.assignments === null) {
+      throw new Error("missing assignments");
+    }
     const map: Record<string, string> = {};
-    for (const [code, color] of Object.entries(parsed)) {
+    for (const [code, color] of Object.entries(file.assignments)) {
       if (typeof color === "string" && /^#[0-9A-Fa-f]{6}$/.test(color)) map[code] = color;
     }
     return map;
@@ -44,7 +59,8 @@ function readColorFile(): Record<string, string> {
 function writeColorFile(map: Record<string, string>): void {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const tmp = `${COLORS_FILE}.tmp-${process.pid}`;
-  fs.writeFileSync(tmp, JSON.stringify(map, null, 2) + "\n", "utf8");
+  const payload = { paletteVersion: PALETTE_VERSION, assignments: map };
+  fs.writeFileSync(tmp, JSON.stringify(payload, null, 2) + "\n", "utf8");
   fs.renameSync(tmp, COLORS_FILE);
 }
 
