@@ -242,7 +242,7 @@ export function InvoiceForecastChart() {
               Invoice Forecast
             </CardTitle>
             <p className="text-xs text-gray-400 mt-0.5">
-              Forecast fees by month and probability · Source: CMap
+              Scheduled invoicing by month and stage probability · Source: CMap invoicing schedule
             </p>
           </div>
           <LiveIndicator connected={connected} />

@@ -9,19 +9,21 @@ SELECT
   pr.Code AS projectCode,
   pr.Title AS projectTitle,
   prob.Value AS probability,
-  FORMAT(bt.StartDate, 'yyyy-MM') AS month,
-  SUM(bt.OurFee) AS fee
-FROM CMAP_BudgetTasks bt
-JOIN CMAP_BudgetStages bs ON bt.BudgetStageID = bs.BudgetStageID
+  FORMAT(ip.Date, 'yyyy-MM') AS month,
+  SUM(ip.Amount) AS fee
+FROM CMAP_InvoiceParts ip
+JOIN CMAP_Projects pr ON ip.ProjectID = pr.ProjectID
+JOIN CMAP_BudgetStages bs ON ip.EntityID = bs.BudgetStageID
 JOIN CMAP_Probabilities prob ON bs.ProbabilityID = prob.ProbabilityID
-JOIN CMAP_Projects pr ON bs.ProjectID = pr.ProjectID
-WHERE pr.StatusID = 'Project'
-  AND pr.Code LIKE '[0-9]%'
-  AND bs.IsClosed = 0
+WHERE ip.EntityTypeID = 'BudgetSection'
+  AND ip.InvoiceID IS NULL
+  AND ip.CreditedToInvoiceID IS NULL
   AND prob.Value IN (75, 100)
-  AND bt.OurFee > 0
-  AND bt.StartDate >= @startOfCurrentMonth
-GROUP BY pr.Code, pr.Title, prob.Value, FORMAT(bt.StartDate, 'yyyy-MM')
+  AND pr.StatusID = 'Project'
+  AND pr.Code LIKE '[0-9]%'
+  AND ip.Date >= @startOfCurrentMonth
+GROUP BY pr.Code, pr.Title, prob.Value, FORMAT(ip.Date, 'yyyy-MM')
+HAVING SUM(ip.Amount) <> 0
 ORDER BY month, probability DESC, fee DESC;
 `;
 
