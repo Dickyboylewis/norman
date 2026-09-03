@@ -1,12 +1,19 @@
 "use client";
 
-import { projectColor } from "@/lib/project-colors";
+import { fallbackProjectColor } from "@/lib/project-colors";
 import type { ResourcingWeek } from "@/lib/resourcing-types";
 
 export interface ResourcingCellInfo {
   personName: string;
   range: string;
-  projects: { code: string; title: string; pct: number; won: boolean; probability: number }[];
+  projects: {
+    code: string;
+    title: string;
+    pct: number;
+    won: boolean;
+    probability: number;
+    color?: string;
+  }[];
   timeOff: { label: string; days: number }[];
   total: number;
 }
@@ -49,6 +56,7 @@ export function buildCellInfo(personName: string, week: ResourcingWeek): Resourc
         pct: p.percentage,
         won: p.won,
         probability: p.probability,
+        color: p.color,
       })),
     timeOff: week.timeOffDays.map(t => ({ label: t.label, days: t.days })),
     total: weekTotal(week),
@@ -65,7 +73,7 @@ export function CellInfoLines({ info }: { info: ResourcingCellInfo }) {
         <p key={`${p.code}-${p.title}`} className="text-[11px] text-gray-700 whitespace-nowrap" style={{ fontFamily: "Roboto, sans-serif" }}>
           <span
             className="mr-1.5 inline-block h-2 w-2 rounded-sm align-middle"
-            style={{ backgroundColor: projectColor(p.code) }}
+            style={{ backgroundColor: p.color ?? fallbackProjectColor(p.code) }}
           />
           {p.code} {p.title} — {p.pct}%
           {!p.won ? ` (${p.probability}%)` : ""}

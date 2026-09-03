@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ConnectionPool } from "mssql";
+import { getProjectColorMap } from "@/lib/project-colors-server";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ interface ProjectMonthly {
   code: string;
   title: string;
   status: string;
+  color?: string;
   monthly: Record<string, { cost: number; invoiced: number }>;
   totalCost: number;
   totalInvoiced: number;
@@ -175,6 +177,9 @@ export async function GET(request: Request) {
         return entry;
       })
       .sort((a, b) => a.code.localeCompare(b.code));
+
+    const colors = await getProjectColorMap(projects.map(p => p.code));
+    for (const project of projects) project.color = colors[project.code];
 
     return NextResponse.json({
       success: true,

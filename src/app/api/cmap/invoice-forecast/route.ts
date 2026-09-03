@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
 import { ConnectionPool } from "mssql";
 import fixture from "@/lib/fixtures/invoice-forecast.json";
+import { getProjectColorMap } from "@/lib/project-colors-server";
 
 export const dynamic = "force-dynamic";
+
+interface ForecastRow {
+  projectCode: string;
+  projectTitle: string;
+  probability: number;
+  month: string;
+  fee: number;
+}
+
+async function withColors(rows: ForecastRow[]): Promise<(ForecastRow & { color: string })[]> {
+  const colors = await getProjectColorMap(rows.map((r) => r.projectCode));
+  return rows.map((r) => ({ ...r, color: colors[r.projectCode] }));
+}
 
 const FORECAST_QUERY = `
 SELECT
@@ -57,13 +71,13 @@ export async function GET() {
       .input("startOfCurrentMonth", startOfCurrentMonth)
       .query(FORECAST_QUERY);
     return NextResponse.json(
-      { data: result.recordset },
+      { data: await withColors(result.recordset as unknown as ForecastRow[]) },
       { headers: { "X-Data-Source": "live" } },
     );
   } catch (error) {
     console.error("CMap DRS invoice forecast error:", error);
     return NextResponse.json(
-      { data: fixture },
+      { data: await withColors(fixture as ForecastRow[]) },
       { headers: { "X-Data-Source": "fixture" } },
     );
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { getProjectColorMap } from "@/lib/project-colors-server";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export interface ProjectData {
   sector: string;
   remainingBudget: number;
   profitHealthPercent: number;
+  color: string;
 }
 
 const RAW_PROJECTS = [
@@ -39,10 +41,11 @@ export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
+  const colors = await getProjectColorMap(RAW_PROJECTS.map(p => p.projectNumber));
   const projects: ProjectData[] = RAW_PROJECTS.map(p => {
     const remainingBudget = p.fee - p.bookedSoFar - p.futureSchedule;
     const profitHealthPercent = +(remainingBudget / p.fee * 100).toFixed(1);
-    return { ...p, remainingBudget, profitHealthPercent };
+    return { ...p, remainingBudget, profitHealthPercent, color: colors[p.projectNumber] };
   });
 
   return NextResponse.json(projects);

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { projectColor } from "@/lib/project-colors";
+import { fallbackProjectColor } from "@/lib/project-colors";
 import { filterWeek, type ResourcingFilterMode } from "@/lib/resourcing-math";
 import {
   CellInfoLines,
@@ -79,7 +79,7 @@ function WeekCell({
             className="h-full"
             style={{
               width: `${(p.percentage / scale) * 100}%`,
-              backgroundColor: projectColor(p.projectCode),
+              backgroundColor: p.color ?? fallbackProjectColor(p.projectCode),
               opacity: p.won ? 1 : 0.4,
             }}
           />
@@ -172,10 +172,15 @@ function SinglePersonView({
   );
 
   const legend = useMemo(() => {
-    const seen = new Map<string, string>();
+    const seen = new Map<string, { title: string; color: string }>();
     for (const week of person.weeks.map(w => filterWeek(w, mode))) {
       for (const p of week.projects) {
-        if (!seen.has(p.projectCode)) seen.set(p.projectCode, p.projectTitle);
+        if (!seen.has(p.projectCode)) {
+          seen.set(p.projectCode, {
+            title: p.projectTitle,
+            color: p.color ?? fallbackProjectColor(p.projectCode),
+          });
+        }
       }
     }
     return [...seen.entries()];
@@ -224,7 +229,7 @@ function SinglePersonView({
                     className="w-full flex-shrink-0"
                     style={{
                       height: `${(p.percentage / SINGLE_VIEW_MAX_PCT) * 100}%`,
-                      backgroundColor: projectColor(p.projectCode),
+                      backgroundColor: p.color ?? fallbackProjectColor(p.projectCode),
                       opacity: p.won ? 1 : 0.4,
                     }}
                   />
@@ -255,10 +260,10 @@ function SinglePersonView({
       </div>
       {legend.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
-          {legend.map(([code, title]) => (
+          {legend.map(([code, entry]) => (
             <span key={code} className="flex items-center gap-1.5 text-[11px] text-gray-700" style={{ fontFamily: "Roboto, sans-serif" }}>
-              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: projectColor(code) }} />
-              {code} {title}
+              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: entry.color }} />
+              {code} {entry.title}
             </span>
           ))}
         </div>

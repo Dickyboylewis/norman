@@ -59,5 +59,8 @@ data/snapshots/
 # BD session log (machine-local)
 data/bd-sessions.json
 
+# persisted project colour assignments (machine-local)
+data/project-colors.json
+
 # uploaded headshots (machine-local, like other uploads)
 public/headshots/*.png

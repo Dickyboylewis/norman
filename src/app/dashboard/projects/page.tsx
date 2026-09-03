@@ -7,6 +7,7 @@ import { TopBar } from "@/components/dashboard/topbar";
 import { ProjectImagePicker } from "@/components/dashboard/widgets/project-image-picker";
 import projectsFixture from "@/lib/fixtures/profitability.json";
 import stagesFixture from "@/lib/fixtures/profitability-stages.json";
+import { fallbackProjectColor } from "@/lib/project-colors";
 
 interface ProfitabilityRow {
   Code: string;
@@ -16,6 +17,7 @@ interface ProfitabilityRow {
   TimeCost: number;
   ProfitVsFee: number;
   MarginPct: number | null;
+  color?: string;
 }
 
 interface StageRow {
@@ -394,6 +396,10 @@ function ProjectCard({ view, imageUrl }: { view: ProjectView; imageUrl: string |
           <div className="flex items-center gap-2 md:gap-3">
             <div className="flex-shrink min-w-0">
               <p className="font-semibold text-sm text-gray-900 truncate" style={{ fontFamily: "Poppins, sans-serif" }}>
+                <span
+                  className="mr-2 inline-block h-2 w-2 flex-shrink-0 rounded-full align-middle"
+                  style={{ backgroundColor: row.color ?? fallbackProjectColor(row.Code) }}
+                />
                 <span className="hidden md:inline">Project {row.Code} · </span>
                 {row.Title}
               </p>

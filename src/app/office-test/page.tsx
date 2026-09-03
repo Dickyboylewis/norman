@@ -31,7 +31,7 @@ import {
   type Person,
   type PersonStatus,
 } from "@/lib/office-data";
-import { projectColor } from "@/lib/project-colors";
+import { fallbackProjectColor } from "@/lib/project-colors";
 import {
   CellInfoLines,
   buildCellInfo,
@@ -638,7 +638,7 @@ function ResourceBarShape({ week }: { week: ResourcingWeek }) {
       key: `${p.projectCode}-${p.projectTitle}`,
       y: cursor,
       h,
-      fill: projectColor(p.projectCode),
+      fill: p.color ?? fallbackProjectColor(p.projectCode),
     });
   }
   let offSeg: { y: number; h: number } | null = null;

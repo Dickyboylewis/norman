@@ -4,10 +4,10 @@
  * Invoice Forecast Chart
  *
  * Stacked bar chart of forecast invoicing per month from CMap budget tasks.
- * Each bar stacks one segment per project/probability combination: a project's
- * shared colour (project-colors.ts) at full strength for 100%-probability fees
- * and a lighter tint of the same hue for 75%-probability fees, so confirmed
- * work sits at the base of the bar in the stronger colour.
+ * Each bar stacks one segment per project/probability combination in the
+ * project's colour supplied by the API: solid fill for 100%-probability fees,
+ * a diagonal hatch in the same hue for 75%-probability fees, so confirmed
+ * work sits at the base of the bar as solid colour.
  * A dashed reference line marks the £3.5m-turnover monthly target.
  * Fetches /api/cmap/invoice-forecast via TanStack Query, with the captured
  * fixture as initialData for instant rendering.
@@ -17,7 +17,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LiveIndicator } from "./live-indicator";
-import { projectColor } from "@/lib/project-colors";
+import { fallbackProjectColor } from "@/lib/project-colors";
 import fixture from "@/lib/fixtures/invoice-forecast.json";
 import {
   BarChart,
@@ -28,6 +28,8 @@ import {
   Tooltip,
   ReferenceLine,
   ResponsiveContainer,
+  useXAxisScale,
+  useYAxisScale,
 } from "recharts";
 
 interface ForecastRow {
@@ -36,6 +38,7 @@ interface ForecastRow {
   probability: number;
   month: string;
   fee: number;
+  color?: string;
 }
 
 interface ForecastResponse {
@@ -46,8 +49,11 @@ interface ForecastResponse {
 /** £3.5m annual turnover target spread across 12 months. */
 const MONTHLY_TARGET = 291_667;
 
-/** Mix a hex colour towards white — 75%-probability segments use the 0.4 tint. */
-const P75_TINT = 0.4;
+/** Hatch geometry for 75%-probability segments: 3px stripes with 4px gaps. */
+const HATCH_STRIPE = 3;
+const HATCH_PERIOD = 7;
+const HATCH_BG_OPACITY = 0.35;
+const KEY_GREY = "#4B5563";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("en-GB", {
@@ -56,12 +62,73 @@ const fmt = (v: number) =>
     maximumFractionDigits: 0,
   }).format(v);
 
-function tint(hex: string, amount: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const mix = (c: number) => Math.round(c + (255 - c) * amount);
-  return `#${[(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff]
-    .map((c) => mix(c).toString(16).padStart(2, "0"))
-    .join("")}`;
+function hatchId(color: string): string {
+  return `invforecast-hatch-${color.replace("#", "")}`;
+}
+
+const SHORTFALL_RED = "#dc2626";
+/** Clears half the 48px max bar width plus a small gap. */
+const SHORTFALL_TEXT_OFFSET = 28;
+
+interface ShortfallMarker {
+  label: string;
+  p100Total: number;
+  shortfall: number;
+}
+
+/**
+ * Dotted gap-to-target markers for the three months after the current one.
+ * Rendered inside the chart so the axis scale hooks keep the line and text
+ * aligned through resizes and month-range changes.
+ */
+function TargetShortfallMarkers({ markers }: { markers: ShortfallMarker[] }) {
+  const xScale = useXAxisScale();
+  const yScale = useYAxisScale();
+  if (!xScale || !yScale) return null;
+  return (
+    <g>
+      {markers.map((m) => {
+        const cx = xScale(m.label, { position: "middle" });
+        const yTarget = yScale(MONTHLY_TARGET);
+        const yStackTop = yScale(m.p100Total);
+        if (cx === undefined || yTarget === undefined || yStackTop === undefined) return null;
+        if (yStackTop <= yTarget) return null;
+        const midY = (yTarget + yStackTop) / 2;
+        const textX = cx + SHORTFALL_TEXT_OFFSET;
+        return (
+          <g key={m.label}>
+            <line
+              x1={cx}
+              x2={cx}
+              y1={yStackTop}
+              y2={yTarget}
+              stroke={SHORTFALL_RED}
+              strokeWidth={1}
+              strokeDasharray="2 3"
+            />
+            <text
+              x={textX}
+              y={midY - 2}
+              fill={SHORTFALL_RED}
+              fontSize={10}
+              fontFamily="Roboto, sans-serif"
+            >
+              {`£${Math.round(m.shortfall / 1000)}k`}
+            </text>
+            <text
+              x={textX}
+              y={midY + 10}
+              fill={SHORTFALL_RED}
+              fontSize={10}
+              fontFamily="Roboto, sans-serif"
+            >
+              {`${Math.round((m.shortfall / MONTHLY_TARGET) * 100)}% to go`}
+            </text>
+          </g>
+        );
+      })}
+    </g>
+  );
 }
 
 function segmentKey(code: string, probability: number): string {
@@ -177,13 +244,12 @@ export function InvoiceForecastChart() {
     for (const r of visible) {
       const key = segmentKey(r.projectCode, r.probability);
       if (!segmentMap.has(key)) {
-        const base = projectColor(r.projectCode);
         segmentMap.set(key, {
           key,
           code: r.projectCode,
           title: r.projectTitle,
           probability: r.probability,
-          color: r.probability === 100 ? base : tint(base, P75_TINT),
+          color: r.color ?? fallbackProjectColor(r.projectCode),
         });
       }
     }
@@ -210,7 +276,7 @@ export function InvoiceForecastChart() {
         byCode.set(r.projectCode, {
           code: r.projectCode,
           title: r.projectTitle,
-          color: projectColor(r.projectCode),
+          color: r.color ?? fallbackProjectColor(r.projectCode),
         });
       }
     }
@@ -233,6 +299,29 @@ export function InvoiceForecastChart() {
     [segments],
   );
 
+  const hatchColors = useMemo(
+    () => [...new Set(segments.filter((s) => s.probability === 75).map((s) => s.color))],
+    [segments],
+  );
+
+  // Gap to target for the three months after the current one, from the raw
+  // rows so the probability toggles never change what the markers say.
+  const shortfallMarkers = useMemo(() => {
+    const now = new Date();
+    const markers: ShortfallMarker[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = `${d.toLocaleDateString("en-GB", { month: "short" })} ${String(d.getFullYear()).slice(2)}`;
+      const p100Total = data.rows
+        .filter((r) => r.month === key && r.probability === 100)
+        .reduce((sum, r) => sum + r.fee, 0);
+      const shortfall = MONTHLY_TARGET - p100Total;
+      if (shortfall > 0) markers.push({ label, p100Total, shortfall });
+    }
+    return markers;
+  }, [data.rows]);
+
   return (
     <Card className="shadow-sm border-gray-200">
       <CardHeader>
@@ -254,6 +343,38 @@ export function InvoiceForecastChart() {
           <TogglePill active={showP75} onClick={() => setShowP75((v) => !v)}>
             75% probability
           </TogglePill>
+          <span className="ml-1 flex items-center gap-2.5 text-[10px] text-gray-500">
+            <span className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-[2px]" style={{ backgroundColor: KEY_GREY }} />
+              100%
+            </span>
+            <span className="flex items-center gap-1">
+              <svg width={12} height={12} className="rounded-[2px]" aria-hidden>
+                <defs>
+                  <pattern
+                    id="invforecast-key-hatch"
+                    patternUnits="userSpaceOnUse"
+                    width={HATCH_PERIOD}
+                    height={HATCH_PERIOD}
+                    patternTransform="rotate(45)"
+                  >
+                    <rect width={HATCH_PERIOD} height={HATCH_PERIOD} fill={KEY_GREY} opacity={HATCH_BG_OPACITY} />
+                    <rect width={HATCH_STRIPE} height={HATCH_PERIOD} fill={KEY_GREY} />
+                  </pattern>
+                </defs>
+                <rect
+                  x={0.5}
+                  y={0.5}
+                  width={11}
+                  height={11}
+                  fill="url(#invforecast-key-hatch)"
+                  stroke={KEY_GREY}
+                  strokeWidth={1}
+                />
+              </svg>
+              75%
+            </span>
+          </span>
           <span className="mx-1 h-4 w-px bg-gray-200" aria-hidden />
           <TogglePill active={monthCount === 6} onClick={() => setMonthCount(6)}>
             6 months
@@ -267,6 +388,21 @@ export function InvoiceForecastChart() {
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 20, bottom: 5, left: 10 }}>
+              <defs>
+                {hatchColors.map((c) => (
+                  <pattern
+                    key={c}
+                    id={hatchId(c)}
+                    patternUnits="userSpaceOnUse"
+                    width={HATCH_PERIOD}
+                    height={HATCH_PERIOD}
+                    patternTransform="rotate(45)"
+                  >
+                    <rect width={HATCH_PERIOD} height={HATCH_PERIOD} fill={c} opacity={HATCH_BG_OPACITY} />
+                    <rect width={HATCH_STRIPE} height={HATCH_PERIOD} fill={c} />
+                  </pattern>
+                ))}
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
               <XAxis
                 dataKey="label"
@@ -304,12 +440,13 @@ export function InvoiceForecastChart() {
                   key={s.key}
                   dataKey={s.key}
                   stackId="fees"
-                  fill={s.color}
-                  stroke="#ffffff"
+                  fill={s.probability === 100 ? s.color : `url(#${hatchId(s.color)})`}
+                  stroke={s.probability === 100 ? "#ffffff" : s.color}
                   strokeWidth={1}
                   maxBarSize={48}
                 />
               ))}
+              <TargetShortfallMarkers markers={shortfallMarkers} />
             </BarChart>
           </ResponsiveContainer>
         </div>

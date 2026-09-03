@@ -2,8 +2,23 @@ import { NextResponse } from "next/server";
 import { ConnectionPool } from "mssql";
 import fixture from "@/lib/fixtures/profitability.json";
 import stagesFixture from "@/lib/fixtures/profitability-stages.json";
+import { getProjectColorMap } from "@/lib/project-colors-server";
 
 export const dynamic = "force-dynamic";
+
+async function withColors<P extends { Code: string }, S extends { Code: string }>(
+  projects: P[],
+  stages: S[],
+): Promise<{ projects: (P & { color: string })[]; stages: (S & { color: string })[] }> {
+  const colors = await getProjectColorMap([
+    ...projects.map((p) => p.Code),
+    ...stages.map((s) => s.Code),
+  ]);
+  return {
+    projects: projects.map((p) => ({ ...p, color: colors[p.Code] })),
+    stages: stages.map((s) => ({ ...s, color: colors[s.Code] })),
+  };
+}
 
 const PROJECT_QUERY = `
 SELECT
@@ -108,13 +123,16 @@ export async function GET() {
       pool.request().query(STAGE_QUERY),
     ]);
     return NextResponse.json(
-      { projects: projects.recordset, stages: stages.recordset },
+      await withColors(
+        projects.recordset as { Code: string }[],
+        stages.recordset as { Code: string }[],
+      ),
       { headers: { "X-Data-Source": "live" } },
     );
   } catch (error) {
     console.error("CMap DRS profitability error:", error);
     return NextResponse.json(
-      { projects: fixture, stages: stagesFixture },
+      await withColors(fixture as { Code: string }[], stagesFixture as { Code: string }[]),
       { headers: { "X-Data-Source": "fixture" } },
     );
   }
