@@ -1,0 +1,15 @@
+{
+  "sidebarOrder": [
+    "dashboard",
+    "studio",
+    "projects",
+    "finance",
+    "sales",
+    "operations",
+    "resourcing",
+    "it",
+    "premises",
+    "hr"
+  ],
+  "theme": "light"
+}

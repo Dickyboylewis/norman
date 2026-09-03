@@ -34,3 +34,29 @@ export function getWeeklyQuote(): string {
   const index = weeksSinceEpoch % MOTIVATIONAL_QUOTES.length;
   return MOTIVATIONAL_QUOTES[index];
 }
+
+export interface DailyQuote {
+  text: string;
+  author: string;
+}
+
+export const dailyQuotes: DailyQuote[] = [
+  {
+    text: "You don't become confident by shouting affirmations in the mirror, but by having a stack of undeniable proof that you are who you say you are.",
+    author: "Alex Hormozi",
+  },
+  { text: "Volume negates luck.", author: "Alex Hormozi" },
+  { text: "The work works on you more than you work on it.", author: "Alex Hormozi" },
+  { text: "The longer you delay the ask, the bigger the ask you can make.", author: "Alex Hormozi" },
+  { text: "Do more of what already works.", author: "Alex Hormozi" },
+  { text: "Skills compound. Keep stacking them.", author: "Alex Hormozi" },
+];
+
+/**
+ * Returns today's quote, rotating daily on days since epoch so every user
+ * sees the same one and it changes at midnight.
+ */
+export function getDailyQuote(): DailyQuote {
+  const daysSinceEpoch = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+  return dailyQuotes[daysSinceEpoch % dailyQuotes.length];
+}
