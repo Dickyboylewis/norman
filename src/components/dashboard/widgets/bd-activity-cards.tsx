@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { getDirectorByEmail } from "@/lib/directors";
 import { QuickAddLeadModal } from "./quick-add-lead-modal";
 
 const BRAND_RED = "#DA2C26";
@@ -17,6 +19,21 @@ export const BD_STATUSES = [
   { label: "Needs followup", color: "#FF642E" },
   { label: "Appointments", color: "#9CD326" },
 ] as const;
+
+type BdSessionType = "core" | "stretch" | "bd500";
+
+interface BdSessionRecord {
+  id: string;
+  name: string;
+  type: BdSessionType;
+  startedAt: string;
+  endsAt: string;
+  completedAt: string | null;
+}
+
+interface BdSessionsResponse {
+  sessions: Record<string, BdSessionRecord[]>;
+}
 
 interface CardCopy {
   id: string;
@@ -70,6 +87,31 @@ const CARDS: CardCopy[] = [
   },
 ];
 
+const TYPE_BY_CARD_ID: Record<string, BdSessionType> = {
+  core: "core",
+  stretch: "stretch",
+  "500": "bd500",
+};
+
+function useBdSessions() {
+  return useQuery<BdSessionsResponse>({
+    queryKey: ["bd-sessions"],
+    queryFn: async () => {
+      const res = await fetch("/api/bd-sessions");
+      if (!res.ok) throw new Error("Failed to fetch BD sessions");
+      return res.json();
+    },
+    refetchInterval: 300_000,
+    retry: 1,
+  });
+}
+
+function useDirectorName(): string | null {
+  const { data } = useSession();
+  const email = data?.user?.email;
+  return email ? getDirectorByEmail(email)?.name ?? null : null;
+}
+
 function formatRemaining(ms: number): string {
   const total = Math.max(0, Math.ceil(ms / 1000));
   const m = Math.floor(total / 60);
@@ -97,42 +139,50 @@ function playChime(ctx: AudioContext) {
 
 type TimerPhase = "idle" | "running" | "done";
 
-function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: string }) {
-  const storageKey = `bd-timer-${cardId}`;
+function FocusTimerButton({ type, cardTitle }: { type: BdSessionType; cardTitle: string }) {
+  const queryClient = useQueryClient();
+  const directorName = useDirectorName();
+  const { data: sessionsData } = useBdSessions();
   const [phase, setPhase] = useState<TimerPhase>("idle");
   const [remainingMs, setRemainingMs] = useState(FOCUS_MINUTES * 60 * 1000);
-  const finishRef = useRef<number | null>(null);
+  const activeRef = useRef<{ id: string; endsAt: number } | null>(null);
+  const completedPostedRef = useRef<string | null>(null);
+  const resumedRef = useRef(false);
+  const startingRef = useRef(false);
   const audioRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    const restore = window.setTimeout(() => {
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (!raw) return;
-        const finish = parseInt(raw, 10);
-        if (Number.isFinite(finish) && finish > Date.now()) {
-          finishRef.current = finish;
-          setRemainingMs(finish - Date.now());
-          setPhase("running");
-        } else {
-          localStorage.removeItem(storageKey);
-        }
-      } catch {
-        /* storage unavailable */
-      }
-    }, 0);
-    return () => window.clearTimeout(restore);
-  }, [storageKey]);
+    if (resumedRef.current || !sessionsData || !directorName) return;
+    resumedRef.current = true;
+    const now = Date.now();
+    const open = (sessionsData.sessions[directorName] ?? []).find(
+      (s) => s.type === type && s.completedAt === null && Date.parse(s.endsAt) > now,
+    );
+    if (open) {
+      activeRef.current = { id: open.id, endsAt: Date.parse(open.endsAt) };
+      setRemainingMs(Date.parse(open.endsAt) - now);
+      setPhase("running");
+    }
+  }, [sessionsData, directorName, type]);
 
   useEffect(() => {
     if (phase !== "running") return;
     const complete = () => {
-      try {
-        localStorage.removeItem(storageKey);
-      } catch {
-        /* storage unavailable */
+      const active = activeRef.current;
+      if (active && completedPostedRef.current !== active.id) {
+        completedPostedRef.current = active.id;
+        void fetch("/api/bd-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "complete", id: active.id }),
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error(`Complete failed: ${res.status}`);
+          })
+          .catch((error) => console.error("BD session complete failed:", error))
+          .finally(() => void queryClient.invalidateQueries({ queryKey: ["bd-sessions"] }));
       }
-      finishRef.current = null;
+      activeRef.current = null;
       setPhase("done");
       try {
         if (!audioRef.current && typeof window !== "undefined" && window.AudioContext) {
@@ -155,37 +205,30 @@ function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: st
       }
     };
     const tick = () => {
-      const rem = (finishRef.current ?? 0) - Date.now();
+      const rem = (activeRef.current?.endsAt ?? 0) - Date.now();
       if (rem <= 0) complete();
       else setRemainingMs(rem);
     };
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [phase, storageKey, cardTitle]);
+  }, [phase, cardTitle, queryClient]);
 
   const handleClick = () => {
     if (phase === "running") {
       if (window.confirm(CANCEL_PROMPT)) {
-        try {
-          localStorage.removeItem(storageKey);
-        } catch {
-          /* storage unavailable */
-        }
-        finishRef.current = null;
+        activeRef.current = null;
         setPhase("idle");
+        setRemainingMs(FOCUS_MINUTES * 60 * 1000);
       }
       return;
     }
     if (phase === "done") {
-      try {
-        localStorage.removeItem(storageKey);
-      } catch {
-        /* storage unavailable */
-      }
       setPhase("idle");
+      setRemainingMs(FOCUS_MINUTES * 60 * 1000);
       return;
     }
+    if (startingRef.current) return;
     try {
       if (window.AudioContext) {
         if (!audioRef.current) audioRef.current = new window.AudioContext();
@@ -194,19 +237,37 @@ function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: st
     } catch {
       /* audio unavailable */
     }
-    const finish = Date.now() + FOCUS_MINUTES * 60 * 1000;
-    try {
-      localStorage.setItem(storageKey, String(finish));
-    } catch {
-      /* storage unavailable */
-    }
-    finishRef.current = finish;
-    setRemainingMs(FOCUS_MINUTES * 60 * 1000);
-    setPhase("running");
+    startingRef.current = true;
+    resumedRef.current = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/bd-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "start", type, durationMinutes: FOCUS_MINUTES }),
+        });
+        if (!res.ok) throw new Error(`Start failed: ${res.status}`);
+        const body: { session: BdSessionRecord } = await res.json();
+        const endsAt = Date.parse(body.session.endsAt);
+        activeRef.current = { id: body.session.id, endsAt };
+        setRemainingMs(endsAt - Date.now());
+        setPhase("running");
+        void queryClient.invalidateQueries({ queryKey: ["bd-sessions"] });
+      } catch (error) {
+        console.error("BD session start failed:", error);
+        window.alert("Could not start the timer. Sign in as a director and try again.");
+      } finally {
+        startingRef.current = false;
+      }
+    })();
   };
 
   const label =
-    phase === "running" ? formatRemaining(remainingMs) : phase === "done" ? "Done!" : "Let’s go!!";
+    phase === "running"
+      ? formatRemaining(remainingMs)
+      : phase === "done"
+        ? "Completed"
+        : "Let’s go!!";
   const ariaLabel =
     phase === "running"
       ? "Cancel focus timer"
@@ -226,6 +287,42 @@ function FocusTimerButton({ cardId, cardTitle }: { cardId: string; cardTitle: st
     >
       {label}
     </button>
+  );
+}
+
+const LONDON_DAY = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/London",
+  weekday: "short",
+});
+
+const LONDON_TIME = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/London",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+function SessionHistoryLine({ type }: { type: BdSessionType }) {
+  const directorName = useDirectorName();
+  const { data } = useBdSessions();
+  if (!directorName || !data) return null;
+
+  const mine = (data.sessions[directorName] ?? [])
+    .filter((s) => s.type === type)
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+  if (mine.length === 0) return null;
+
+  return (
+    <p className="-mt-2 mb-3 text-[11px] leading-relaxed text-gray-400">
+      {mine
+        .map((s) => {
+          const start = new Date(s.startedAt);
+          const end = new Date(s.endsAt);
+          const mark = s.completedAt ? "✓" : "○";
+          return `${mark} ${LONDON_DAY.format(start)} ${LONDON_TIME.format(start)} – ${LONDON_TIME.format(end)}`;
+        })
+        .join(" · ")}
+    </p>
   );
 }
 
@@ -282,6 +379,7 @@ function ContactsListButton() {
 }
 
 function BDCard({ card, footer }: { card: CardCopy; footer: React.ReactNode }) {
+  const type = TYPE_BY_CARD_ID[card.id];
   return (
     <div className="flex flex-col rounded-3xl border-2 bg-white p-6 shadow-sm" style={{ borderColor: BRAND_RED }}>
       <div className="relative mb-4">
@@ -291,8 +389,10 @@ function BDCard({ card, footer }: { card: CardCopy; footer: React.ReactNode }) {
         >
           {card.title}
         </h3>
-        <FocusTimerButton cardId={card.id} cardTitle={card.title} />
+        <FocusTimerButton type={type} cardTitle={card.title} />
       </div>
+
+      <SessionHistoryLine type={type} />
 
       <p className="mb-3 text-sm font-medium" style={{ color: BRAND_RED }}>
         {card.intro}
