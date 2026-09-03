@@ -51,6 +51,7 @@ import {
   LabelList,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatBdSessionLine, type BdSessionSummaryInput } from "@/lib/bd-sessions-format";
 
 // ── Avatar map ─────────────────────────────────────────────────────────────
 // Maps the full name (as returned by the API) to the public image path and
@@ -116,10 +117,11 @@ interface CustomTickProps {
   y?: number | string;
   payload?: { value: string };
   isMobile?: boolean;
+  bdLine?: string;
   [key: string]: any;
 }
 
-function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false }: CustomTickProps) {
+function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false, bdLine }: CustomTickProps) {
   const numX = typeof x === "string" ? parseFloat(x) : (x ?? 0);
   const numY = typeof y === "string" ? parseFloat(y) : (y ?? 0);
   const name = payload?.value ?? "";
@@ -172,6 +174,29 @@ function CustomXAxisTick({ x = 0, y = 0, payload, isMobile = false }: CustomTick
         >
           {meta.firstName}
         </text>
+      )}
+
+      {/* BD session summary — wraps to two lines inside a foreignObject */}
+      {bdLine !== undefined && (
+        <foreignObject
+          x={isMobile ? -60 : -95}
+          y={AVATAR_R * 2 + (isMobile ? 4 : 22)}
+          width={isMobile ? 120 : 190}
+          height={isMobile ? 26 : 30}
+        >
+          <div
+            style={{
+              color: "#9CA3AF",
+              fontSize: isMobile ? 9 : 10,
+              fontFamily: "var(--font-poppins), Poppins, sans-serif",
+              textAlign: "center",
+              lineHeight: 1.3,
+              overflow: "hidden",
+            }}
+          >
+            {bdLine}
+          </div>
+        </foreignObject>
       )}
     </g>
   );
@@ -279,6 +304,7 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
   const [data, setData]       = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [bdSessions, setBdSessions] = useState<Record<string, BdSessionSummaryInput[]> | null>(null);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -300,6 +326,17 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
       .catch((err) => {
         console.error("Failed to load prospecting data", err);
         setLoading(false);
+      });
+  }, []);
+
+  // Fetch this week's BD sessions for the summary lines under each name
+  useEffect(() => {
+    fetch("/api/bd-sessions")
+      .then((res) => res.json())
+      .then((json) => setBdSessions(json?.sessions ?? {}))
+      .catch((err) => {
+        console.error("Failed to load BD sessions", err);
+        setBdSessions({});
       });
   }, []);
 
@@ -325,8 +362,12 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
   // Chart height adapts to screen size
   const chartHeight = isMobile ? 220 : 300;
 
-  // Extra bottom margin so the avatar + name don't get clipped
-  const bottomMargin = isMobile ? 50 : 70;
+  // Extra bottom margin so the avatar, name and BD session line don't get clipped
+  const bottomMargin = isMobile ? 78 : 106;
+
+  // BD session summary per director, rendered under each x-axis name
+  const bdLineFor = (name: string): string | undefined =>
+    bdSessions === null ? undefined : formatBdSessionLine(bdSessions[name] ?? []);
 
   return (
     <Card className="w-full flex flex-col font-roboto shadow-sm border-gray-200">
@@ -372,7 +413,11 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
               tickLine={false}
               height={bottomMargin}
               tick={(props) => (
-                <CustomXAxisTick {...props} isMobile={isMobile} />
+                <CustomXAxisTick
+                  {...props}
+                  isMobile={isMobile}
+                  bdLine={bdLineFor(props?.payload?.value ?? "")}
+                />
               )}
             />
 
@@ -443,7 +488,11 @@ export function ProspectingChart({ disableAnimations = false }: { disableAnimati
                 tickLine={false}
                 height={bottomMargin}
                 tick={(props) => (
-                  <CustomXAxisTick {...props} isMobile={isMobile} />
+                  <CustomXAxisTick
+                  {...props}
+                  isMobile={isMobile}
+                  bdLine={bdLineFor(props?.payload?.value ?? "")}
+                />
                 )}
               />
 

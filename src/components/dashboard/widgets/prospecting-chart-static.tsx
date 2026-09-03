@@ -21,6 +21,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatBdSessionLine, type BdSessionSummaryInput } from "@/lib/bd-sessions-format";
 
 // ── Avatar map ─────────────────────────────────────────────────────────────
 const PERSON_META: Record<string, { avatar: string; firstName: string }> = {
@@ -68,6 +69,7 @@ function computeScoreRanks(data: any[]): Record<number, number> {
 export function ProspectingChartStatic() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bdSessions, setBdSessions] = useState<Record<string, BdSessionSummaryInput[]> | null>(null);
 
   // Fetch live Monday.com data
   useEffect(() => {
@@ -80,6 +82,17 @@ export function ProspectingChartStatic() {
       .catch((err) => {
         console.error("Failed to load prospecting data", err);
         setLoading(false);
+      });
+  }, []);
+
+  // Fetch this week's BD sessions for the summary line under each name
+  useEffect(() => {
+    fetch("/api/bd-sessions")
+      .then((res) => res.json())
+      .then((json) => setBdSessions(json?.sessions ?? {}))
+      .catch((err) => {
+        console.error("Failed to load BD sessions", err);
+        setBdSessions({});
       });
   }, []);
 
@@ -308,6 +321,23 @@ export function ProspectingChartStatic() {
                     >
                       {meta.firstName}
                     </div>
+
+                    {/* BD session summary */}
+                    {bdSessions !== null && (
+                      <div
+                        data-testid="bd-session-line"
+                        style={{
+                          width: "220px",
+                          fontSize: "11px",
+                          color: "#9CA3AF",
+                          fontFamily: "var(--font-poppins), Poppins, sans-serif",
+                          textAlign: "center",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        {formatBdSessionLine(bdSessions[name] ?? [])}
+                      </div>
+                    )}
                   </div>
                 );
               })}

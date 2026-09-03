@@ -48,6 +48,10 @@ export async function GET(request: Request) {
     console.log("Warming up Monday.com API...");
     await fetch("http://localhost:3000/api/monday").catch(() => {});
 
+    // Warm up the BD sessions API
+    console.log("Warming up BD sessions API...");
+    await fetch("http://localhost:3000/api/bd-sessions").catch(() => {});
+
     console.log("Launching browser...");
     const browser = await puppeteer.launch({
       headless: true,
@@ -80,13 +84,14 @@ export async function GET(request: Request) {
       document.head.appendChild(style);
     });
 
-    // Wait for static chart bars to render
-    console.log("Waiting for chart bars...");
+    // Wait for static chart bars and BD session lines to render
+    console.log("Waiting for chart bars and BD session lines...");
     await page.waitForFunction(() => {
       const bars = document.querySelectorAll('[data-testid="chart-bar"]');
-      return bars.length > 0;
+      const bdLines = document.querySelectorAll('[data-testid="bd-session-line"]');
+      return bars.length > 0 && bdLines.length > 0;
     }, { timeout: 30000 }).catch(() => {
-      console.log("No bars detected - may be a zero-data week");
+      console.log("No bars or BD session lines detected - may be a zero-data week");
     });
 
     // Safety buffer
